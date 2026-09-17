@@ -1,6 +1,6 @@
 # Original low-poly boxing opponent
 
-A faceless boxer with red gloves, navy boxing shorts, chalk trim and dark boxing boots. Created in Blender 5.2.1, using original geometry and solid-color materials; no downloaded mesh, texture or animation data. General direction: a recognizable, economical boxing NPC, not a reproduction of a particular marketplace character.
+A minimal-face boxer (small symbolic nose and ears, no eyes or mouth) with red gloves, navy boxing shorts, chalk trim and dark boxing boots. Created in Blender 5.2.1, using original geometry and solid-color materials; no downloaded mesh, texture or animation data. General direction: a recognizable, economical boxing NPC, not a reproduction of a particular marketplace character.
 
 ## Deliverables
 
@@ -19,6 +19,8 @@ All vertices have normalized bone weights. The torso and each arm/leg have conne
 `Guard_Pose` is a static 30-frame guard sample. `Hit_Recoil` is a short 30fps example: upper body and head recoil around frame 7, then return by frame 24. Neither is a complete combat animation set. No inverse-kinematics controls, fingers, face rig, walking, root motion or Humanoid Avatar mapping are supplied. Large limb rotations may require weight/garment refinement; the provided guard and recoil are the reviewed poses.
 
 A rig is not essential for a whole-object tilt on impact. It is useful for independently bending the torso, neck and arms without moving the feet; this example demonstrates that. Unity's `BoxingOpponentAvatar` drives these bones from the existing logical attack/guard targets and adds separate head/body hit reactions. The imported Animator is disabled so the example clips do not compete with runtime inverse kinematics. Hit volumes remain unchanged. If the logical strike exceeds anatomical arm length, the visual chain stretches to maintain contact alignment.
+
+Runtime motion now uses fixed per-round body scale, staggered planted feet with knee flexion, coordinated torso turn and forward weight shift, straight and curved hook trajectories, opposite-hand guard, and forearm-aligned wrist orientation. Opponent eye height is approximately 10cm above player eye height. The Blender sample actions remain authoring examples; gameplay motion is procedural and belongs to the Unity source. Reference: [IBA Coaches Manual](https://www.iba.sport/documents/iba-coach-manual/), stance and basic punches. No animation data from that source is copied.
 
 ## Rebuild / verify
 

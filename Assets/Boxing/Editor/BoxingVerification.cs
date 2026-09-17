@@ -63,7 +63,6 @@ namespace Hapbeat.Boxing.Editor
                 if (game == null || game.Opponent == null) return;
                 game.feedback.forceSilent = true;
                 game.menu.enabled = false;
-                game.input.mode = BoxingInputMode.Desktop;
                 game.input.SetTestPose(Pose(0, false));
                 game.StartRound();
                 // This full-duration coverage run exercises every impact zone, not KO timing.
@@ -120,6 +119,13 @@ namespace Hapbeat.Boxing.Editor
             float elapsed = (float)(EditorApplication.timeSinceStartup - started);
             int stage = (int)(elapsed / 8) % 4;
             var pose = Pose(elapsed, stage == 0);
+            if (stage == 1)
+            {
+                // Approach the actual head from its side, outside the front guard.
+                // A fixed 1.55m fist no longer exercises head hits on the taller opponent.
+                float reach = Mathf.Clamp01((elapsed % 1.6f - .4f) / .4f);
+                pose.left = game.Opponent.Head + Vector3.right * (.45f * (1-reach));
+            }
             if (stage == 2)
             {
                 var lean = Vector3.right * (0.48f * Mathf.Sin(elapsed * 4));
@@ -157,7 +163,7 @@ namespace Hapbeat.Boxing.Editor
             BoxingProject.Configure();
             BoxingProject.Validate();
             var game = UnityEngine.Object.FindAnyObjectByType<BoxingGame>(); game.Initialize(); game.feedback.forceSilent = true;
-            game.input.mode = BoxingInputMode.Desktop;
+            game.input.SetTestPose(Pose(0, false));
             var pose = Pose(0, false);
             pose.left = pose.head + new Vector3(-0.25f, -0.30f, 0.4f);
             pose.right = pose.head + new Vector3(0.25f, -0.30f, 0.4f);

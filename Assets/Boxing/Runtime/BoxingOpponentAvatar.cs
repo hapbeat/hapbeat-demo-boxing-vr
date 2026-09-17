@@ -68,30 +68,43 @@ namespace Hapbeat.Boxing
                 bones[i].localPosition = restPositions[i]; bones[i].localRotation = restRotations[i]; bones[i].localScale = restScales[i];
             }
             transform.SetPositionAndRotation(opponent.Root, Quaternion.Euler(0, 180, 0));
-            transform.localScale = Vector3.one * ((opponent.Head.y - opponent.Root.y) / neutralHeadHeight);
-            var lf = leftFoot.position; var rf = rightFoot.position;
+            // Height is fixed throughout a round. Bobbing lowers the hips over planted feet,
+            // rather than scaling the entire character up and down.
+            transform.localScale = Vector3.one * (opponent.StandingHeadHeight / neutralHeadHeight);
+            var lf = leftFoot.position + new Vector3(-.035f,0,-.13f);
+            var rf = rightFoot.position + new Vector3(.035f,0,.13f);
             var lr = leftFoot.rotation; var rr = rightFoot.rotation;
             float angle = (BodyReaction ? -10 : 6) * Reaction;
-            spine.rotation = Quaternion.AngleAxis(angle, Vector3.right) * spine.rotation;
-            chest.rotation = Quaternion.AngleAxis(angle * .5f, Vector3.right) * chest.rotation;
+            spine.rotation = Quaternion.Euler(angle, 12 + opponent.BodyYaw * .45f, 0) * spine.rotation;
+            chest.rotation = Quaternion.Euler(angle * .5f, opponent.BodyYaw * .55f, 0) * chest.rotation;
+            head.rotation = Quaternion.AngleAxis(-12 - opponent.BodyYaw,Vector3.up) * head.rotation;
             head.rotation = Quaternion.AngleAxis((BodyReaction ? -8 : 14) * Reaction, Vector3.right) * head.rotation;
             // Keep the head's rendered centre on its hit sphere while bending the body beneath it.
             transform.position += opponent.Head - HeadCenter;
             Solve(leftThigh, leftShin, leftFoot, lf, Vector3.back); leftFoot.rotation = lr;
             Solve(rightThigh, rightShin, rightFoot, rf, Vector3.back); rightFoot.rotation = rr;
-            Arm(leftUpper, leftFore, leftHand, leftCenter, opponent.Left, opponent.Head, -1);
-            Arm(rightUpper, rightFore, rightHand, rightCenter, opponent.Right, opponent.Head, 1);
+            Arm(leftUpper, leftFore, leftHand, leftCenter, opponent.Left, opponent.Head, -1, opponent.Hook && opponent.AttackLeft ? opponent.MotionWeight : 0);
+            Arm(rightUpper, rightFore, rightHand, rightCenter, opponent.Right, opponent.Head, 1, opponent.Hook && !opponent.AttackLeft ? opponent.MotionWeight : 0);
             Reaction = Mathf.Max(0, Reaction - Mathf.Max(0, dt) * 2.8f);
         }
-        private void Arm(Transform upper, Transform fore, Transform hand, Vector3 center, Vector3 target, Vector3 targetHead, float side)
+        private void Arm(Transform upper, Transform fore, Transform hand, Vector3 center, Vector3 target, Vector3 targetHead, float side, float hook)
         {
             float extension = Mathf.Clamp01((targetHead.z - target.z - .28f) / .35f);
             Vector3 direction = Vector3.Lerp(Vector3.up, Vector3.back, extension).normalized;
-            Quaternion rotation = Quaternion.FromToRotation(hand.up, direction) * hand.rotation;
-            Vector3 offset = rotation * Vector3.Scale(center, hand.lossyScale);
-            Vector3 pole = new Vector3(side * (BodyReaction ? .15f : .6f), -1, .15f);
-            Solve(upper, fore, hand, target - offset, pole);
-            hand.rotation = rotation;
+            Vector3 pole = Vector3.Lerp(new Vector3(side * .3f, -1, .1f), new Vector3(side, .05f, .1f), hook);
+            // Explicit two-axis wrist frame: local Y runs cuff -> knuckles, local Z
+            // is the back of the glove. Iterate towards the forearm to avoid bent wrists.
+            for (int i=0; i<5; i++)
+            {
+                Vector3 back = Vector3.Lerp(Vector3.back,Vector3.up,extension);
+                back = Vector3.ProjectOnPlane(back,direction).normalized;
+                if(back.sqrMagnitude<.001f) back=Vector3.ProjectOnPlane(Vector3.right,direction).normalized;
+                Quaternion rotation = Quaternion.LookRotation(back,direction);
+                Vector3 offset = rotation * Vector3.Scale(center, hand.lossyScale);
+                Solve(upper, fore, hand, target - offset, pole);
+                hand.rotation = rotation;
+                direction = (hand.position-fore.position).normalized;
+            }
         }
         private static void Solve(Transform upper, Transform lower, Transform end, Vector3 target, Vector3 pole)
         {

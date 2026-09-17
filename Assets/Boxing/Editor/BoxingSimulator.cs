@@ -129,7 +129,7 @@ namespace Hapbeat.Boxing.Editor
             }
             EditorGUILayout.HelpBox("Press Play, then focus the Game view. Use INPUT: Controllers in the boxing menu. Stop Play before changing the Editor input mode.", MessageType.Info);
             GUILayout.Label("Tab: cycle FPS / device control\nH: head; [ / ]: select left / right device\nWASD: move; Q / E: down / up\nRight-mouse drag / arrow keys: rotate selected device\n1: A/X; 2: B/Y\nR: reset; Escape: boxing menu; Enter: confirm", EditorStyles.wordWrappedLabel);
-            EditorGUILayout.HelpBox("Simulator input is Unity's standard XRI sample. It is not the game's simplified Desktop mode. The simulator prefab and control assets are Editor-only and are not included in APKs.", MessageType.None);
+            EditorGUILayout.HelpBox("Simulator input uses Unity's standard XR devices. The simulator prefab and control assets are Editor-only and are not included in APKs.", MessageType.None);
         }
     }
 }

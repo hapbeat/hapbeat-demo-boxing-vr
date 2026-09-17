@@ -16,7 +16,7 @@ def material(name, color, roughness=.75):
     mat = bpy.data.materials.new(name)
     mat.diffuse_color = (*color, 1)
     mat.use_nodes = True
-    node = mat.node_tree.nodes.get('Principled BSDF')
+    node = next(n for n in mat.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
     node.inputs['Base Color'].default_value = (*color, 1)
     node.inputs['Roughness'].default_value = roughness
     return mat
@@ -105,6 +105,15 @@ vertical('Faceless sculpted head', [
     (0, .006, 1.785, .082, .075),
     (0, .007, 1.808, .044, .042),
 ], skin, 'head', 10)
+
+# Small readable features, not a realistic face. Rigidly follow the head bone.
+mesh('Symbolic nose', [(-.019, -.088, 1.696), (.019, -.088, 1.696),
+    (0, -.128, 1.665), (-.017, -.092, 1.65), (.017, -.092, 1.65)],
+    [(0, 1, 2), (0, 2, 3), (1, 4, 2), (3, 2, 4), (0, 3, 4, 1)], skin, [{'head': 1}]*5)
+for sign in (-1, 1):
+    vertical('Symbolic ear '+str(sign), [(sign*.102, .002, 1.637, .012, .018),
+        (sign*.117, .002, 1.665, .019, .027), (sign*.112, .002, 1.7, .017, .024),
+        (sign*.101, .002, 1.717, .009, .014)], skin, 'head', 6)
 
 vertical('Shorts hip', [(0, 0, .925, .196, .121), (0, 0, .975, .18, .122), (0, 0, 1.027, .162, .105)], shorts, 'pelvis', 12)
 vertical('Wide waistband', [(0, 0, .988, .204, .142), (0, 0, 1.035, .177, .123)], ivory, 'pelvis', 12)

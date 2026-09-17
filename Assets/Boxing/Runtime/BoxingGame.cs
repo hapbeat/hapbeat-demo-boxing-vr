@@ -32,6 +32,7 @@ namespace Hapbeat.Boxing
         private XRDisplaySubsystem display;
         private bool displayFocused = true, displayFocusKnown;
         private readonly List<XRDisplaySubsystem> displays = new List<XRDisplaySubsystem>();
+        private string lastPauseReport;
 
         public void Initialize() { if (Opponent == null) Opponent = new BoxingOpponent(tuning); previousPhase = Round.Phase; }
         private void Awake() => Initialize();
@@ -76,7 +77,15 @@ namespace Hapbeat.Boxing
             Round.Start(tuning.roundSeconds, tuning.maximumHealth); Opponent.Reset(input.Current.head.y > 0.5f ? input.Current.head.y : 1.65f);
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); menu.Close();
         }
-        private void Update() => Simulate(Time.unscaledDeltaTime, input.Current);
+        private void Update()
+        {
+            Simulate(Time.unscaledDeltaTime, input.Current);
+            string state = Paused ? PauseReason : "RUNNING";
+            if (state != lastPauseReport)
+            {
+                Debug.Log("[Boxing State] " + state); lastPauseReport = state;
+            }
+        }
         public void Simulate(float dt, BoxerPose pose)
         {
             bool tracking = pose.valid && dt > 0 && dt <= 0.1f;

@@ -16,7 +16,7 @@ namespace Hapbeat.Boxing.Tests
     // Exercises the real XR Hands subsystem and real BoxingInput joint reader.
     public sealed class BoxingTestHandProvider : XRHandSubsystemProvider
     {
-        public static bool leftTracked, rightTracked, palmMenu;
+        public static bool leftTracked, rightTracked, palmMenu, wristOnly;
         public override void Start() { }
         public override void Stop() { }
         public override void Destroy() { }
@@ -40,7 +40,8 @@ namespace Hapbeat.Boxing.Tests
                 if (id == XRHandJointID.Wrist) p += Vector3.back * 0.04f;
                 if (id == XRHandJointID.MiddleProximal) p += Vector3.forward * 0.06f;
                 if (id == XRHandJointID.MiddleTip || id == XRHandJointID.IndexTip) p += Vector3.forward * (open ? 0.16f : 0.02f);
-                joints[i] = XRHandProviderUtility.CreateJoint(side, tracked ? XRHandJointTrackingState.Pose : XRHandJointTrackingState.None, id, new Pose(p, rotation));
+                bool valid = tracked && (!wristOnly || id == XRHandJointID.Wrist);
+                joints[i] = XRHandProviderUtility.CreateJoint(side, valid ? XRHandJointTrackingState.Pose : XRHandJointTrackingState.None, id, new Pose(p, rotation));
             }
         }
     }
@@ -55,6 +56,7 @@ namespace Hapbeat.Boxing.Tests
             InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
             InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
             BoxingTestHandProvider.leftTracked = BoxingTestHandProvider.rightTracked = BoxingTestHandProvider.palmMenu = false;
+            BoxingTestHandProvider.wristOnly = false;
             InputSystem.RegisterLayout<XRSimulatedHMD>(); head = InputSystem.AddDevice<XRSimulatedHMD>();
         }
         public override void TearDown() { hands?.Destroy(); hands = null; base.TearDown(); }
@@ -130,6 +132,38 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.input.ActiveMode, Is.EqualTo(BoxingInputMode.Hands));
             Assert.That(game.input.HasTracking, Is.True); Assert.That(game.Paused, Is.False, game.PauseReason);
             Assert.That(game.feedback.Sends, Is.Zero);
+        }
+        [UnityTest] public IEnumerator WristTrackingWithoutFingersMustNotStopGloveGameplay()
+        {
+            yield return SceneManager.LoadSceneAsync("Boxing"); var game = Object.FindAnyObjectByType<BoxingGame>();
+            game.SendMessage("FocusChanged", true); game.SendMessage("OnApplicationPause", false);
+            StartHands(); BoxingTestHandProvider.leftTracked = BoxingTestHandProvider.rightTracked = true;
+            BoxingTestHandProvider.wristOnly = true;
+            yield return Pump(.4f, game);
+            Assert.That(game.input.HasTracking, Is.True, "GloveBall accepts these exact wrist poses; Boxing must not require finger tips.");
+            Vector3 left=game.input.Current.left; Quaternion rotation=game.input.Current.leftRotation;
+            BoxingTestHandProvider.wristOnly=false; BoxingTestHandProvider.palmMenu=false;
+            yield return Pump(.2f,game);
+            Assert.That(Vector3.Distance(left,game.input.Current.left),Is.LessThan(.001f));
+            Assert.That(Quaternion.Angle(rotation,game.input.Current.leftRotation),Is.LessThan(.1f));
+            BoxingTestHandProvider.wristOnly=true;
+            game.StartRound(); yield return Pump(.6f, game);
+            Assert.That(game.Round.Countdown, Is.LessThan(3));
+            Assert.That(game.feedback.Sends, Is.Zero);
+        }
+        [UnityTest] public IEnumerator LookingAtInputRowWithoutControllersNeverEntersDesktop()
+        {
+            yield return SceneManager.LoadSceneAsync("Boxing"); var game = Object.FindAnyObjectByType<BoxingGame>();
+            yield return Pump(.4f, game);
+            float end = Time.realtimeSinceStartup + 3;
+            while (Time.realtimeSinceStartup < end)
+            {
+                var q = Quaternion.LookRotation(game.menu.rows[2].transform.position - game.input.headCamera.transform.position);
+                InputSystem.QueueStateEvent(head, new XRSimulatedHMDState { isTracked = true, trackingState = 3, centerEyePosition = Vector3.up * 1.65f, centerEyeRotation = q, deviceRotation = q });
+                yield return null;
+            }
+            Assert.That(game.input.mode.ToString(), Is.Not.EqualTo("Desktop"));
+            Assert.That(game.input.HasTracking, Is.False, "No synthetic keyboard gloves may replace missing XR tracking.");
         }
     }
 }

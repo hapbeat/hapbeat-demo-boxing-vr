@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Hapbeat.Boxing
 {
     public enum BoxingPhase { Ready, Countdown, Fighting, Results }
-    public enum BoxingInputMode { Controllers, Hands, Desktop }
+    public enum BoxingInputMode { Controllers, Hands }
     public enum ImpactMode { Continuous, WeakHard }
     public enum ImpactZone { LeftGlove, RightGlove, Head }
     public enum ImpactSurface { Glove, Body }

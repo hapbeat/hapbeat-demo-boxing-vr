@@ -17,6 +17,10 @@ namespace Hapbeat.Boxing
         public int AttackId { get; private set; }
         public bool AttackLeft { get; private set; }
         public int CompletedAttacks { get; private set; }
+        public float StandingHeadHeight => height + .075f;
+        public float MotionWeight { get; private set; }
+        public float BodyYaw { get; private set; }
+        public bool Hook => attacking && pattern % 6 >= 4;
         private float clock, attackTime, wait, reaction;
         private int pattern;
         private bool attacking, blocked;
@@ -28,7 +32,8 @@ namespace Hapbeat.Boxing
         public BoxingOpponent(BoxingTuning tuning) { this.tuning = tuning; Reset(1.65f); }
         public void Reset(float playerHeight)
         {
-            height = Mathf.Clamp(playerHeight, 1.25f, 1.95f); clock = attackTime = reaction = 0;
+            height = Mathf.Clamp(playerHeight + .10f, 1.35f, 2.05f); clock = attackTime = reaction = 0;
+            MotionWeight = BodyYaw = 0;
             pattern = AttackId = CompletedAttacks = 0; wait = 0.7f; attacking = Striking = Telegraphing = blocked = false;
             random = new System.Random(1701); guardWait = tuning.guardInterval; guardTime = 0; Guarding = false; GuardWeight = 0;
             SetRestPose();
@@ -46,6 +51,12 @@ namespace Hapbeat.Boxing
         {
             if (dt <= 0) return;
             clock += dt; reaction = Mathf.Max(0, reaction - dt);
+            float preDuration = tuning.telegraphSeconds, strikeDuration = tuning.strikeSeconds;
+            float extension = !attacking ? 0 : attackTime < preDuration ? -.18f * Mathf.Sin(Mathf.PI * .5f * attackTime / preDuration) :
+                attackTime < preDuration + strikeDuration ? Mathf.SmoothStep(0, 1, (attackTime - preDuration) / strikeDuration) :
+                1 - Mathf.SmoothStep(0, 1, (attackTime - preDuration - strikeDuration) / tuning.recoverSeconds);
+            MotionWeight = Mathf.Max(0, extension);
+            BodyYaw = (AttackLeft ? -1 : 1) * (Hook ? 42 : 24) * extension;
             SetRestPose(); Striking = Telegraphing = Guarding = false; GuardWeight = 0;
             if (!fighting) return;
             if (!attacking)
@@ -73,31 +84,37 @@ namespace Hapbeat.Boxing
             if (attackTime < pre)
             {
                 Telegraphing = true;
-                fist = rest + new Vector3(AttackLeft ? -0.05f : 0.05f, 0.03f, 0.12f) * Mathf.Sin(attackTime / pre * Mathf.PI * 0.5f);
+                fist = rest + new Vector3(AttackLeft ? -0.025f : 0.025f, 0, 0.045f) * Mathf.Sin(attackTime / pre * Mathf.PI * 0.5f);
                 strikeStart = fist;
             }
             else if (attackTime < pre + strike)
             {
                 Striking = true; float t = (attackTime - pre) / strike;
-                fist = Vector3.Lerp(strikeStart, aim + Vector3.back * 0.12f, t);
-                if (hook) fist += Vector3.right * (AttackLeft ? -0.35f : 0.35f) * Mathf.Sin(t * Mathf.PI);
+                t = Mathf.SmoothStep(0, 1, t);
+                Vector3 end = aim;
+                if (hook)
+                {
+                    var control = new Vector3(Head.x + (AttackLeft ? -.48f : .48f), aim.y, aim.z + .12f);
+                    fist = (1-t)*(1-t)*strikeStart + 2*(1-t)*t*control + t*t*end;
+                }
+                else fist = Vector3.Lerp(strikeStart, end, t);
             }
             else
             {
                 float t = Mathf.Clamp01((attackTime - pre - strike) / recover);
-                fist = Vector3.Lerp(blocked ? blockedAt : aim + Vector3.back * 0.12f, rest, t * t * (3 - 2 * t));
+                fist = Vector3.Lerp(blocked ? blockedAt : aim, rest, t * t * (3 - 2 * t));
                 if (t >= 1) { attacking = false; pattern++; CompletedAttacks++; wait = pattern % 3 == 1 ? 0.18f : tuning.enemyInterval; }
             }
             if (AttackLeft) Left = fist; else Right = fist;
         }
         private void SetRestPose()
         {
-            Root = new Vector3(Mathf.Sin(clock * 0.72f) * 0.16f, 0, 1.08f + Mathf.Sin(clock * 0.91f) * 0.10f);
-            float bob = Mathf.Sin(clock * 3) * 0.022f;
-            Head = Root + new Vector3(Mathf.Sin(clock * 0.9f) * 0.035f, height + bob, reaction * 0.24f);
-            Body = Root + new Vector3(0, height - 0.43f + bob, 0.015f);
-            Left = Head + new Vector3(-0.26f, -0.18f, -0.22f);
-            Right = Head + new Vector3(0.26f, -0.18f, -0.22f);
+            Root = new Vector3(0, 0, 1.08f);
+            float bob = (Mathf.Cos(clock * 3) - 1) * .018f;
+            Head = Root + new Vector3(Mathf.Sin(clock * 1.5f) * .025f, height + bob, reaction * .24f - MotionWeight * (Hook ? .25f : .12f));
+            Body = Head + new Vector3(0, -.43f, .015f);
+            Left = Head + new Vector3(-.19f, -.10f, -.23f);
+            Right = Head + new Vector3(.18f, -.09f, -.19f);
         }
     }
 }

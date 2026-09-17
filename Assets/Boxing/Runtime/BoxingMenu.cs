@@ -92,7 +92,7 @@ namespace Hapbeat.Boxing
                     if (game.Round.Phase == BoxingPhase.Ready || game.Round.Phase == BoxingPhase.Results) game.StartRound(); else Close();
                     break;
                 case 1: game.StartRound(); break;
-                case 2: input.SelectMode((BoxingInputMode)(((int)input.mode + 1) % (Application.isEditor ? 3 : 2))); game.ResetHistory(); break;
+                case 2: game.UseHandTracking(); break;
                 case 3: game.tuning.impactMode = game.tuning.impactMode == ImpactMode.Continuous ? ImpactMode.WeakHard : ImpactMode.Continuous; break;
                 case 4: game.RecenterPlayer(); Open(); break;
                 case 5: game.feedback.hapticsEnabled = !game.feedback.hapticsEnabled; if (!game.feedback.hapticsEnabled) game.feedback.StopFeedback(); break;
@@ -104,14 +104,13 @@ namespace Hapbeat.Boxing
             title.text = game.Round.Phase == BoxingPhase.Results ?
                 (game.Round.PlayerHealth <= 0 ? "KO - OPPONENT WINS" : game.Round.EnemyHealth <= 0 ? "KO - YOU WIN" : "ROUND COMPLETE") + "\n" + game.Round.Score + " POINTS" : "HAPBEAT\nBOXING";
             string[] labels = {game.Round.Phase == BoxingPhase.Ready || game.Round.Phase == BoxingPhase.Results ? "START " + game.tuning.roundSeconds.ToString("0") + "s ROUND" : "RESUME", "RESTART ROUND",
-                "INPUT: " + input.mode, "IMPACT: " + game.tuning.impactMode, "RECENTER", "HAPTICS: " + (game.feedback.hapticsEnabled ? "ON" : "OFF"), "SOUND: " + (game.feedback.soundEnabled ? "ON" : "OFF")};
+                "INPUT: " + input.ActiveMode + " (HANDS FIRST)", "IMPACT: " + game.tuning.impactMode, "RECENTER", "HAPTICS: " + (game.feedback.hapticsEnabled ? "ON" : "OFF"), "SOUND: " + (game.feedback.soundEnabled ? "ON" : "OFF")};
             for (int i = 0; i < rows.Length; i++)
             {
                 rows[i].text = (i == Selection ? ">  " : "   ") + labels[i];
                 rows[i].color = i == Selection ? new Color(0.25f, 0.95f, 1) : new Color(0.8f, 0.85f, 0.92f);
             }
             hint.text = (UsesGaze ? "LOOK AT AN OPTION FOR 1.5s\nLEFT OPEN PALM TOWARD YOUR FACE: HOLD 0.8s FOR MENU" :
-                input.mode == BoxingInputMode.Desktop ? "ARROWS: SELECT   ENTER: CONFIRM\nESC: PAUSE   Q / E: PUNCH   SPACE: GUARD" :
                 "EITHER STICK: SELECT   A / X: CONFIRM\nMENU / B / Y: PAUSE") + "\nCLEAR YOUR PLAY AREA - DO NOT HIT REAL OBJECTS";
         }
     }

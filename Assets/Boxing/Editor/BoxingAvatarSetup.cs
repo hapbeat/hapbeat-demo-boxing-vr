@@ -17,6 +17,8 @@ namespace Hapbeat.Boxing.Editor
             // The named old opponent is the explicit replacement target, not the arena or player rig.
             var old = GameObject.Find("Opponent - sparring partner");
             if (old != null) Object.DestroyImmediate(old);
+            // Explicit reinstall refreshes mesh-derived centres/rest data after re-export.
+            if (game.presentation.enemyAvatar != null) Object.DestroyImmediate(game.presentation.enemyAvatar.gameObject);
             Attach(game.presentation);
             game.Initialize(); game.presentation.enemyAvatar.Render(game.Opponent, 0);
             EditorUtility.SetDirty(game.presentation);
@@ -64,10 +66,22 @@ namespace Hapbeat.Boxing.Editor
             for(int i=0;i<1000 && !game.Opponent.Striking;i++) game.Opponent.Tick(.01f,pose.head,true);
             game.Opponent.Tick(game.tuning.strikeSeconds*.75f,pose.head,true);
             game.presentation.Render(game,pose,true); Capture(game,camera,"Logs/boxing-avatar-strike.png");
+            game.Opponent.Reset(1.65f);
+            bool hookCaptured=false, crossCaptured=false;
+            for(int i=0;i<5000 && !(hookCaptured && crossCaptured);i++)
+            {
+                game.Opponent.Tick(.01f,pose.head,true);
+                if(!game.Opponent.Striking || game.Opponent.MotionWeight<.65f) continue;
+                if(game.Opponent.Hook && !hookCaptured)
+                { game.presentation.Render(game,pose,true); Capture(game,camera,"Logs/boxing-avatar-hook.png"); hookCaptured=true; }
+                if(!game.Opponent.Hook && !game.Opponent.AttackLeft && !crossCaptured)
+                { game.presentation.Render(game,pose,true); Capture(game,camera,"Logs/boxing-avatar-cross.png"); crossCaptured=true; }
+            }
             camera.transform.SetPositionAndRotation(pose.head,Quaternion.identity);
             game.Opponent.Reset(1.65f); game.presentation.Render(game,pose,true);
             Capture(game,camera,"Logs/boxing-avatar-player-view.png");
-            Debug.Log("BOXING_AVATAR_PREVIEW: rest, head hit, body hit, strike and player view rendered silently");
+            if(!hookCaptured || !crossCaptured) throw new System.InvalidOperationException("Missing hook/cross preview");
+            Debug.Log("BOXING_AVATAR_PREVIEW: rest, head hit, body hit, straight, cross, hook and player view rendered silently");
         }
         private static void Capture(BoxingGame game, Camera camera, string path)
         {

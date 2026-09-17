@@ -46,6 +46,19 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(avatar.Reaction,Is.Zero);
             avatar.React(true,1); game.StartRound(); Assert.That(avatar.Reaction,Is.Zero);
         }
+        [Test] public void IdleBendsKneesWithoutChangingScaleOrSlidingFeet()
+        {
+            var avatar=game.presentation.enemyAvatar;
+            game.Opponent.Reset(1.65f); avatar.Render(game.Opponent,0);
+            var scale=avatar.transform.localScale; var left=avatar.leftFoot.position; var right=avatar.rightFoot.position;
+            var knee=avatar.leftShin.rotation;
+            Assert.That(game.Opponent.Head.y,Is.GreaterThan(1.72f));
+            for(int i=0;i<45;i++) { game.Opponent.Tick(1f/90,Vector3.up*1.65f,false); avatar.Render(game.Opponent,0); }
+            Assert.That(avatar.transform.localScale,Is.EqualTo(scale));
+            Assert.That(Vector3.Distance(left,avatar.leftFoot.position),Is.LessThan(.001f));
+            Assert.That(Vector3.Distance(right,avatar.rightFoot.position),Is.LessThan(.001f));
+            Assert.That(Quaternion.Angle(knee,avatar.leftShin.rotation),Is.GreaterThan(1));
+        }
         [TestCase(true)] [TestCase(false)]
         public void RealContactSelectsHeadOrBodyReaction(bool head)
         {
