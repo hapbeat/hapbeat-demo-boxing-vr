@@ -33,6 +33,7 @@ namespace Hapbeat.Boxing
         private bool displayFocused = true, displayFocusKnown;
         private readonly List<XRDisplaySubsystem> displays = new List<XRDisplaySubsystem>();
         private string lastPauseReport;
+        public float ResultPresentationTime { get; private set; }
 
         public void Initialize() { if (Opponent == null) Opponent = new BoxingOpponent(tuning); previousPhase = Round.Phase; }
         private void Awake() => Initialize();
@@ -41,14 +42,14 @@ namespace Hapbeat.Boxing
             Hapbeat.DemoSwitch.DemoSwitch.BeforeSwitch += BeforeSwitch;
             Hapbeat.DemoSwitch.DemoSwitch.LaunchContextDetected += LaunchContext;
             Application.focusChanged += FocusChanged;
-            if (input != null) input.Recentered += ResetHistory;
+            if (input != null) input.Recentered += OnRecentered;
         }
         private void OnDisable()
         {
             Hapbeat.DemoSwitch.DemoSwitch.BeforeSwitch -= BeforeSwitch;
             Hapbeat.DemoSwitch.DemoSwitch.LaunchContextDetected -= LaunchContext;
             Application.focusChanged -= FocusChanged;
-            if (input != null) input.Recentered -= ResetHistory;
+            if (input != null) input.Recentered -= OnRecentered;
             if (display != null) display.displayFocusChanged -= DisplayFocus;
             if (feedback != null) feedback.StopFeedback();
         }
@@ -66,15 +67,20 @@ namespace Hapbeat.Boxing
         private void OnApplicationPause(bool value) { appPaused = value; if (value) PauseForExternalTransition(); }
         public void ResetHistory() { haveHistory = false; validTime = 0; leftContact = rightContact = false; leftCooldown = rightCooldown = 0; ResetPunches(); }
         public void ResetPunches() { leftPunch.Reset(); rightPunch.Reset(); }
+        private void OnRecentered()
+        {
+            Initialize(); Opponent.Reset(input.ReferenceEyeHeight); resolvedAttack=lastCompleted=0; ResetHistory();
+        }
         // Local operations for a future authenticated M5 command adapter. No new wire protocol here.
-        public void RecenterPlayer() { input.Recenter(); ResetHistory(); feedback.StopImpacts(); }
+        public void RecenterPlayer() { input.Recenter(); OnRecentered(); feedback.StopImpacts(); }
         public void UseHandTracking() { input.SelectMode(BoxingInputMode.Hands); ResetHistory(); }
         public void UseControllers() { input.SelectMode(BoxingInputMode.Controllers); ResetHistory(); }
         public void StartRound()
         {
             if (presentation != null && presentation.enemyAvatar != null) presentation.enemyAvatar.ResetReaction();
             if (input.HasTracking && !input.HasOverride) input.Recenter();
-            Round.Start(tuning.roundSeconds, tuning.maximumHealth); Opponent.Reset(input.Current.head.y > 0.5f ? input.Current.head.y : 1.65f);
+            Round.Start(tuning.roundSeconds, tuning.maximumHealth); Opponent.Reset(input.ReferenceEyeHeight);
+            ResultPresentationTime=0;
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); menu.Close();
         }
         private void Update()
@@ -88,6 +94,14 @@ namespace Hapbeat.Boxing
         }
         public void Simulate(float dt, BoxerPose pose)
         {
+            if(Round.Phase==BoxingPhase.Results && previousPhase==BoxingPhase.Results && !menu.IsOpen)
+            {
+                // End the action before hiding it behind the menu. No combat runs here.
+                ResultPresentationTime += dt>0 && dt<=.1f ? dt : 0;
+                presentation.Render(this,pose,false);
+                if(ResultPresentationTime>=2.5f) menu.Open();
+                return;
+            }
             bool tracking = pose.valid && dt > 0 && dt <= 0.1f;
             Vector3 fromStart = pose.head - input.StartPosition;
             bool outside = new Vector2(fromStart.x, fromStart.z).magnitude > tuning.playRadius;
@@ -146,7 +160,7 @@ namespace Hapbeat.Boxing
             }
             if (Round.Phase != previousPhase)
             {
-                if (Round.Phase == BoxingPhase.Results) { feedback.StopFeedback(); menu.Open(); }
+                if (Round.Phase == BoxingPhase.Results) { feedback.StopFeedback(); ResultPresentationTime=0; }
                 if (Round.Phase == BoxingPhase.Fighting || Round.Phase == BoxingPhase.Results) feedback.Ring();
                 previousPhase = Round.Phase;
             }

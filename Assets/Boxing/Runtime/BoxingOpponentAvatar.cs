@@ -16,6 +16,9 @@ namespace Hapbeat.Boxing
         public Transform leftThigh, leftShin, leftFoot, rightThigh, rightShin, rightFoot;
         public Vector3 headCenter, leftCenter, rightCenter;
         public float neutralHeadHeight;
+        public const float GloveWidth = .16f;
+        public const float GloveDepthRatio = .75f;
+        public float leftGloveLocalWidth, rightGloveLocalWidth;
         public float Reaction { get; private set; }
         public bool BodyReaction { get; private set; }
         public Vector3 HeadCenter => head.TransformPoint(headCenter);
@@ -36,11 +39,12 @@ namespace Hapbeat.Boxing
             rightUpper = Bone("upper_arm.L"); rightFore = Bone("forearm.L"); rightHand = Bone("hand.L");
             leftThigh = Bone("thigh.R"); leftShin = Bone("shin.R"); leftFoot = Bone("foot.R");
             rightThigh = Bone("thigh.L"); rightShin = Bone("shin.L"); rightFoot = Bone("foot.L");
-            headCenter = WeightedCenter(head); leftCenter = WeightedCenter(leftHand); rightCenter = WeightedCenter(rightHand);
+            headCenter = WeightedBounds(head).center; leftCenter = WeightedBounds(leftHand).center; rightCenter = WeightedBounds(rightHand).center;
+            leftGloveLocalWidth=WeightedBounds(leftHand).size.x; rightGloveLocalWidth=WeightedBounds(rightHand).size.x;
             neutralHeadHeight = HeadCenter.y - transform.position.y;
             skin.updateWhenOffscreen = true;
         }
-        private Vector3 WeightedCenter(Transform bone)
+        private Bounds WeightedBounds(Transform bone)
         {
             int index = Array.IndexOf(skin.bones, bone);
             var mesh = skin.sharedMesh; var vertices = mesh.vertices; var weights = mesh.boneWeights;
@@ -54,7 +58,7 @@ namespace Hapbeat.Boxing
                 if (first) { bounds = new Bounds(point, Vector3.zero); first = false; } else bounds.Encapsulate(point);
             }
             if (first) throw new InvalidOperationException("No weighted vertices for " + bone.name);
-            return bounds.center;
+            return bounds;
         }
         public void React(bool body, float gain)
         {
@@ -71,6 +75,11 @@ namespace Hapbeat.Boxing
             // Height is fixed throughout a round. Bobbing lowers the hips over planted feet,
             // rather than scaling the entire character up and down.
             transform.localScale = Vector3.one * (opponent.StandingHeadHeight / neutralHeadHeight);
+            // Match the player's gloves in metres, independently of calibrated body height.
+            leftHand.localScale *= GloveWidth/(leftGloveLocalWidth*leftHand.lossyScale.x);
+            rightHand.localScale *= GloveWidth/(rightGloveLocalWidth*rightHand.lossyScale.x);
+            leftHand.localScale=Vector3.Scale(leftHand.localScale,new Vector3(1,1,GloveDepthRatio));
+            rightHand.localScale=Vector3.Scale(rightHand.localScale,new Vector3(1,1,GloveDepthRatio));
             var lf = leftFoot.position + new Vector3(-.035f,0,-.13f);
             var rf = rightFoot.position + new Vector3(.035f,0,.13f);
             var lr = leftFoot.rotation; var rr = rightFoot.rotation;

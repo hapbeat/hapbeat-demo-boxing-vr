@@ -30,15 +30,16 @@ namespace Hapbeat.Boxing
         {
             bool menuOpen = game.menu != null && game.menu.IsOpen;
             timerText.transform.parent.gameObject.SetActive(!menuOpen);
-            leftGlove.gameObject.SetActive(pose.valid && !menuOpen); rightGlove.gameObject.SetActive(pose.valid && !menuOpen);
+            leftGlove.gameObject.SetActive((pose.valid || pose.visualValid) && !menuOpen); rightGlove.gameObject.SetActive((pose.valid || pose.visualValid) && !menuOpen);
             enemyAvatar.gameObject.SetActive(!menuOpen);
-            if (pose.valid)
+            if (pose.valid || pose.visualValid)
             {
                 leftGlove.SetPositionAndRotation(pose.left, pose.leftRotation);
                 rightGlove.SetPositionAndRotation(pose.right, pose.rightRotation);
             }
             enemyAvatar.Render(game.Opponent, !game.Paused && valid ? Time.unscaledDeltaTime : 0);
-            timerText.text = game.Round.Phase == BoxingPhase.Countdown ? Mathf.CeilToInt(game.Round.Countdown).ToString() :
+            timerText.text = game.Round.Phase == BoxingPhase.Results ? (game.Round.PlayerHealth<=0 ? "KNOCKOUT - OPPONENT WINS" : game.Round.EnemyHealth<=0 ? "KNOCKOUT - YOU WIN" : "ROUND COMPLETE") :
+                game.Round.Phase == BoxingPhase.Countdown ? Mathf.CeilToInt(game.Round.Countdown).ToString() :
                 game.Round.Phase == BoxingPhase.Ready ? game.tuning.roundSeconds.ToString("0") + " SECOND ROUND" : Mathf.CeilToInt(game.Round.TimeLeft).ToString("00") + "s";
             scoreText.text = "SCORE " + game.Round.Score + "     HIT " + game.Round.Hits + "     BLOCK " + game.Round.Blocks + "     DODGE " + game.Round.Dodges;
             RenderHealth(game.Round);

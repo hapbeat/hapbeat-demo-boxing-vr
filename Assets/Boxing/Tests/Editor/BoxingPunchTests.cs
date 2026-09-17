@@ -22,6 +22,10 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(Stroke(Vector3.forward * 0.2f, Vector3.forward * 0.25f, 1), Is.Zero);
             punch.Reset(); Assert.That(Stroke(Vector3.forward * 0.2f, Vector3.forward * 0.7f), Is.EqualTo(1));
         }
+        [Test] public void FrontGuardQuarterMetrePunchIsHardWithoutRearWindup()
+        {
+            Assert.That(Stroke(Vector3.forward*.38f,Vector3.forward*.63f),Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
+        }
         [Test] public void DistanceNotSpeedControlsDamage()
         {
             float fast = Stroke(Vector3.forward * 0.1f, Vector3.forward * 0.4f, 5);
@@ -49,11 +53,11 @@ namespace Hapbeat.Boxing.Tests
             Rest(Vector3.zero); punch.Sample(Vector3.forward * 0.3f, Vector3.forward, 0.01f, tuning);
             punch.Reset(); Assert.That(punch.Consume(Vector3.forward * 0.6f, tuning), Is.Zero);
         }
-        [Test] public void RearPreparationBonusAndExpiryAreBounded()
+        [Test] public void RearPreparationHasNoBonusAndExpiryIsBounded()
         {
             float front = Stroke(Vector3.forward * 0.1f, Vector3.forward * 0.4f);
             punch.Reset(); float rear = Stroke(Vector3.back * 0.2f, Vector3.forward * 0.1f);
-            Assert.That(rear, Is.EqualTo(Mathf.Min(1, front * tuning.punchRearMultiplier)).Within(0.0001f));
+            Assert.That(rear, Is.EqualTo(front).Within(0.0001f));
             punch.Reset(); Rest(Vector3.zero);
             for (int i = 1; i <= 130; i++) punch.Sample(Vector3.forward * (i * 0.006f), Vector3.forward, 0.01f, tuning);
             Assert.That(punch.Consume(Vector3.forward * 0.78f, tuning), Is.Zero);

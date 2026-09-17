@@ -55,8 +55,6 @@ namespace Hapbeat.Boxing
             float distance = moving ? Vector3.Distance(start, contactRelativeToHead) : 0;
             float strength = tuning.PunchStrength(distance);
             if (startDepth > tuning.punchReturnDepth) strength = 0;
-            else if (startDepth < -tuning.punchRearDepth)
-                strength = Mathf.Clamp01(strength * tuning.punchRearMultiplier);
             moving = ready = false; spent = true; quiet = 0;
             return strength;
         }

@@ -38,7 +38,7 @@ namespace Hapbeat.Boxing.Editor
             var scene = EditorSceneManager.OpenScene(BoxingProject.ScenePath);
             var game = UnityEngine.Object.FindFirstObjectByType<BoxingGame>();
             ConfigureModels(game); ConfigureImpactVisuals(game.presentation); ConfigureFeedback(game);
-            game.tuning.gloveRadius = 0.09f; EditorUtility.SetDirty(game.tuning);
+            game.tuning.gloveRadius = 0.075f; EditorUtility.SetDirty(game.tuning);
             EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); AssetDatabase.SaveAssets();
             BoxingProject.Validate();
             Preview();
@@ -80,65 +80,11 @@ namespace Hapbeat.Boxing.Editor
             // Only explicitly selected model/effect children are replaced; rig and gameplay objects stay intact.
             for (int i = root.childCount - 1; i >= 0; i--) UnityEngine.Object.DestroyImmediate(root.GetChild(i).gameObject);
         }
-        private static Transform Shape(Transform root, string name, Vector3 position, Vector3 size, Material material)
-        {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere); go.name = name;
-            UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
-            go.transform.SetParent(root, false); go.transform.localPosition = position; go.transform.localScale = size;
-            go.GetComponent<Renderer>().sharedMaterial = material; return go.transform;
-        }
-        private static void Glove(Transform root, Material leather, Material dark, bool left)
-        {
-            Clear(root); root.localScale = Vector3.one;
-            var pad = new GameObject("Contoured knuckle pad"); pad.transform.SetParent(root, false);
-            pad.AddComponent<MeshFilter>().sharedMesh = GlovePad();
-            pad.AddComponent<MeshRenderer>().sharedMaterial = leather;
-            Shape(root, "Palm", new Vector3(0, -0.035f, -0.018f), new Vector3(0.128f, 0.078f, 0.145f), dark);
-            Shape(root, "Thumb", new Vector3(left ? 0.061f : -0.061f, -0.037f, -0.005f), new Vector3(0.058f, 0.064f, 0.104f), leather);
-            Shape(root, "Cuff", new Vector3(0, -0.009f, -0.095f), new Vector3(0.125f, 0.103f, 0.065f), leather);
-            Shape(root, "Wrist strap", new Vector3(0, 0.027f, -0.094f), new Vector3(0.113f, 0.027f, 0.05f), dark);
-        }
-        private static Mesh GlovePad()
-        {
-            const string path = Root + "Art/ContouredGlove.asset";
-            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
-            if (mesh != null) return mesh;
-            var vertices = new List<Vector3>(); var triangles = new List<int>();
-            const int rings = 13, sides = 32;
-            for (int r = 0; r < rings; r++)
-            {
-                float t = r / (float)(rings - 1);
-                float cap = Mathf.Pow(Mathf.Max(0.0001f, Mathf.Sin(t * Mathf.PI)), 0.35f);
-                for (int s = 0; s < sides; s++)
-                {
-                    float a = s * Mathf.PI * 2 / sides;
-                    float x = Mathf.Sign(Mathf.Cos(a)) * Mathf.Pow(Mathf.Abs(Mathf.Cos(a)), 0.72f);
-                    float y = Mathf.Sign(Mathf.Sin(a)) * Mathf.Pow(Mathf.Abs(Mathf.Sin(a)), 0.8f);
-                    vertices.Add(new Vector3(x * 0.08f * cap, 0.005f + y * 0.07f * cap, -0.073f + t * 0.17f));
-                    if (r < rings - 1)
-                    {
-                        int n = r * sides + s, next = r * sides + (s + 1) % sides;
-                        triangles.AddRange(new[] { n, next, n + sides, next, next + sides, n + sides });
-                    }
-                }
-            }
-            // Close both ends with triangle fans.
-            for (int s = 1; s < sides - 1; s++)
-            {
-                triangles.AddRange(new[] { 0, s + 1, s });
-                int b = (rings - 1) * sides; triangles.AddRange(new[] { b, b + s, b + s + 1 });
-            }
-            mesh = new Mesh { name = "Contoured boxing glove pad" };
-            mesh.SetVertices(vertices); mesh.SetTriangles(triangles, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
-            AssetDatabase.CreateAsset(mesh, path); return mesh;
-        }
         public static void ConfigureModels(BoxingGame game)
         {
             var v = game.presentation;
-            var dark = Material("IconInk", new Color(0.015f, 0.028f, 0.04f));
-            var blue = Material("GloveBlue", new Color(0.07f, 0.55f, 0.73f));
-            Glove(v.leftGlove, blue, dark, true); Glove(v.rightGlove, blue, dark, false);
             BoxingAvatarSetup.Attach(v);
+            BoxingPlayerGloves.Install(v);
             EditorUtility.SetDirty(v);
             Debug.Log("BOXING_GLOVE_BOUNDS " + GloveSize(v.leftGlove).ToString("F3"));
         }

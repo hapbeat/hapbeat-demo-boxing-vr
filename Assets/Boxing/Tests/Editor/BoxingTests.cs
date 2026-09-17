@@ -118,7 +118,7 @@ namespace Hapbeat.Boxing.Tests
                 {
                     guarded++; Assert.That(enemy.Striking, Is.False);
                     Assert.That(Mathf.Abs(enemy.Left.x - enemy.Head.x), Is.LessThan(0.13f));
-                    Assert.That(enemy.Left.y, Is.GreaterThan(enemy.Head.y - 0.06f));
+                    Assert.That(enemy.Left.y, Is.GreaterThan((enemy.BodyGuard ? enemy.Body.y : enemy.Head.y) - 0.06f));
                 }
                 old = enemy.Guarding;
             }
@@ -228,24 +228,25 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void CompactGlovesMatchTheSmallerCollisionEnvelope()
         {
             var size = BoxingContent.GloveSize(game.presentation.leftGlove);
-            Assert.That(size.x, Is.InRange(0.16f, 0.18f)); Assert.That(size.z, Is.InRange(0.21f, 0.24f));
-            Assert.That(game.tuning.gloveRadius, Is.EqualTo(0.09f));
+            Assert.That(size.x, Is.EqualTo(.16f).Within(.001f)); Assert.That(size.z, Is.InRange(0.21f, 0.24f));
+            Assert.That(game.tuning.gloveRadius, Is.EqualTo(0.075f));
         }
-        [Test] public void GuardInterceptionAndBodyHitSelectDifferentOutcomes()
+        [TestCase(false)] [TestCase(true)] public void GuardInterceptionAndBodyHitSelectDifferentOutcomes(bool bodyGuard)
         {
             game.Round.Tick(3, false);
-            for (int i = 0; i < 2000 && game.Opponent.GuardWeight < 0.99f; i++) game.Opponent.Tick(0.01f, Pose().head, true);
+            for (int i = 0; i < 6000 && (game.Opponent.GuardWeight < 0.99f || game.Opponent.BodyGuard!=bodyGuard); i++) game.Opponent.Tick(0.01f, Pose().head, true);
             Assert.That(game.Opponent.Guarding, Is.True);
             typeof(BoxingGame).GetMethod("SaveHistory", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(game, new object[] { Pose() });
             var resolve = typeof(BoxingGame).GetMethod("ResolvePlayer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            Vector3 from = game.Opponent.Left + Vector3.back * 0.5f, to = game.Opponent.Head;
+            Vector3 from = game.Opponent.Left + Vector3.back * 0.5f, to = game.Opponent.Left;
             var args = new object[] { to, from, true, ImpactZone.LeftGlove, false, 0f, 0.1f };
             resolve.Invoke(game, args);
             Assert.That(game.Round.EnemyBlocks, Is.EqualTo(1)); Assert.That(game.Round.Hits, Is.Zero);
             Assert.That(game.feedback.LastImpact.surface, Is.EqualTo(ImpactSurface.Glove));
             Assert.That(game.Round.EnemyHealth, Is.EqualTo(10000));
             resolve.Invoke(game, args); Assert.That(game.Round.EnemyBlocks, Is.EqualTo(1), "Held overlap must not repeatedly fire.");
-            resolve.Invoke(game, new object[] { game.Opponent.Body, game.Opponent.Body + Vector3.back * 0.6f, true, ImpactZone.RightGlove, false, 0f, 0.1f });
+            Vector3 uncovered=bodyGuard ? game.Opponent.Head : game.Opponent.Body;
+            resolve.Invoke(game, new object[] { uncovered, uncovered + Vector3.back * 0.6f, true, ImpactZone.RightGlove, false, 0f, 0.1f });
             Assert.That(game.Round.Hits, Is.EqualTo(1)); Assert.That(game.Round.EnemyHealth, Is.LessThan(10000));
             Assert.That(game.feedback.LastImpact.surface, Is.EqualTo(ImpactSurface.Body));
         }

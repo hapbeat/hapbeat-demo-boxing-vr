@@ -52,7 +52,7 @@ namespace Hapbeat.Boxing.Tests
             game.Opponent.Reset(1.65f); avatar.Render(game.Opponent,0);
             var scale=avatar.transform.localScale; var left=avatar.leftFoot.position; var right=avatar.rightFoot.position;
             var knee=avatar.leftShin.rotation;
-            Assert.That(game.Opponent.Head.y,Is.GreaterThan(1.72f));
+            Assert.That(game.Opponent.Head.y,Is.EqualTo(1.65f).Within(.001f));
             for(int i=0;i<45;i++) { game.Opponent.Tick(1f/90,Vector3.up*1.65f,false); avatar.Render(game.Opponent,0); }
             Assert.That(avatar.transform.localScale,Is.EqualTo(scale));
             Assert.That(Vector3.Distance(left,avatar.leftFoot.position),Is.LessThan(.001f));

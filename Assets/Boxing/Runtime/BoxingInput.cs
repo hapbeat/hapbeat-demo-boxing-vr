@@ -18,6 +18,7 @@ namespace Hapbeat.Boxing
         public Transform startPoint;
         public Vector3 StartPosition => startPoint != null ? new Vector3(startPoint.position.x, 0, startPoint.position.z) : Vector3.zero;
         public float StartYaw => startPoint != null ? startPoint.eulerAngles.y : 0;
+        public float ReferenceEyeHeight { get; private set; } = 1.65f;
         public event System.Action Recentered;
         public BoxingInputMode mode = BoxingInputMode.Hands;
         public BoxingInputMode ActiveMode => mode == BoxingInputMode.Hands && controllerFallback ? BoxingInputMode.Controllers : mode;
@@ -42,6 +43,7 @@ namespace Hapbeat.Boxing
         private bool oldMenu, oldConfirm, aligned;
         private readonly BoxingHandMenuGesture handMenu = new BoxingHandMenuGesture();
         private string lastTrackingReport;
+        private readonly BoxingHandVisual leftVisual = new BoxingHandVisual(), rightVisual = new BoxingHandVisual();
         private BoxingXrControls xrControls;
         private BoxingGame game;
 
@@ -60,6 +62,8 @@ namespace Hapbeat.Boxing
             origin.RotateAroundCameraUsingOriginUp(Mathf.DeltaAngle(headCamera.transform.eulerAngles.y, StartYaw));
             var p = headCamera.transform.position;
             origin.transform.position += StartPosition - new Vector3(p.x, 0, p.z);
+            ReferenceEyeHeight = Mathf.Clamp(headCamera.transform.position.y,.8f,2.2f);
+            leftVisual.Reset(); rightVisual.Reset();
             aligned = true;
             Recentered?.Invoke();
         }
@@ -89,6 +93,9 @@ namespace Hapbeat.Boxing
                     bool l = ReadHand(true, out frame.left, out frame.leftRotation, out frame.leftClosed);
                     bool r = ReadHand(false, out frame.right, out frame.rightRotation, out frame.rightClosed);
                     frame.valid = headValid && l && r;
+                    bool lv = leftVisual.Sample(l,ref frame.left,ref frame.leftRotation,frame.timestamp);
+                    bool rv = rightVisual.Sample(r,ref frame.right,ref frame.rightRotation,frame.timestamp);
+                    frame.visualValid = headValid && lv && rv;
                     TrackingStatus = !headValid ? "HMD NOT TRACKED" : hands == null || !hands.running ? "WAITING FOR HAND SUBSYSTEM" :
                         !l || !r ? $"WRIST TRACKING: LEFT {(l ? "OK" : "LOST")} / RIGHT {(r ? "OK" : "LOST")}" : "HANDS READY";
                     bool controllerIntent = xr.confirm || xr.menu || Mathf.Abs(xr.navigate) > 0.6f;

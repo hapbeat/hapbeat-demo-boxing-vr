@@ -23,7 +23,7 @@ namespace Hapbeat.Boxing
         [Min(0.4f)] public float guardSeconds = 1.2f;
         [Min(0.5f)] public float playRadius = 1.0f;
         [Header("Collision (metres / seconds)")]
-        [Min(0.01f)] public float gloveRadius = 0.09f;
+        [Min(0.01f)] public float gloveRadius = 0.075f;
         [Min(0.01f)] public float headRadius = 0.14f;
         [Min(0.01f)] public float enemyHeadRadius = 0.17f;
         [Min(0.01f)] public float enemyBodyRadius = 0.25f;
@@ -34,11 +34,9 @@ namespace Hapbeat.Boxing
         [Min(0.01f)] public float punchStartSpeed = 0.4f;
         [Min(0.01f)] public float punchRestSeconds = 0.06f;
         [Min(0.1f)] public float punchMaximumSeconds = 1.2f;
-        public float punchReturnDepth = 0.35f;
-        [Min(0)] public float punchRearDepth = 0.1f;
-        [Min(1)] public float punchRearMultiplier = 1.1f;
-        [Min(0)] public float punchTapDistance = 0.12f;
-        [Min(0.01f)] public float punchFullDistance = 0.45f;
+        public float punchReturnDepth = 0.45f;
+        [Min(0)] public float punchTapDistance = 0.10f;
+        [Min(0.01f)] public float punchFullDistance = 0.32f;
         [Range(0, 1)] public float punchHardStrength = 0.65f;
         [Min(0)] public float tapDamage = 0.5f;
         [Min(1)] public float fullPunchDamage = 20;
@@ -65,7 +63,7 @@ namespace Hapbeat.Boxing
     {
         public Vector3 head, left, right;
         public Quaternion headRotation, leftRotation, rightRotation;
-        public bool valid, leftClosed, rightClosed;
+        public bool valid, visualValid, leftClosed, rightClosed;
         public double timestamp;
     }
 

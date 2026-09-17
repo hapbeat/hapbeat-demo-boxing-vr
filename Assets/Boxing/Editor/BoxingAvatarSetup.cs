@@ -20,6 +20,7 @@ namespace Hapbeat.Boxing.Editor
             // Explicit reinstall refreshes mesh-derived centres/rest data after re-export.
             if (game.presentation.enemyAvatar != null) Object.DestroyImmediate(game.presentation.enemyAvatar.gameObject);
             Attach(game.presentation);
+            BoxingPlayerGloves.Install(game.presentation);
             game.Initialize(); game.presentation.enemyAvatar.Render(game.Opponent, 0);
             EditorUtility.SetDirty(game.presentation);
             EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); AssetDatabase.SaveAssets();

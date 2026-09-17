@@ -13,6 +13,7 @@ namespace Hapbeat.Boxing
         public bool Striking { get; private set; }
         public bool Telegraphing { get; private set; }
         public bool Guarding { get; private set; }
+        public bool BodyGuard { get; private set; }
         public float GuardWeight { get; private set; }
         public int AttackId { get; private set; }
         public bool AttackLeft { get; private set; }
@@ -32,10 +33,10 @@ namespace Hapbeat.Boxing
         public BoxingOpponent(BoxingTuning tuning) { this.tuning = tuning; Reset(1.65f); }
         public void Reset(float playerHeight)
         {
-            height = Mathf.Clamp(playerHeight + .10f, 1.35f, 2.05f); clock = attackTime = reaction = 0;
+            height = Mathf.Clamp(playerHeight, .8f, 2.2f); clock = attackTime = reaction = 0;
             MotionWeight = BodyYaw = 0;
             pattern = AttackId = CompletedAttacks = 0; wait = 0.7f; attacking = Striking = Telegraphing = blocked = false;
-            random = new System.Random(1701); guardWait = tuning.guardInterval; guardTime = 0; Guarding = false; GuardWeight = 0;
+            random = new System.Random(1701); guardWait = tuning.guardInterval; guardTime = 0; Guarding = BodyGuard = false; GuardWeight = 0;
             SetRestPose();
         }
         public void React(float gain) => reaction = Mathf.Max(reaction, 0.10f + gain * 0.15f);
@@ -64,10 +65,12 @@ namespace Hapbeat.Boxing
                 guardWait -= dt;
                 if (guardTime > 0 || guardWait <= 0)
                 {
+                    if (guardTime == 0) BodyGuard = !BodyGuard;
                     guardTime += dt; Guarding = true;
                     GuardWeight = Mathf.SmoothStep(0, 1, Mathf.Clamp01(Mathf.Min(guardTime, tuning.guardSeconds - guardTime) / 0.18f));
-                    Left = Vector3.Lerp(Left, Head + new Vector3(-0.105f, -0.025f, -0.25f), GuardWeight);
-                    Right = Vector3.Lerp(Right, Head + new Vector3(0.105f, -0.025f, -0.25f), GuardWeight);
+                    Vector3 guardTarget = BodyGuard ? Body + new Vector3(0,.02f,-.26f) : Head + new Vector3(0,-.025f,-.25f);
+                    Left = Vector3.Lerp(Left, guardTarget + Vector3.left*.105f, GuardWeight);
+                    Right = Vector3.Lerp(Right, guardTarget + Vector3.right*.105f, GuardWeight);
                     if (guardTime >= tuning.guardSeconds) { guardTime = 0; guardWait = tuning.guardInterval * (0.65f + (float)random.NextDouble()); Guarding = false; }
                     return;
                 }
