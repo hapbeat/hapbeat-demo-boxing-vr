@@ -75,7 +75,7 @@ namespace Hapbeat.Boxing.Editor
                 Box("Ceiling strip", arena, new Vector3(i * 2.5f, 4.5f, 0), new Vector3(0.12f, 0.06f, 10), white);
             }
             Box("Rear wall", arena, new Vector3(0, 2, 7.2f), new Vector3(20, 4, 0.2f), navy);
-            var floorMark = Box("Start position", arena, new Vector3(0, 0.003f, 0), new Vector3(0.5f, 0.006f, 0.05f), gold);
+            var floorMark = Box("Start position", arena, new Vector3(0, 0.003f, 0.4f), new Vector3(0.5f, 0.006f, 0.05f), gold);
             var rig = new GameObject("XR Origin (Boxing)");
             var origin = rig.AddComponent<XROrigin>();
             var offset = new GameObject("Camera Offset"); offset.transform.SetParent(rig.transform, false);
@@ -116,7 +116,7 @@ namespace Hapbeat.Boxing.Editor
                 view.enemyLegs[i * 3 + 1] = Primitive("Shin", PrimitiveType.Capsule, enemy, skin);
                 view.enemyLegs[i * 3 + 2] = Sphere("Boot", enemy, Vector3.zero, new Vector3(0.15f, 0.16f, 0.29f), dark);
             }
-            var hud = Canvas("Ring scoreboard", new Vector3(0, 2.4f, 3.05f), Vector3.zero, new Vector2(1200, 260), 0.003f);
+            var hud = Canvas("Ring scoreboard", new Vector3(0, 2.7f, 3.05f), Vector3.zero, new Vector2(1200, 260), 0.003f);
             view.timerText = Text("Timer", hud, new Vector2(0, 65), new Vector2(1100, 85), 60, "90s");
             view.scoreText = Text("Score", hud, new Vector2(0, -8), new Vector2(1150, 45), 27, "SCORE 0");
             view.cueText = Text("Cue", hud, new Vector2(0, -58), new Vector2(1150, 45), 28, "GLOVES UP");

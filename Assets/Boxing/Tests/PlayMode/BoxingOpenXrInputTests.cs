@@ -94,7 +94,7 @@ namespace Hapbeat.Boxing.Tests
             InputSystem.QueueStateEvent(head, new XRSimulatedHMDState { isTracked = true, trackingState = 3, centerEyePosition = new Vector3(0.8f, 1.65f, -0.6f), centerEyeRotation = Quaternion.Euler(0, 120, 0), deviceRotation = Quaternion.Euler(0, 120, 0) });
             InputSystem.Update(); yield return null; yield return null;
             Assert.That(Mathf.Abs(Mathf.DeltaAngle(game.input.headCamera.transform.eulerAngles.y, 0)), Is.LessThan(0.1f));
-            Assert.That(new Vector2(game.input.headCamera.transform.position.x, game.input.headCamera.transform.position.z).magnitude, Is.LessThan(0.001f));
+            Assert.That(Vector3.Distance(Vector3.ProjectOnPlane(game.input.headCamera.transform.position, Vector3.up), new Vector3(0, 0, 0.4f)), Is.LessThan(0.001f));
             Assert.That(game.input.startPoint, Is.Not.Null);
             game.input.startPoint.position = new Vector3(0.4f, 0.003f, -0.2f);
             game.input.startPoint.rotation = Quaternion.Euler(0, 35, 0);
@@ -136,11 +136,13 @@ namespace Hapbeat.Boxing.Tests
             game.SendMessage("OnApplicationPause", false, SendMessageOptions.RequireReceiver);
             yield return null;
             Assert.That(game.input.HasTracking, Is.True);
+            Vector3 menuHead = game.input.headCamera.transform.position;
             Set(right.thumbstick, Vector2.down); yield return null;
             Assert.That(game.menu.Selection, Is.EqualTo(1), "Right stick must move the actual menu.");
             Set(right.thumbstick, Vector2.zero); yield return null;
             Set(left.thumbstick, Vector2.up); yield return null;
             Assert.That(game.menu.Selection, Is.Zero, "Left stick must also move the actual menu.");
+            Assert.That(Vector3.Distance(game.input.headCamera.transform.position, menuHead), Is.LessThan(0.001f), "Menu navigation must not move the rig.");
             Set(left.thumbstick, Vector2.zero); Set(right.primaryButton, 1); yield return null;
             Set(right.primaryButton, 0);
             Assert.That(game.menu.IsOpen, Is.False, "A must start the round.");
@@ -151,6 +153,12 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.Round.Countdown, Is.LessThan(3), "Countdown must advance when controller tracking arrives.");
             yield return new WaitForSecondsRealtime(3.2f);
             Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Fighting));
+            Vector3 beforeMove = game.input.headCamera.transform.position;
+            Set(left.thumbstick, Vector2.right); yield return new WaitForSecondsRealtime(0.35f);
+            Set(left.thumbstick, Vector2.zero); yield return null;
+            Assert.That(game.input.headCamera.transform.position.x - beforeMove.x, Is.GreaterThan(0.05f), "Left stick moves the actual rig for debugging.");
+            game.RecenterPlayer(); yield return null;
+            Assert.That(game.input.headCamera.transform.position.x, Is.EqualTo(game.input.StartPosition.x).Within(0.001f));
             Assert.That(game.input.HasOverride, Is.False);
             Assert.That(game.feedback.Sends, Is.Zero);
         }

@@ -44,6 +44,7 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(frame.head.position.y, Is.EqualTo(1.6f));
             Assert.That(frame.left.position.x, Is.EqualTo(-0.2f)); Assert.That(frame.right.position.z, Is.EqualTo(0.6f));
             Assert.That(frame.confirm, Is.True); Assert.That(frame.navigate, Is.EqualTo(1));
+            Assert.That(frame.move, Is.EqualTo(Vector2.up));
             Send(buttons: (ushort)(1 << (int)ControllerButton.SecondaryButton));
             Assert.That(controls.Read().menu, Is.True); Assert.That(controls.Read().confirm, Is.False);
         }

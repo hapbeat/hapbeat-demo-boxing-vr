@@ -27,6 +27,18 @@ MonoBehaviour:
   enemyBodyRadius: 0.25
   minimumImpactSpeed: 0.25
   hitCooldown: 0.22
+  punchRestSpeed: 0.2
+  punchStartSpeed: 0.4
+  punchRestSeconds: 0.06
+  punchMaximumSeconds: 1.2
+  punchReturnDepth: 0.35
+  punchRearDepth: 0.1
+  punchRearMultiplier: 1.1
+  punchTapDistance: 0.12
+  punchFullDistance: 0.45
+  punchHardStrength: 0.65
+  tapDamage: 0.5
+  fullPunchDamage: 20
   impactMode: 1
   hardHitSpeed: 2.5
   fullGainSpeed: 6

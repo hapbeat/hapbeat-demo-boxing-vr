@@ -20,6 +20,11 @@ namespace Hapbeat.Boxing
         public float StartYaw => startPoint != null ? startPoint.eulerAngles.y : 0;
         public event System.Action Recentered;
         public BoxingInputMode mode = BoxingInputMode.Controllers;
+        [Header("Debug locomotion (disable for exhibition)")]
+        public bool debugStickMovement = true;
+        [Min(0)] public float debugMoveSpeed = 0.45f;
+        [Min(0)] public float debugMoveRadius = 0.6f;
+        public string TrackingStatus { get; private set; } = "WAITING FOR TRACKING";
         public Vector3 controllerOffset = new Vector3(0, -0.015f, 0.08f);
         public Vector3 controllerRotation = new Vector3(75, 0, 0);
         public bool HasTracking { get; private set; }
@@ -36,6 +41,7 @@ namespace Hapbeat.Boxing
         private float openHandsTime, leftPunch, rightPunch;
         private float desktopYaw, desktopPitch;
         private BoxingXrControls xrControls;
+        private BoxingGame game;
 
         private void OnEnable() { xrControls = new BoxingXrControls(); aligned = false; }
         private void OnDisable() { xrControls?.Dispose(); xrControls = null; HasTracking = false; }
@@ -58,6 +64,7 @@ namespace Hapbeat.Boxing
         }
         private void Update()
         {
+            if (game == null) game = GetComponentInParent<BoxingGame>() ?? FindFirstObjectByType<BoxingGame>();
             MenuPressed = ConfirmPressed = false; Navigate = 0;
             if (headDriver != null) headDriver.enabled = mode != BoxingInputMode.Desktop && !HasOverride;
             if (HasOverride) { Current = testPose; HasTracking = testPose.valid; return; }
@@ -85,6 +92,16 @@ namespace Hapbeat.Boxing
                     frame.leftRotation = space.rotation * lp.rotation * Quaternion.Euler(controllerRotation);
                     frame.rightRotation = space.rotation * rp.rotation * Quaternion.Euler(controllerRotation);
                     frame.valid = headValid && l && r; frame.leftClosed = frame.rightClosed = true;
+                    TrackingStatus = !headValid ? "HMD NOT TRACKED" : !l || !r ? "CONTROLLERS NOT TRACKED" : "CONTROLLERS READY";
+                    if (frame.valid && game != null && !game.menu.IsOpen && !game.Paused)
+                    {
+                        Vector3 shift = ApplyDebugMove(xr.move, Time.unscaledDeltaTime, game.Opponent.Root);
+                        if (shift.sqrMagnitude > 0)
+                        {
+                            frame.head += shift; frame.left += shift; frame.right += shift;
+                            frame.leftClosed = frame.rightClosed = false; game.ResetPunches();
+                        }
+                    }
                 }
                 else
                 {
@@ -92,6 +109,8 @@ namespace Hapbeat.Boxing
                     bool l = ReadHand(true, out frame.left, out frame.leftRotation, out frame.leftClosed);
                     bool r = ReadHand(false, out frame.right, out frame.rightRotation, out frame.rightClosed);
                     frame.valid = headValid && l && r;
+                    TrackingStatus = !headValid ? "HMD NOT TRACKED" : hands == null || !hands.running ? "HAND SUBSYSTEM UNAVAILABLE - CHECK LINK DEVELOPER FEATURES" :
+                        !l || !r ? "SHOW BOTH HANDS" : "HANDS READY";
                 }
                 MenuPressed = xr.menu && !oldMenu; ConfirmPressed = xr.confirm && !oldConfirm;
                 oldMenu = xr.menu; oldConfirm = xr.confirm; Navigate = xr.navigate;
@@ -111,6 +130,19 @@ namespace Hapbeat.Boxing
                 if (openHandsTime > 1.2f && !handMenuLatched) { MenuPressed = true; handMenuLatched = true; }
             }
             Current = frame; HasTracking = frame.valid;
+        }
+        public Vector3 ApplyDebugMove(Vector2 stick, float dt, Vector3 opponentPosition)
+        {
+            if (!debugStickMovement || mode != BoxingInputMode.Controllers || origin == null || headCamera == null ||
+                dt <= 0 || dt > 0.1f || stick.magnitude < 0.2f) return Vector3.zero;
+            Vector3 head = Vector3.ProjectOnPlane(headCamera.transform.position, Vector3.up);
+            Vector3 delta = Quaternion.Euler(0, StartYaw, 0) * new Vector3(stick.x, 0, stick.y);
+            Vector3 wanted = head + Vector3.ClampMagnitude(delta, 1) * (debugMoveSpeed * dt);
+            wanted = StartPosition + Vector3.ClampMagnitude(wanted - StartPosition, debugMoveRadius);
+            Vector3 enemy = Vector3.ProjectOnPlane(opponentPosition, Vector3.up);
+            if (Vector3.Distance(wanted, enemy) < 0.5f) return Vector3.zero;
+            delta = wanted - head; origin.transform.position += delta;
+            return delta;
         }
         private void FindHands()
         {

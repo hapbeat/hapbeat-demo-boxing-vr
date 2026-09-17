@@ -29,6 +29,19 @@ namespace Hapbeat.Boxing
         [Min(0.01f)] public float enemyBodyRadius = 0.25f;
         [Min(0)] public float minimumImpactSpeed = 0.25f;
         [Min(0.01f)] public float hitCooldown = 0.22f;
+        [Header("Player punch displacement (head-relative metres)")]
+        [Min(0)] public float punchRestSpeed = 0.2f;
+        [Min(0.01f)] public float punchStartSpeed = 0.4f;
+        [Min(0.01f)] public float punchRestSeconds = 0.06f;
+        [Min(0.1f)] public float punchMaximumSeconds = 1.2f;
+        public float punchReturnDepth = 0.35f;
+        [Min(0)] public float punchRearDepth = 0.1f;
+        [Min(1)] public float punchRearMultiplier = 1.1f;
+        [Min(0)] public float punchTapDistance = 0.12f;
+        [Min(0.01f)] public float punchFullDistance = 0.45f;
+        [Range(0, 1)] public float punchHardStrength = 0.65f;
+        [Min(0)] public float tapDamage = 0.5f;
+        [Min(1)] public float fullPunchDamage = 20;
         [Header("Impact response")]
         public ImpactMode impactMode = ImpactMode.WeakHard;
         [Min(0.1f)] public float hardHitSpeed = 2.5f;
@@ -44,6 +57,8 @@ namespace Hapbeat.Boxing
             return Mathf.Lerp(minimumGain, maximumGain, Mathf.Pow(t, gainExponent));
         }
         public bool IsHard(float speed) => impactMode == ImpactMode.WeakHard && speed >= hardHitSpeed;
+        public float PunchStrength(float distance) => float.IsFinite(distance) ?
+            Mathf.SmoothStep(0, 1, Mathf.InverseLerp(punchTapDistance, Mathf.Max(punchTapDistance + 0.01f, punchFullDistance), distance)) : 0;
     }
 
     public struct BoxerPose
@@ -57,7 +72,7 @@ namespace Hapbeat.Boxing
     public readonly struct BoxingImpact
     {
         public readonly ImpactZone zone;
-        public readonly float relativeSpeed, gain;
+        public readonly float relativeSpeed, gain, damage;
         public readonly bool hard, attack;
         public readonly ImpactSurface surface;
         public readonly Vector3 point;
@@ -65,6 +80,15 @@ namespace Hapbeat.Boxing
         {
             this.zone = zone; relativeSpeed = speed; gain = tuning.Gain(speed);
             hard = tuning.IsHard(speed); this.attack = attack; this.point = point; this.surface = surface;
+            damage = hard ? 20 : 10;
+        }
+        public BoxingImpact(ImpactZone zone, float speed, Vector3 point, BoxingTuning tuning, ImpactSurface surface, float punchStrength)
+        {
+            this.zone = zone; relativeSpeed = speed; attack = true; this.point = point; this.surface = surface;
+            float strength = Mathf.Clamp01(punchStrength);
+            gain = Mathf.Lerp(tuning.minimumGain, tuning.maximumGain, strength);
+            hard = tuning.impactMode == ImpactMode.WeakHard && strength >= tuning.punchHardStrength;
+            damage = Mathf.Lerp(tuning.tapDamage, tuning.fullPunchDamage, strength);
         }
     }
 
@@ -122,7 +146,7 @@ namespace Hapbeat.Boxing
         public void Report(BoxingImpact impact)
         {
             if (Phase != BoxingPhase.Fighting) return;
-            float damage = impact.hard ? 20 : 10;
+            float damage = impact.damage;
             if (impact.surface == ImpactSurface.Glove)
             {
                 if (impact.attack) EnemyBlocks++; else { Blocks++; Score += 15; }

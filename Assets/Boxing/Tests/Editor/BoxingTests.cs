@@ -249,6 +249,45 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.Round.Hits, Is.EqualTo(1)); Assert.That(game.Round.EnemyHealth, Is.LessThan(10000));
             Assert.That(game.feedback.LastImpact.surface, Is.EqualTo(ImpactSurface.Body));
         }
+        [Test] public void ExtendedWristTapCannotDealFullPunchDamage()
+        {
+            game.Round.Tick(3, false);
+            typeof(BoxingGame).GetMethod("SaveHistory", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(game, new object[] { Pose() });
+            var resolve = typeof(BoxingGame).GetMethod("ResolvePlayer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Vector3 contact = game.Opponent.Body + Vector3.back * (game.tuning.gloveRadius + game.tuning.enemyBodyRadius);
+            resolve.Invoke(game, new object[] { contact + Vector3.forward * 0.01f, contact + Vector3.back * 0.04f, true, ImpactZone.LeftGlove, false, 0f, 0.01f });
+            Assert.That(game.Round.Hits, Is.EqualTo(1));
+            Assert.That(10000 - game.Round.EnemyHealth, Is.LessThanOrEqualTo(1), "A fast 5cm wrist tap is not a full punch.");
+        }
+        [Test] public void RealSimulationUsesHeadRelativeStrokeForBodyDamage()
+        {
+            game.Round.Tick(3, false); game.tuning.telegraphSeconds = 100;
+            var pose = Pose(); pose.head.z = 0.4f; pose.left = new Vector3(0, 1.22f, 0.25f);
+            Advance(0.4f, pose);
+            int before = game.Round.Hits;
+            for (int i = 1; i <= 30 && game.Round.Hits == before; i++)
+            {
+                pose.left.z = 0.25f + i * 0.025f; game.Simulate(0.01f, pose);
+            }
+            Assert.That(game.Round.Hits, Is.EqualTo(before + 1));
+            Assert.That(game.feedback.LastImpact.attack, Is.True);
+            Assert.That(game.feedback.LastImpact.damage, Is.GreaterThan(15));
+            Assert.That(game.feedback.Sends, Is.Zero);
+        }
+        [Test] public void WalkingAnExtendedFistIntoOpponentIsOnlyATap()
+        {
+            game.Round.Tick(3, false); game.tuning.telegraphSeconds = 100;
+            var pose = Pose(); pose.left = new Vector3(0, 1.22f, 0.5f);
+            Advance(0.4f, pose);
+            int before = game.Round.Hits;
+            for (int i = 0; i < 30 && game.Round.Hits == before; i++)
+            {
+                pose.head.z += 0.015f; pose.left.z += 0.015f; pose.right.z += 0.015f;
+                game.Simulate(0.01f, pose);
+            }
+            Assert.That(game.Round.Hits, Is.EqualTo(before + 1));
+            Assert.That(game.feedback.LastImpact.damage, Is.LessThanOrEqualTo(1));
+        }
         [TestCase(true)] [TestCase(false)]
         public void SurfaceSelectsDistinctAudioAndTactileClipsForBothDirections(bool attack)
         {

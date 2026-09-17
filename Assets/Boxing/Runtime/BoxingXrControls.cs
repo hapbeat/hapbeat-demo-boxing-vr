@@ -13,6 +13,7 @@ namespace Hapbeat.Boxing
             public Pose head, left, right;
             public bool headTracked, leftTracked, rightTracked, menu, confirm;
             public float navigate;
+            public Vector2 move;
         }
 
         private readonly InputActionMap map = new InputActionMap("Boxing XR");
@@ -44,6 +45,7 @@ namespace Hapbeat.Boxing
             frame.rightTracked = right.Read(out frame.right);
             frame.menu = menu.IsPressed(); frame.confirm = confirm.IsPressed();
             float leftY = leftNavigate.ReadValue<Vector2>().y, rightY = rightNavigate.ReadValue<Vector2>().y;
+            frame.move = leftNavigate.ReadValue<Vector2>();
             // Compare vertical intent so a horizontal stick cannot suppress the other hand.
             frame.navigate = Mathf.Abs(leftY) >= Mathf.Abs(rightY) ? leftY : rightY;
             return frame;

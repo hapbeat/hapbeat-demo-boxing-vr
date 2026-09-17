@@ -13,6 +13,24 @@ namespace Hapbeat.Boxing.Editor
     public static class BoxingContent
     {
         private const string Root = "Assets/Boxing/";
+        [MenuItem("Hapbeat Boxing/Apply Reach And Punch Update")]
+        public static void ApplyReachUpdate()
+        {
+            var scene = EditorSceneManager.OpenScene(BoxingProject.ScenePath);
+            var game = UnityEngine.Object.FindFirstObjectByType<BoxingGame>();
+            game.input.startPoint.position = new Vector3(0, 0.003f, 0.4f);
+            game.input.startPoint.rotation = Quaternion.identity;
+            game.input.debugStickMovement = true;
+            game.input.debugMoveSpeed = 0.45f;
+            var scoreboard = (RectTransform)game.presentation.timerText.transform.parent;
+            scoreboard.anchoredPosition3D = new Vector3(0, 2.7f, 3.05f);
+            EditorUtility.SetDirty(scoreboard);
+            game.input.Recenter();
+            ConfigureModels(game);
+            EditorUtility.SetDirty(game.input); EditorUtility.SetDirty(game.tuning);
+            EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); AssetDatabase.SaveAssets();
+            BoxingProject.Validate(); Preview();
+        }
         [MenuItem("Hapbeat Boxing/Update Models And Surface Feedback")]
         public static void Upgrade()
         {
@@ -31,6 +49,7 @@ namespace Hapbeat.Boxing.Editor
             game.feedback.forceSilent = true; game.feedback.sdkRoot.SetActive(false); game.Initialize();
             var pose = new BoxerPose { valid = true, head = new Vector3(0, 1.65f, 0), left = new Vector3(-0.25f, 1.25f, 0.34f), right = new Vector3(0.25f, 1.25f, 0.34f),
                 headRotation = Quaternion.identity, leftRotation = Quaternion.identity, rightRotation = Quaternion.identity, leftClosed = true, rightClosed = true };
+            pose.head += game.input.StartPosition; pose.left += game.input.StartPosition; pose.right += game.input.StartPosition;
             game.menu.Close(); game.Round.Start(90); game.Round.Tick(3, false);
             var camera = game.input.headCamera; camera.transform.SetPositionAndRotation(pose.head, Quaternion.identity);
             game.presentation.Render(game, pose, true); Directory.CreateDirectory("Logs");
@@ -70,10 +89,47 @@ namespace Hapbeat.Boxing.Editor
         private static void Glove(Transform root, Material leather, Material dark, bool left)
         {
             Clear(root); root.localScale = Vector3.one;
-            Shape(root, "Knuckle pad", new Vector3(0, 0.005f, 0.012f), new Vector3(0.16f, 0.14f, 0.17f), leather);
+            var pad = new GameObject("Contoured knuckle pad"); pad.transform.SetParent(root, false);
+            pad.AddComponent<MeshFilter>().sharedMesh = GlovePad();
+            pad.AddComponent<MeshRenderer>().sharedMaterial = leather;
             Shape(root, "Palm", new Vector3(0, -0.035f, -0.018f), new Vector3(0.128f, 0.078f, 0.145f), dark);
             Shape(root, "Thumb", new Vector3(left ? 0.061f : -0.061f, -0.037f, -0.005f), new Vector3(0.058f, 0.064f, 0.104f), leather);
             Shape(root, "Cuff", new Vector3(0, -0.009f, -0.095f), new Vector3(0.125f, 0.103f, 0.065f), leather);
+            Shape(root, "Wrist strap", new Vector3(0, 0.027f, -0.094f), new Vector3(0.113f, 0.027f, 0.05f), dark);
+        }
+        private static Mesh GlovePad()
+        {
+            const string path = Root + "Art/ContouredGlove.asset";
+            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (mesh != null) return mesh;
+            var vertices = new List<Vector3>(); var triangles = new List<int>();
+            const int rings = 13, sides = 32;
+            for (int r = 0; r < rings; r++)
+            {
+                float t = r / (float)(rings - 1);
+                float cap = Mathf.Pow(Mathf.Max(0.0001f, Mathf.Sin(t * Mathf.PI)), 0.35f);
+                for (int s = 0; s < sides; s++)
+                {
+                    float a = s * Mathf.PI * 2 / sides;
+                    float x = Mathf.Sign(Mathf.Cos(a)) * Mathf.Pow(Mathf.Abs(Mathf.Cos(a)), 0.72f);
+                    float y = Mathf.Sign(Mathf.Sin(a)) * Mathf.Pow(Mathf.Abs(Mathf.Sin(a)), 0.8f);
+                    vertices.Add(new Vector3(x * 0.08f * cap, 0.005f + y * 0.07f * cap, -0.073f + t * 0.17f));
+                    if (r < rings - 1)
+                    {
+                        int n = r * sides + s, next = r * sides + (s + 1) % sides;
+                        triangles.AddRange(new[] { n, next, n + sides, next, next + sides, n + sides });
+                    }
+                }
+            }
+            // Close both ends with triangle fans.
+            for (int s = 1; s < sides - 1; s++)
+            {
+                triangles.AddRange(new[] { 0, s + 1, s });
+                int b = (rings - 1) * sides; triangles.AddRange(new[] { b, b + s, b + s + 1 });
+            }
+            mesh = new Mesh { name = "Contoured boxing glove pad" };
+            mesh.SetVertices(vertices); mesh.SetTriangles(triangles, 0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
+            AssetDatabase.CreateAsset(mesh, path); return mesh;
         }
         public static void ConfigureModels(BoxingGame game)
         {
@@ -88,13 +144,8 @@ namespace Hapbeat.Boxing.Editor
             Glove(v.enemyLeftGlove, red, dark, true); Glove(v.enemyRightGlove, red, dark, false);
             Clear(v.enemyHead); v.enemyHead.localScale = Vector3.one;
             Shape(v.enemyHead, "Icon head", Vector3.zero, new Vector3(0.275f, 0.32f, 0.28f), ivory);
-            Shape(v.enemyHead, "Visor", new Vector3(0, 0.02f, -0.135f), new Vector3(0.19f, 0.055f, 0.035f), dark);
-            for (int s = -1; s <= 1; s += 2)
-                Shape(v.enemyHead, "Eye", new Vector3(s * 0.047f, 0.02f, -0.151f), new Vector3(0.032f, 0.022f, 0.009f), ivory);
             Clear(v.enemyTorso); v.enemyTorso.localScale = Vector3.one;
             Shape(v.enemyTorso, "Jersey", new Vector3(0, 0.015f, 0), new Vector3(0.46f, 0.58f, 0.28f), navy);
-            Shape(v.enemyTorso, "Chest panel", new Vector3(0, 0.09f, -0.153f), new Vector3(0.28f, 0.24f, 0.028f), ivory);
-            Shape(v.enemyTorso, "Badge", new Vector3(0, 0.09f, -0.172f), new Vector3(0.052f, 0.076f, 0.01f), amber);
             Shape(v.enemyTorso, "Neck", new Vector3(0, 0.30f, 0), new Vector3(0.115f, 0.13f, 0.115f), ivory);
             Clear(v.enemyHip); v.enemyHip.localScale = Vector3.one;
             Shape(v.enemyHip, "Shorts", Vector3.zero, new Vector3(0.37f, 0.29f, 0.27f), navy);

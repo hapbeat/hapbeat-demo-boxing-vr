@@ -19,7 +19,7 @@ namespace Hapbeat.Boxing
         {
             flashTime = 0.28f;
             lastImpact = (impact.surface == ImpactSurface.Glove ? (impact.attack ? "GUARDED" : "BLOCK") : impact.attack ? "HIT" : "HEAD HIT") +
-                "  " + (impact.hard ? "HARD" : "SOFT") + "  " + impact.relativeSpeed.ToString("0.0") + " m/s";
+                "  " + (impact.hard ? "HARD" : "SOFT") + (impact.attack ? "  " + (impact.surface == ImpactSurface.Body ? impact.damage : 0).ToString("0.0") + " DMG" : "");
             if (hitBurst != null) { hitBurst.position = impact.point; hitBurst.gameObject.SetActive(true); }
             if (hitBurst != null)
             {

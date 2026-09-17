@@ -27,6 +27,8 @@ namespace Hapbeat.Boxing
         private Vector3 oldEnemyLeft, oldEnemyRight, oldEnemyHead, oldEnemyBody;
         private int resolvedAttack, lastCompleted;
         private BoxingPhase previousPhase;
+        private readonly BoxingPunch leftPunch = new BoxingPunch(), rightPunch = new BoxingPunch();
+        private Vector3 sampledHead;
         private XRDisplaySubsystem display;
         private bool displayFocused = true, displayFocusKnown;
         private readonly List<XRDisplaySubsystem> displays = new List<XRDisplaySubsystem>();
@@ -38,12 +40,14 @@ namespace Hapbeat.Boxing
             Hapbeat.DemoSwitch.DemoSwitch.BeforeSwitch += BeforeSwitch;
             Hapbeat.DemoSwitch.DemoSwitch.LaunchContextDetected += LaunchContext;
             Application.focusChanged += FocusChanged;
+            if (input != null) input.Recentered += ResetHistory;
         }
         private void OnDisable()
         {
             Hapbeat.DemoSwitch.DemoSwitch.BeforeSwitch -= BeforeSwitch;
             Hapbeat.DemoSwitch.DemoSwitch.LaunchContextDetected -= LaunchContext;
             Application.focusChanged -= FocusChanged;
+            if (input != null) input.Recentered -= ResetHistory;
             if (display != null) display.displayFocusChanged -= DisplayFocus;
             if (feedback != null) feedback.StopFeedback();
         }
@@ -59,7 +63,12 @@ namespace Hapbeat.Boxing
             if (lost) PauseForExternalTransition();
         }
         private void OnApplicationPause(bool value) { appPaused = value; if (value) PauseForExternalTransition(); }
-        public void ResetHistory() { haveHistory = false; validTime = 0; leftContact = rightContact = false; leftCooldown = rightCooldown = 0; }
+        public void ResetHistory() { haveHistory = false; validTime = 0; leftContact = rightContact = false; leftCooldown = rightCooldown = 0; ResetPunches(); }
+        public void ResetPunches() { leftPunch.Reset(); rightPunch.Reset(); }
+        // Local operations for a future authenticated M5 command adapter. No new wire protocol here.
+        public void RecenterPlayer() { input.Recenter(); ResetHistory(); feedback.StopImpacts(); }
+        public void UseHandTracking() { input.SelectMode(BoxingInputMode.Hands); ResetHistory(); }
+        public void UseControllers() { input.SelectMode(BoxingInputMode.Controllers); ResetHistory(); }
         public void StartRound()
         {
             if (input.HasTracking && !input.HasOverride) input.Recenter();
@@ -91,7 +100,7 @@ namespace Hapbeat.Boxing
             {
                 if (!Paused) feedback.StopImpacts();
                 Paused = true;
-                PauseReason = unavailable ? (appPaused ? "APPLICATION PAUSED" : displayFocusKnown ? "HEADSET PAUSED - OPENXR NOT FOCUSED" : "GAME WINDOW NOT FOCUSED") : outside ? "RETURN TO YOUR START POSITION" : !tracking ? "TRACKING LOST - SHOW BOTH HANDS / CONTROLLERS" : "PAUSED";
+                PauseReason = unavailable ? (appPaused ? "APPLICATION PAUSED" : displayFocusKnown ? "HEADSET PAUSED - OPENXR NOT FOCUSED" : "GAME WINDOW NOT FOCUSED") : outside ? "RETURN TO YOUR START POSITION" : !tracking ? input.TrackingStatus : "PAUSED";
                 ResetHistory();
                 if (presentation != null) presentation.Render(this, pose, false);
                 return;
@@ -108,6 +117,10 @@ namespace Hapbeat.Boxing
             { ResetHistory(); feedback.StopFeedback(); return; }
             Round.Tick(dt, false);
             Opponent.Tick(dt, pose.head, Round.Phase == BoxingPhase.Fighting);
+            sampledHead = pose.head;
+            Vector3 forward = Vector3.ProjectOnPlane(Opponent.Root - pose.head, Vector3.up).normalized;
+            leftPunch.Sample(pose.left - pose.head, forward, dt, tuning);
+            rightPunch.Sample(pose.right - pose.head, forward, dt, tuning);
             if (haveHistory && Round.Phase == BoxingPhase.Fighting)
             {
                 leftBlockedThisFrame = rightBlockedThisFrame = false;
@@ -154,6 +167,8 @@ namespace Hapbeat.Boxing
             {
                 Opponent.Block(Vector3.Lerp(from, to, earliest));
                 leftBlockedThisFrame = zone == ImpactZone.LeftGlove; rightBlockedThisFrame = zone == ImpactZone.RightGlove;
+                Vector3 hand = zone == ImpactZone.LeftGlove ? Vector3.Lerp(previous.left, p.left, earliest) : Vector3.Lerp(previous.right, p.right, earliest);
+                (zone == ImpactZone.LeftGlove ? leftPunch : rightPunch).Consume(hand - Vector3.Lerp(previous.head, p.head, earliest), tuning);
             }
             if (speed >= tuning.minimumImpactSpeed) Report(new BoxingImpact(zone, speed, false, Vector3.Lerp(from, to, earliest), tuning,
                 zone == ImpactZone.Head ? ImpactSurface.Body : ImpactSurface.Glove));
@@ -183,8 +198,12 @@ namespace Hapbeat.Boxing
             float speed = BoxingCollision.RelativeSpeed(from, to, targetFrom, targetTo, dt);
             if (speed < tuning.minimumImpactSpeed) return;
             cooldown = tuning.hitCooldown;
-            if (surface == ImpactSurface.Body) Opponent.React(tuning.Gain(speed));
-            Report(new BoxingImpact(side, speed, true, Vector3.Lerp(from, to, earliest), tuning, surface));
+            Vector3 point = Vector3.Lerp(from, to, earliest);
+            Vector3 headAtContact = Vector3.Lerp(previous.head, sampledHead, earliest);
+            float strength = (side == ImpactZone.LeftGlove ? leftPunch : rightPunch).Consume(point - headAtContact, tuning);
+            var impact = new BoxingImpact(side, speed, point, tuning, surface, strength);
+            if (surface == ImpactSurface.Body) Opponent.React(impact.gain);
+            Report(impact);
         }
         private bool TouchingEnemy(Vector3 position) => Vector3.Distance(position, Opponent.Head) <= tuning.gloveRadius + tuning.enemyHeadRadius + 0.03f ||
             Vector3.Distance(position, Opponent.Body) <= tuning.gloveRadius + tuning.enemyBodyRadius + 0.03f ||
