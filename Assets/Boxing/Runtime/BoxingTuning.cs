@@ -6,7 +6,7 @@ namespace Hapbeat.Boxing
     public enum BoxingPhase { Ready, Countdown, Fighting, Results }
     public enum BoxingInputMode { Controllers, Hands }
     public enum ImpactMode { Continuous, WeakHard }
-    public enum ImpactZone { LeftGlove, RightGlove, Head }
+    public enum ImpactZone { LeftGlove, RightGlove, Head, Body }
     public enum ImpactSurface { Glove, Body }
 
     [CreateAssetMenu(menuName = "Hapbeat Boxing/Tuning")]
@@ -23,10 +23,11 @@ namespace Hapbeat.Boxing
         [Min(0.4f)] public float guardSeconds = 1.2f;
         [Min(0.5f)] public float playRadius = 1.0f;
         [Header("Collision (metres / seconds)")]
-        [Min(0.01f)] public float gloveRadius = 0.075f;
+        [Min(0.01f)] public float gloveRadius = 0.07f;
         [Min(0.01f)] public float headRadius = 0.14f;
-        [Min(0.01f)] public float enemyHeadRadius = 0.17f;
-        [Min(0.01f)] public float enemyBodyRadius = 0.25f;
+        [Min(0.01f)] public float bodyRadius = 0.21f;
+        [Min(0.01f)] public float enemyHeadRadius = 0.145f;
+        [Min(0.01f)] public float enemyBodyRadius = 0.21f;
         [Min(0)] public float minimumImpactSpeed = 0.25f;
         [Min(0.01f)] public float hitCooldown = 0.22f;
         [Header("Player punch displacement (head-relative metres)")]
@@ -150,7 +151,7 @@ namespace Hapbeat.Boxing
                 if (impact.attack) EnemyBlocks++; else { Blocks++; Score += 15; }
             }
             else if (impact.attack) { Hits++; Score += Mathf.RoundToInt(20 + 80 * Mathf.Clamp01(impact.gain)); EnemyHealth = Mathf.Max(0, EnemyHealth - damage); }
-            else if (impact.zone == ImpactZone.Head) { Taken++; PlayerHealth = Mathf.Max(0, PlayerHealth - damage); }
+            else if (impact.zone == ImpactZone.Head || impact.zone == ImpactZone.Body) { Taken++; PlayerHealth = Mathf.Max(0, PlayerHealth - damage); }
             if (PlayerHealth <= 0 || EnemyHealth <= 0) Phase = BoxingPhase.Results;
         }
         public void Dodge() { if (Phase == BoxingPhase.Fighting) { Dodges++; Score += 10; } }

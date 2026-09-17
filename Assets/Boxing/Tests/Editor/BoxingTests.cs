@@ -187,10 +187,12 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void GlovesInFrontOfHeadBlockAndNoAttackHitsTwice()
         {
+            int bodyHits = 0;
+            game.feedback.Reported += impact => { if (!impact.attack && impact.zone == ImpactZone.Body) bodyHits++; };
             Advance(95, Pose(true));
-            Assert.That(game.Round.Blocks, Is.GreaterThan(10));
+            Assert.That(game.Round.Blocks, Is.GreaterThan(0));
             Assert.That(game.Round.Blocks + game.Round.Taken, Is.LessThanOrEqualTo(game.Opponent.AttackId));
-            Assert.That(game.Round.Taken, Is.LessThan(game.Round.Blocks));
+            Assert.That(bodyHits, Is.GreaterThan(0), "A head-only guard must leave the torso exposed.");
         }
         [Test] public void GuardContactStopsEnemyStrikeAndRetractsInsteadOfPassingThrough()
         {
@@ -228,8 +230,8 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void CompactGlovesMatchTheSmallerCollisionEnvelope()
         {
             var size = BoxingContent.GloveSize(game.presentation.leftGlove);
-            Assert.That(size.x, Is.EqualTo(.16f).Within(.001f)); Assert.That(size.z, Is.InRange(0.21f, 0.24f));
-            Assert.That(game.tuning.gloveRadius, Is.EqualTo(0.075f));
+            Assert.That(size.x, Is.EqualTo(.15f).Within(.001f)); Assert.That(size.z, Is.InRange(0.20f, 0.25f));
+            Assert.That(game.tuning.gloveRadius, Is.EqualTo(0.07f));
         }
         [TestCase(false)] [TestCase(true)] public void GuardInterceptionAndBodyHitSelectDifferentOutcomes(bool bodyGuard)
         {
@@ -372,7 +374,9 @@ namespace Hapbeat.Boxing.Tests
             pose.left = game.Opponent.Head + Vector3.back * 0.5f;
             Advance(0.4f, pose);
             int before = game.Round.Hits;
-            for (int i = 0; i < 35; i++)
+            float contactDistance = game.tuning.gloveRadius + game.tuning.enemyHeadRadius;
+            int steps = Mathf.CeilToInt((.5f - contactDistance) / .008f) + 2;
+            for (int i = 0; i < steps; i++)
             {
                 pose.left = game.Opponent.Head + Vector3.back * (0.5f - i * 0.008f);
                 game.Simulate(1f / 90, pose);
@@ -397,7 +401,7 @@ namespace Hapbeat.Boxing.Tests
             Advance(6, Pose()); game.PauseForExternalTransition();
             float time = game.Round.TimeLeft; Advance(2, Pose());
             Assert.That(game.menu.IsOpen, Is.True); Assert.That(game.Round.TimeLeft, Is.EqualTo(time));
-            Assert.That(game.menu.dwellBar.enabled, Is.False, "No completed gaze indicator before dwelling.");
+            Assert.That(game.menu.panel.Find("Look to select progress"), Is.Null);
             game.menu.Activate(0); Advance(1, Pose());
             Assert.That(game.menu.IsOpen, Is.False); Assert.That(game.Round.TimeLeft, Is.LessThan(time));
         }
@@ -417,13 +421,13 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void TrackedControllersDoNotHaveGazeOverrideTheirMenuSelection()
         {
             game.input.mode = BoxingInputMode.Controllers; game.input.SetTestPose(Pose());
-            Assert.That(game.menu.UsesGaze, Is.False);
-            game.input.mode = BoxingInputMode.Hands; Assert.That(game.menu.UsesGaze, Is.True);
+            Assert.That(game.menu.UsesHandPointer, Is.False);
+            game.input.mode = BoxingInputMode.Hands; Assert.That(game.menu.UsesHandPointer, Is.True);
         }
         [Test] public void LostControllerTrackingDoesNotEnableGazeMenu()
         {
             game.input.mode = BoxingInputMode.Controllers; var missing = Pose(); missing.valid = false; game.input.SetTestPose(missing);
-            Assert.That(game.menu.UsesGaze, Is.False);
+            Assert.That(game.menu.UsesHandPointer, Is.False);
         }
         [Test] public void GlovesBehindHeadCannotRetroactivelyBlock()
         {

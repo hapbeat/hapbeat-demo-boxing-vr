@@ -36,6 +36,8 @@ namespace Hapbeat.Boxing
         public float Navigate { get; private set; }
         public BoxerPose Current { get; private set; }
         public bool HasOverride { get; private set; }
+        public BoxingHandPointer LeftPointer { get; } = new BoxingHandPointer();
+        public BoxingHandPointer RightPointer { get; } = new BoxingHandPointer();
         private BoxerPose testPose;
         private XRHandSubsystem hands;
         private readonly List<XRHandSubsystem> handSystems = new List<XRHandSubsystem>();
@@ -48,7 +50,7 @@ namespace Hapbeat.Boxing
         private BoxingGame game;
 
         private void OnEnable() { xrControls = new BoxingXrControls(); aligned = false; }
-        private void OnDisable() { xrControls?.Dispose(); xrControls = null; HasTracking = false; }
+        private void OnDisable() { xrControls?.Dispose(); xrControls = null; HasTracking = false; LeftPointer.Reset(); RightPointer.Reset(); }
 
         public void SetTestPose(BoxerPose pose) { HasOverride = true; testPose = Current = pose; HasTracking = pose.valid; }
         public void ClearTestPose() => HasOverride = false;
@@ -78,6 +80,9 @@ namespace Hapbeat.Boxing
             {
                 var xr = xrControls.Read();
                 bool headValid = xr.headTracked;
+                FindHands();
+                ReadPointer(true, headValid && mode == BoxingInputMode.Hands, LeftPointer);
+                ReadPointer(false, headValid && mode == BoxingInputMode.Hands, RightPointer);
                 // Head transform is driven by the template's Input System TrackedPoseDriver (Update + BeforeRender).
                 if (headValid && !aligned)
                 {
@@ -196,6 +201,16 @@ namespace Hapbeat.Boxing
             rotation = space.rotation * wrist.rotation;
             closed = true;
             return true;
+        }
+        private void ReadPointer(bool left, bool enabled, BoxingHandPointer pointer)
+        {
+            if (!enabled || hands == null || !hands.running) { pointer.Reset(); return; }
+            XRHand hand = left ? hands.leftHand : hands.rightHand;
+            if (!hand.isTracked || !hand.GetJoint(XRHandJointID.IndexTip).TryGetPose(out var tip) ||
+                !hand.GetJoint(XRHandJointID.IndexProximal).TryGetPose(out var knuckle) ||
+                !hand.GetJoint(XRHandJointID.ThumbTip).TryGetPose(out var thumb)) { pointer.Reset(); return; }
+            var space = headCamera.transform.parent;
+            pointer.Sample(true, space.TransformPoint(tip.position), space.TransformPoint(knuckle.position), space.TransformPoint(thumb.position));
         }
         private bool ReadWideVisual(BoxingWideMotionFeature wide,bool left,bool measured,ref Vector3 position,ref Quaternion rotation)
         {

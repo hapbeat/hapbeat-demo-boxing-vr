@@ -50,13 +50,13 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void GlovesShareWidthRegardlessOfOpponentHeight()
         {
-            Assert.That(Editor.BoxingContent.GloveSize(game.presentation.leftGlove).x,Is.EqualTo(.16f).Within(.001f));
-            Assert.That(Editor.BoxingContent.GloveSize(game.presentation.rightGlove).x,Is.EqualTo(.16f).Within(.001f));
+            Assert.That(Editor.BoxingContent.GloveSize(game.presentation.leftGlove).x,Is.EqualTo(.15f).Within(.001f));
+            Assert.That(Editor.BoxingContent.GloveSize(game.presentation.rightGlove).x,Is.EqualTo(.15f).Within(.001f));
             var avatar=game.presentation.enemyAvatar;
             foreach(float h in new[]{1.3f,1.9f})
             {
                 game.Opponent.Reset(h); avatar.Render(game.Opponent,0);
-                Assert.That(avatar.leftGloveLocalWidth*avatar.leftHand.lossyScale.x,Is.EqualTo(.16f).Within(.001f));
+                Assert.That(avatar.leftGloveLocalWidth*avatar.leftHand.lossyScale.x,Is.EqualTo(.15f).Within(.001f));
             }
         }
         [Test] public void MissingHandPredictionIsShortAndBounded()

@@ -148,18 +148,30 @@ for sign, side in [(1, 'L'), (-1, 'R')]:
         (wrist, .037, .038, {fa: .3, hand: .7}),
     ], skin, 10, arm_axis)
     direction = (fingertip-wrist).normalized()
-    loft('Glove cuff.'+side, [(wrist-direction*.025, .056, .05, {hand: 1}), (wrist+direction*.047, .059, .052, {hand: 1})], ivory, 8, direction)
+    glove_start = len(parts)
+    loft('Glove cuff.'+side, [(wrist-direction*.025, .053, .047, {hand: 1}), (wrist, .058, .052, {hand: 1}), (wrist+direction*.047, .058, .051, {hand: 1})], red, 16, direction)
+    loft('Wrist strap.'+side, [(wrist-direction*.01, .059, .054, {hand: 1}), (wrist+direction*.022, .061, .055, {hand: 1})], ivory, 16, direction)
+    loft('Cuff piping.'+side, [(wrist+direction*.038, .060, .053, {hand: 1}), (wrist+direction*.046, .060, .053, {hand: 1})], dark, 16, direction)
     loft('Glove.'+side, [
         (wrist+direction*.038, .057, .055, {hand: 1}),
         (wrist+direction*.075, .077, .069, {hand: 1}),
         (wrist+direction*.145, .09, .075, {hand: 1}),
-        (wrist+direction*.195, .077, .067, {hand: 1}),
-        (wrist+direction*.215, .05, .041, {hand: 1}),
-    ], red, 10, direction)
+        (wrist+direction*.18, .085, .073, {hand: 1}),
+        (wrist+direction*.205, .065, .059, {hand: 1}),
+        (wrist+direction*.221, .039, .036, {hand: 1}),
+        (wrist+direction*.229, .008, .008, {hand: 1}),
+    ], red, 20, direction)
     # Thumb is attached along the inner side, not a second ball on top.
     inner = Vector((-sign, 0, 0))
     thumb = wrist + direction*.095 + inner*.061 + Vector((0, -.018, 0))
-    loft('Thumb.'+side, [(thumb-direction*.018, .032, .028, {hand: 1}), (thumb+direction*.04, .033, .028, {hand: 1}), (thumb+direction*.072, .021, .019, {hand: 1})], red, 8, direction)
+    loft('Thumb.'+side, [(thumb-direction*.025, .018, .017, {hand: 1}), (thumb, .032, .028, {hand: 1}), (thumb+direction*.04, .031, .027, {hand: 1}), (thumb+direction*.069, .020, .018, {hand: 1}), (thumb+direction*.079, .006, .006, {hand: 1})], red, 16, direction)
+    # Contrast the palm grip panel and back patch; both are original geometry.
+    back = Vector((0, 1, 0)); back = (back-direction*back.dot(direction)).normalized()
+    for name, side_sign, mat, width in [('Palm grip', -1, dark, .049), ('Back patch', 1, ivory, .026)]:
+        c = wrist+direction*.108+back*(side_sign*.068)
+        loft(name+'.'+side, [(c-direction*.028, width*.7, .004, {hand: 1}), (c, width, .005, {hand: 1}), (c+direction*.035, width*.65, .003, {hand: 1})], mat, 12, direction)
+    for obj in parts[glove_start:]:
+        for polygon in obj.data.polygons: polygon.use_smooth = True
     loft('Leg.'+side, [
         (hip, .09, .10, {'thigh.'+side: 1}),
         (hip.lerp(knee, .3), .10, .10, {'thigh.'+side: 1}),
@@ -204,7 +216,15 @@ for vertex in pants.data.vertices:
     groups['thigh.L' if vertex.co.x >= 0 else 'thigh.R'].add([vertex.index], 1-hip_weight, 'REPLACE')
 parts.append(pants)
 
-# A single exportable skinned mesh, deliberately flat shaded.
+# Slimmer silhouette at the same eye height. Transform the bind skeleton too.
+for obj in parts:
+    for vertex in obj.data.vertices:
+        vertex.co.x *= .88
+        vertex.co.y *= .90
+for _, a, b, _ in bone_defs:
+    for point in (a, b): point.x *= .88; point.y *= .90
+
+# A single exportable mesh: faceted body with smoother leather gloves.
 bpy.ops.object.select_all(action='DESELECT')
 for obj in parts: obj.select_set(True)
 bpy.context.view_layer.objects.active = parts[0]

@@ -49,7 +49,9 @@ namespace Hapbeat.Boxing
             PlaySound(contactSounds[SoundIndex(impact)], Mathf.Clamp01(impact.gain));
         }
         public static int SoundIndex(BoxingImpact impact) => (int)impact.surface * 2 + (impact.hard ? 1 : 0);
-        public static int TriggerIndex(BoxingImpact impact) => (int)impact.zone * 4 + SoundIndex(impact);
+        // This demo has wrist L/R and neck receivers, not a fourth torso device.
+        // Both received body/head hits use the existing neck feedback bank.
+        public static int TriggerIndex(BoxingImpact impact) => (impact.zone == ImpactZone.Body ? 2 : (int)impact.zone) * 4 + SoundIndex(impact);
         public void Ring()
         {
             Rings++;

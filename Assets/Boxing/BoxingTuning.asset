@@ -21,10 +21,11 @@ MonoBehaviour:
   guardInterval: 2.5
   guardSeconds: 1.2
   playRadius: 1
-  gloveRadius: 0.075
+  gloveRadius: 0.07
   headRadius: 0.14
-  enemyHeadRadius: 0.17
-  enemyBodyRadius: 0.25
+  bodyRadius: 0.21
+  enemyHeadRadius: 0.145
+  enemyBodyRadius: 0.21
   minimumImpactSpeed: 0.25
   hitCooldown: 0.22
   punchRestSpeed: 0.2
@@ -32,7 +33,7 @@ MonoBehaviour:
   punchRestSeconds: 0.06
   punchMaximumSeconds: 1.2
   punchReturnDepth: 0.45
-  punchTapDistance: 0.10
+  punchTapDistance: 0.1
   punchFullDistance: 0.32
   punchHardStrength: 0.65
   tapDamage: 0.5

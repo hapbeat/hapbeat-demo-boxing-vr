@@ -14,6 +14,10 @@ namespace Hapbeat.Boxing.Editor
         {
             var scene = EditorSceneManager.OpenScene(BoxingProject.ScenePath);
             var game = Object.FindFirstObjectByType<BoxingGame>();
+            var dwell = game.menu.panel.Find("Look to select progress");
+            if (dwell != null) Object.DestroyImmediate(dwell.gameObject);
+            game.tuning.gloveRadius = .07f; game.tuning.enemyHeadRadius = .145f; game.tuning.enemyBodyRadius = .21f;
+            EditorUtility.SetDirty(game.tuning);
             // The named old opponent is the explicit replacement target, not the arena or player rig.
             var old = GameObject.Find("Opponent - sparring partner");
             if (old != null) Object.DestroyImmediate(old);
@@ -42,7 +46,7 @@ namespace Hapbeat.Boxing.Editor
                 string path = $"Assets/Boxing/Art/BoxerMaterial{i}.mat";
                 var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
                 if (mat == null) { mat = new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(mat, path); }
-                mat.SetColor("_BaseColor", colors[i]); mat.SetFloat("_Smoothness", .15f); materials[i] = mat; EditorUtility.SetDirty(mat);
+                mat.SetColor("_BaseColor", colors[i]); mat.SetFloat("_Smoothness", i == 3 ? .4f : .15f); materials[i] = mat; EditorUtility.SetDirty(mat);
             }
             skin.sharedMaterials = materials;
             var avatar = root.AddComponent<BoxingOpponentAvatar>(); avatar.CaptureRest(); view.enemyAvatar = avatar;
@@ -64,6 +68,16 @@ namespace Hapbeat.Boxing.Editor
             game.presentation.enemyAvatar.ResetReaction(); game.presentation.enemyAvatar.React(true, 1); game.presentation.Render(game,pose,true);
             Capture(game,camera,"Logs/boxing-avatar-body-hit.png");
             game.presentation.enemyAvatar.ResetReaction();
+            int captured = 0;
+            for(int i=0;i<12000 && captured!=15;i++)
+            {
+                game.Opponent.Tick(.005f,pose.head,true);
+                int bit=1<<(int)game.Opponent.Attack;
+                if(!game.Opponent.Striking || game.Opponent.MotionWeight<.8f || (captured&bit)!=0) continue;
+                game.presentation.Render(game,pose,true);
+                Capture(game,camera,"Logs/boxing-attack-"+game.Opponent.Attack+".png"); captured|=bit;
+            }
+            game.Opponent.Reset(1.65f);
             for(int i=0;i<1000 && !game.Opponent.Striking;i++) game.Opponent.Tick(.01f,pose.head,true);
             game.Opponent.Tick(game.tuning.strikeSeconds*.75f,pose.head,true);
             game.presentation.Render(game,pose,true); Capture(game,camera,"Logs/boxing-avatar-strike.png");

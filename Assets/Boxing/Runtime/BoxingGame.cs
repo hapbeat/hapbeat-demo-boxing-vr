@@ -143,10 +143,13 @@ namespace Hapbeat.Boxing
             Opponent.Tick(dt, pose.head, Round.Phase == BoxingPhase.Fighting);
             sampledHead = pose.head;
             Vector3 forward = Vector3.ProjectOnPlane(Opponent.Root - pose.head, Vector3.up).normalized;
+            bool leftMoving = leftPunch.Moving, rightMoving = rightPunch.Moving;
             leftPunch.Sample(pose.left - pose.head, forward, dt, tuning);
             rightPunch.Sample(pose.right - pose.head, forward, dt, tuning);
             if (haveHistory && Round.Phase == BoxingPhase.Fighting)
             {
+                if ((!leftMoving && leftPunch.Moving) || (!rightMoving && rightPunch.Moving))
+                    Opponent.ObservePlayerPunch((!leftMoving && leftPunch.Moving ? pose.left.y : pose.right.y) > Opponent.Head.y - .25f);
                 leftBlockedThisFrame = rightBlockedThisFrame = false;
                 leftCooldown = Mathf.Max(0, leftCooldown - dt); rightCooldown = Mathf.Max(0, rightCooldown - dt);
                 ResolveEnemy(pose, dt);
@@ -183,11 +186,12 @@ namespace Hapbeat.Boxing
             Candidate(ImpactZone.LeftGlove, previous.left, p.left, tuning.gloveRadius);
             Candidate(ImpactZone.RightGlove, previous.right, p.right, tuning.gloveRadius);
             Candidate(ImpactZone.Head, previous.head, p.head, tuning.headRadius);
+            Candidate(ImpactZone.Body, BoxingOpponent.PlayerBody(previous.head), BoxingOpponent.PlayerBody(p.head), tuning.bodyRadius);
             if (float.IsPositiveInfinity(earliest)) return;
             resolvedAttack = Opponent.AttackId;
             float speed = BoxingCollision.RelativeSpeed(from, to, targetFrom, targetTo, dt);
             // A guard contact stops the trajectory, not just the scoring for this attack.
-            if (zone != ImpactZone.Head)
+            if (zone == ImpactZone.LeftGlove || zone == ImpactZone.RightGlove)
             {
                 Opponent.Block(Vector3.Lerp(from, to, earliest));
                 leftBlockedThisFrame = zone == ImpactZone.LeftGlove; rightBlockedThisFrame = zone == ImpactZone.RightGlove;
@@ -195,7 +199,7 @@ namespace Hapbeat.Boxing
                 (zone == ImpactZone.LeftGlove ? leftPunch : rightPunch).Consume(hand - Vector3.Lerp(previous.head, p.head, earliest), tuning);
             }
             if (speed >= tuning.minimumImpactSpeed) Report(new BoxingImpact(zone, speed, false, Vector3.Lerp(from, to, earliest), tuning,
-                zone == ImpactZone.Head ? ImpactSurface.Body : ImpactSurface.Glove));
+                zone == ImpactZone.Head || zone == ImpactZone.Body ? ImpactSurface.Body : ImpactSurface.Glove));
         }
         private void ResolvePlayer(Vector3 to, Vector3 from, bool closed, ImpactZone side, ref bool contact, ref float cooldown, float dt)
         {

@@ -16,7 +16,7 @@ namespace Hapbeat.Boxing
         public Transform leftThigh, leftShin, leftFoot, rightThigh, rightShin, rightFoot;
         public Vector3 headCenter, leftCenter, rightCenter;
         public float neutralHeadHeight;
-        public const float GloveWidth = .16f;
+        public const float GloveWidth = .15f;
         public const float GloveDepthRatio = .75f;
         public float leftGloveLocalWidth, rightGloveLocalWidth;
         public float Reaction { get; private set; }

@@ -17,6 +17,9 @@ namespace Hapbeat.Boxing.Tests
     public sealed class BoxingTestHandProvider : XRHandSubsystemProvider
     {
         public static bool leftTracked, rightTracked, palmMenu, wristOnly;
+        public static bool pointMenu, pinch;
+        public static Handedness pointerSide = Handedness.Right;
+        public static Vector3 menuTarget;
         public override void Start() { }
         public override void Stop() { }
         public override void Destroy() { }
@@ -40,6 +43,13 @@ namespace Hapbeat.Boxing.Tests
                 if (id == XRHandJointID.Wrist) p += Vector3.back * 0.04f;
                 if (id == XRHandJointID.MiddleProximal) p += Vector3.forward * 0.06f;
                 if (id == XRHandJointID.MiddleTip || id == XRHandJointID.IndexTip) p += Vector3.forward * (open ? 0.16f : 0.02f);
+                if (pointMenu && side == pointerSide)
+                {
+                    Vector3 direction = (menuTarget - palm).normalized;
+                    if (id == XRHandJointID.IndexProximal) p = palm;
+                    if (id == XRHandJointID.IndexTip) p = palm + direction * .10f;
+                    if (id == XRHandJointID.ThumbTip) p = palm + direction * .10f + Vector3.right * (pinch ? .015f : .07f);
+                }
                 bool valid = tracked && (!wristOnly || id == XRHandJointID.Wrist);
                 joints[i] = XRHandProviderUtility.CreateJoint(side, valid ? XRHandJointTrackingState.Pose : XRHandJointTrackingState.None, id, new Pose(p, rotation));
             }
@@ -57,6 +67,8 @@ namespace Hapbeat.Boxing.Tests
             InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
             BoxingTestHandProvider.leftTracked = BoxingTestHandProvider.rightTracked = BoxingTestHandProvider.palmMenu = false;
             BoxingTestHandProvider.wristOnly = false;
+            BoxingTestHandProvider.pointMenu = BoxingTestHandProvider.pinch = false;
+            BoxingTestHandProvider.pointerSide = Handedness.Right;
             InputSystem.RegisterLayout<XRSimulatedHMD>(); head = InputSystem.AddDevice<XRSimulatedHMD>();
         }
         public override void TearDown() { hands?.Destroy(); hands = null; base.TearDown(); }
@@ -78,7 +90,7 @@ namespace Hapbeat.Boxing.Tests
                 yield return null;
             }
         }
-        [UnityTest] public IEnumerator HandsCanArriveAfterStartupStartByGazeAndRecoverWithoutControllers()
+        [UnityTest] public IEnumerator HandsCanArriveAfterStartupStartByPinchAndRecoverWithoutControllers()
         {
             yield return SceneManager.LoadSceneAsync("Boxing"); var game = Object.FindAnyObjectByType<BoxingGame>();
             game.SendMessage("FocusChanged", true); game.SendMessage("OnApplicationPause", false);
@@ -89,7 +101,14 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.input.HasTracking, Is.True, game.input.TrackingStatus);
             Assert.That(game.input.Current.leftClosed, Is.True); Assert.That(game.input.HasOverride, Is.False);
             yield return Pump(2.1f, game, true);
-            Assert.That(game.menu.IsOpen, Is.False, "Gaze must start without an A button or controller.");
+            Assert.That(game.menu.IsOpen, Is.True, "Looking alone must never select.");
+            BoxingTestHandProvider.menuTarget = game.input.headCamera.transform.parent.InverseTransformPoint(game.menu.rows[0].transform.position);
+            BoxingTestHandProvider.pointMenu = true;
+            yield return Pump(.2f, game);
+            BoxingTestHandProvider.pinch = true;
+            yield return Pump(.2f, game);
+            Assert.That(game.menu.IsOpen, Is.False, "Measured fingertip ray and pinch must start without controllers.");
+            BoxingTestHandProvider.pointMenu = false;
             yield return Pump(0.4f, game);
             Assert.That(game.Round.Countdown, Is.LessThan(3));
             BoxingTestHandProvider.rightTracked = false;
@@ -104,6 +123,28 @@ namespace Hapbeat.Boxing.Tests
             yield return Pump(1.0f, game);
             Assert.That(game.menu.IsOpen, Is.True, "Left palm opens the menu even if the other hand is occluded.");
             Assert.That(game.feedback.Sends, Is.Zero);
+        }
+        [UnityTest] public IEnumerator LeftPointerWorksAloneAndHeldPinchCannotRepeatOrClickAfterLoss()
+        {
+            yield return SceneManager.LoadSceneAsync("Boxing"); var game=Object.FindAnyObjectByType<BoxingGame>();
+            game.feedback.forceSilent=true; game.feedback.sdkRoot.SetActive(false);
+            StartHands(); BoxingTestHandProvider.leftTracked=true;
+            yield return Pump(.4f,game);
+            BoxingTestHandProvider.pointerSide=Handedness.Left;
+            BoxingTestHandProvider.menuTarget=game.input.headCamera.transform.parent.InverseTransformPoint(game.menu.rows[3].transform.position);
+            BoxingTestHandProvider.pointMenu=true;
+            var original=game.tuning.impactMode;
+            yield return Pump(.2f,game);
+            BoxingTestHandProvider.pinch=true; yield return Pump(.2f,game);
+            Assert.That(game.tuning.impactMode,Is.Not.EqualTo(original));
+            var selected=game.tuning.impactMode;
+            yield return Pump(.4f,game); Assert.That(game.tuning.impactMode,Is.EqualTo(selected));
+            BoxingTestHandProvider.leftTracked=false; yield return Pump(.2f,game);
+            BoxingTestHandProvider.leftTracked=true; yield return Pump(.2f,game);
+            Assert.That(game.tuning.impactMode,Is.EqualTo(selected));
+            BoxingTestHandProvider.pinch=false; yield return Pump(.2f,game);
+            BoxingTestHandProvider.pinch=true; yield return Pump(.2f,game);
+            Assert.That(game.tuning.impactMode,Is.EqualTo(original)); Assert.That(game.feedback.Sends,Is.Zero);
         }
         [UnityTest] public IEnumerator PickingUpControllersAfterHandlessStartupDoesNotRequireRestart()
         {

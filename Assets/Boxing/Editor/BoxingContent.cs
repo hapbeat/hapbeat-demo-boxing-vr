@@ -38,7 +38,7 @@ namespace Hapbeat.Boxing.Editor
             var scene = EditorSceneManager.OpenScene(BoxingProject.ScenePath);
             var game = UnityEngine.Object.FindFirstObjectByType<BoxingGame>();
             ConfigureModels(game); ConfigureImpactVisuals(game.presentation); ConfigureFeedback(game);
-            game.tuning.gloveRadius = 0.075f; EditorUtility.SetDirty(game.tuning);
+            game.tuning.gloveRadius = 0.07f; EditorUtility.SetDirty(game.tuning);
             EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); AssetDatabase.SaveAssets();
             BoxingProject.Validate();
             Preview();

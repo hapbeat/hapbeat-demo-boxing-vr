@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace Hapbeat.Boxing
 {
+    public enum BoxingAttack { HeadStraight, BodyStraight, HeadHook, BodyHook }
     // Fixed, readable combinations. Aim is committed before the strike, so leaning works.
     public sealed class BoxingOpponent
     {
@@ -21,7 +22,21 @@ namespace Hapbeat.Boxing
         public float StandingHeadHeight => height + .075f;
         public float MotionWeight { get; private set; }
         public float BodyYaw { get; private set; }
-        public bool Hook => attacking && pattern % 6 >= 4;
+        public BoxingAttack Attack { get; private set; }
+        public bool Hook => attacking && (Attack == BoxingAttack.HeadHook || Attack == BoxingAttack.BodyHook);
+        public bool BodyAttack => attacking && (Attack == BoxingAttack.BodyStraight || Attack == BoxingAttack.BodyHook);
+        public static Vector3 PlayerBody(Vector3 head) => head + Vector3.down * .43f;
+        public bool Counter { get; private set; }
+        private int observedPunches;
+        private float counterCooldown;
+        private bool counterQueued;
+        private BoxingAttack counterAttack;
+        public void ObservePlayerPunch(bool high)
+        {
+            if (attacking || counterQueued || counterCooldown > 0 || ++observedPunches % 3 != 0) return;
+            counterQueued = true; counterAttack = high ? BoxingAttack.BodyStraight : BoxingAttack.HeadHook;
+            wait = Mathf.Min(wait, .25f); counterCooldown = 4;
+        }
         private float clock, attackTime, wait, reaction;
         private int pattern;
         private bool attacking, blocked;
@@ -35,6 +50,7 @@ namespace Hapbeat.Boxing
         {
             height = Mathf.Clamp(playerHeight, .8f, 2.2f); clock = attackTime = reaction = 0;
             MotionWeight = BodyYaw = 0;
+            observedPunches = 0; counterCooldown = 0; counterQueued = Counter = false; Attack = BoxingAttack.HeadStraight;
             pattern = AttackId = CompletedAttacks = 0; wait = 0.7f; attacking = Striking = Telegraphing = blocked = false;
             random = new System.Random(1701); guardWait = tuning.guardInterval; guardTime = 0; Guarding = BodyGuard = false; GuardWeight = 0;
             SetRestPose();
@@ -52,6 +68,7 @@ namespace Hapbeat.Boxing
         {
             if (dt <= 0) return;
             clock += dt; reaction = Mathf.Max(0, reaction - dt);
+            counterCooldown = Mathf.Max(0, counterCooldown - dt);
             float preDuration = tuning.telegraphSeconds, strikeDuration = tuning.strikeSeconds;
             float extension = !attacking ? 0 : attackTime < preDuration ? -.18f * Mathf.Sin(Mathf.PI * .5f * attackTime / preDuration) :
                 attackTime < preDuration + strikeDuration ? Mathf.SmoothStep(0, 1, (attackTime - preDuration) / strikeDuration) :
@@ -63,7 +80,7 @@ namespace Hapbeat.Boxing
             if (!attacking)
             {
                 guardWait -= dt;
-                if (guardTime > 0 || guardWait <= 0)
+                if (guardTime > 0 || (guardWait <= 0 && !counterQueued))
                 {
                     if (guardTime == 0) BodyGuard = !BodyGuard;
                     guardTime += dt; Guarding = true;
@@ -77,17 +94,18 @@ namespace Hapbeat.Boxing
                 wait -= dt;
                 if (wait > 0) return;
                 attacking = true; blocked = false; attackTime = 0; AttackId++; AttackLeft = pattern % 3 != 1;
-                aim = playerHead; strikeStart = AttackLeft ? Left : Right;
+                Counter = counterQueued; Attack = Counter ? counterAttack : (BoxingAttack)(pattern % 4); counterQueued = false;
+                aim = BodyAttack ? PlayerBody(playerHead) : playerHead; strikeStart = AttackLeft ? Left : Right;
             }
             attackTime += dt;
             float pre = tuning.telegraphSeconds, strike = tuning.strikeSeconds, recover = tuning.recoverSeconds;
             Vector3 rest = AttackLeft ? Left : Right;
             Vector3 fist;
-            bool hook = pattern % 6 >= 4;
+            bool hook = Hook;
             if (attackTime < pre)
             {
                 Telegraphing = true;
-                fist = rest + new Vector3(AttackLeft ? -0.025f : 0.025f, 0, 0.045f) * Mathf.Sin(attackTime / pre * Mathf.PI * 0.5f);
+                fist = rest + new Vector3((AttackLeft ? -1 : 1) * (hook ? .10f : .025f), BodyAttack ? -.18f : 0, .045f) * Mathf.Sin(attackTime / pre * Mathf.PI * .5f);
                 strikeStart = fist;
             }
             else if (attackTime < pre + strike)
@@ -114,7 +132,8 @@ namespace Hapbeat.Boxing
         {
             Root = new Vector3(0, 0, 1.08f);
             float bob = (Mathf.Cos(clock * 3) - 1) * .018f;
-            Head = Root + new Vector3(Mathf.Sin(clock * 1.5f) * .025f, height + bob, reaction * .24f - MotionWeight * (Hook ? .25f : .12f));
+            float dip = BodyAttack ? .10f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(attackTime / (tuning.telegraphSeconds + tuning.strikeSeconds + tuning.recoverSeconds))) : 0;
+            Head = Root + new Vector3(Mathf.Sin(clock * 1.5f) * .025f, height + bob - dip, reaction * .24f - MotionWeight * (Hook ? .25f : .12f));
             Body = Head + new Vector3(0, -.43f, .015f);
             Left = Head + new Vector3(-.19f, -.10f, -.23f);
             Right = Head + new Vector3(.18f, -.09f, -.19f);

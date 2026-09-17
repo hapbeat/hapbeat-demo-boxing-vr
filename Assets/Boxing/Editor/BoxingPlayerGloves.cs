@@ -17,12 +17,14 @@ namespace Hapbeat.Boxing.Editor
         {
             var source=avatar.skin.sharedMesh;
             int bone=Array.IndexOf(avatar.skin.bones,hand);
-            var vertices=source.vertices; var weights=source.boneWeights;
-            var points=new List<Vector3>(); var map=new Dictionary<int,int>();
+            var vertices=source.vertices; var weights=source.boneWeights; var sourceNormals=source.normals;
+            var points=new List<Vector3>(); var normals=new List<Vector3>(); var map=new Dictionary<int,int>();
+            var normalMatrix=source.bindposes[bone].inverse.transpose;
             Quaternion orientation=Quaternion.LookRotation(Vector3.up,Vector3.forward);
             for(int i=0;i<vertices.Length;i++)
                 if(weights[i].boneIndex0==bone && weights[i].weight0>.9f)
-                { map[i]=points.Count; points.Add(orientation*source.bindposes[bone].MultiplyPoint3x4(vertices[i])); }
+                { map[i]=points.Count; points.Add(orientation*source.bindposes[bone].MultiplyPoint3x4(vertices[i]));
+                  normals.Add(Vector3.Scale(orientation*normalMatrix.MultiplyVector(sourceNormals[i]),new Vector3(1,1/BoxingOpponentAvatar.GloveDepthRatio,1)).normalized); }
             var bounds=new Bounds(points[0],Vector3.zero);
             foreach(var p in points) bounds.Encapsulate(p);
             float scale=BoxingOpponentAvatar.GloveWidth/bounds.size.x;
@@ -39,13 +41,13 @@ namespace Hapbeat.Boxing.Editor
                     { output.Add(map[input[i]]); output.Add(map[input[i+1]]); output.Add(map[input[i+2]]); }
                 mesh.SetTriangles(output,s);
             }
-            mesh.RecalculateNormals(); mesh.RecalculateBounds(); EditorUtility.SetDirty(mesh);
+            mesh.SetNormals(normals); mesh.RecalculateBounds(); EditorUtility.SetDirty(mesh);
             for(int i=root.childCount-1;i>=0;i--) UnityEngine.Object.DestroyImmediate(root.GetChild(i).gameObject);
             root.localScale=Vector3.one;
             var model=new GameObject("Boxer glove "+side); model.transform.SetParent(root,false);
             model.AddComponent<MeshFilter>().sharedMesh=mesh;
             model.AddComponent<MeshRenderer>().sharedMaterials=avatar.skin.sharedMaterials;
-            Debug.Log($"BOXING_SHARED_GLOVE {side} size_m={mesh.bounds.size:F4} collision_diameter_m=0.1500");
+            Debug.Log($"BOXING_SHARED_GLOVE {side} size_m={mesh.bounds.size:F4} collision_diameter_m=0.1400");
         }
     }
 }

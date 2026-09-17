@@ -119,9 +119,6 @@ namespace Hapbeat.Boxing.Editor
             menu.rows = new Text[7];
             for (int i = 0; i < 7; i++) menu.rows[i] = Text("Option " + i, panel, new Vector2(0, 185 - i * 65), new Vector2(680, 58), 30, "");
             menu.hint = Text("Controls", panel, new Vector2(0, -340), new Vector2(730, 125), 20, "");
-            var dwell = new GameObject("Look to select progress", typeof(RectTransform), typeof(Image)); dwell.transform.SetParent(panel, false);
-            var dr = dwell.GetComponent<RectTransform>(); dr.anchoredPosition = new Vector2(0, -255); dr.sizeDelta = new Vector2(600, 6);
-            menu.dwellBar = dwell.GetComponent<Image>(); menu.dwellBar.color = Color.cyan; menu.dwellBar.type = Image.Type.Filled; menu.dwellBar.fillMethod = Image.FillMethod.Horizontal;
             BuildHaptics(game);
             BoxingContent.ConfigureModels(game);
             BoxingContent.ConfigureImpactVisuals(game.presentation);

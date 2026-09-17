@@ -11,23 +11,21 @@ namespace Hapbeat.Boxing
         public Transform panel;
         public Text title, hint;
         public Text[] rows;
-        public Image dwellBar;
         public bool IsOpen { get; private set; }
         public int Selection { get; private set; }
-        public bool UsesGaze => input.ActiveMode == BoxingInputMode.Hands;
+        public bool UsesHandPointer => input.ActiveMode == BoxingInputMode.Hands;
         private bool navigationReady = true;
-        private float gazeTime, openTime;
-        private int gazeSelection = -1;
-        private bool gazeLatched;
+        private LineRenderer leftRay, rightRay;
+        private Material rayMaterial;
+        private bool leftReady, rightReady;
         private void OnEnable() { if (input != null) input.Recentered += RepositionAfterRecenter; }
-        private void OnDisable() { if (input != null) input.Recentered -= RepositionAfterRecenter; }
+        private void OnDisable() { if (input != null) input.Recentered -= RepositionAfterRecenter; HideRays(); }
         private void RepositionAfterRecenter() { if (IsOpen) Open(); }
         private void Start() { input.Recentered -= RepositionAfterRecenter; input.Recentered += RepositionAfterRecenter; Open(); }
         public void Open()
         {
-            IsOpen = true; Selection = 0; openTime = Time.unscaledTime;
-            gazeTime = 0; gazeLatched = false; gazeSelection = -1;
-            SetDwellProgress(0);
+            IsOpen = true; Selection = 0;
+            leftReady = rightReady = false;
             panel.gameObject.SetActive(true);
             var camera = input.headCamera.transform;
             Vector3 forward = Vector3.ProjectOnPlane(camera.forward, Vector3.up).normalized;
@@ -37,7 +35,7 @@ namespace Hapbeat.Boxing
             panel.rotation = Quaternion.LookRotation(forward);
             game.ResetHistory(); game.feedback.StopFeedback(); Refresh();
         }
-        public void Close() { IsOpen = false; panel.gameObject.SetActive(false); game.ResetHistory(); }
+        public void Close() { IsOpen = false; panel.gameObject.SetActive(false); HideRays(); game.ResetHistory(); }
         private void Update()
         {
             if (input.MenuPressed) { if (IsOpen && game.Round.Phase != BoxingPhase.Ready && game.Round.Phase != BoxingPhase.Results) Close(); else Open(); }
@@ -46,44 +44,52 @@ namespace Hapbeat.Boxing
             if (navigationReady && Mathf.Abs(input.Navigate) > 0.6f)
             {
                 Selection = (Selection + (input.Navigate > 0 ? rows.Length - 1 : 1)) % rows.Length;
-                navigationReady = false; gazeTime = 0;
+                navigationReady = false;
             }
-            if (input.ConfirmPressed) { gazeLatched = true; Activate(Selection); }
+            if (input.ConfirmPressed) Activate(Selection);
             if (!IsOpen) return;
-            // Gaze dwell provides a controller-free menu and needs no select/pinch gesture.
-            var camera = input.headCamera.transform;
-            var plane = new Plane(panel.forward, panel.position);
-            int hovered = -1;
-            if (UsesGaze && plane.Raycast(new Ray(camera.position, camera.forward), out float distance) && distance < 3)
+            if (UsesHandPointer)
             {
-                Vector3 point = camera.position + camera.forward * distance;
+                int left = Point(input.LeftPointer, ref leftRay, ref leftReady, out bool leftClick);
+                int right = Point(input.RightPointer, ref rightRay, ref rightReady, out bool rightClick);
+                if (right >= 0) Selection = right; else if (left >= 0) Selection = left;
+                if (rightClick) Activate(right); else if (leftClick) Activate(left);
+            }
+            else { HideRays(); leftReady = rightReady = false; }
+            Refresh();
+        }
+        private int Point(BoxingHandPointer pointer, ref LineRenderer line, ref bool ready, out bool clicked)
+        {
+            clicked = false;
+            if (!pointer.Valid) { ready = false; if (line != null) line.enabled = false; return -1; }
+            if (!pointer.Pinching) ready = true;
+            if (line == null)
+            {
+                if (rayMaterial == null) rayMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                var go = new GameObject("Hand menu ray"); go.transform.SetParent(transform, false);
+                line = go.AddComponent<LineRenderer>(); line.sharedMaterial = rayMaterial;
+                line.positionCount = 2; line.startWidth = .002f; line.endWidth = .004f;
+                line.useWorldSpace = true; line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+            Ray ray = pointer.Ray;
+            float distance = 1.5f; int hovered = -1;
+            if (new Plane(panel.forward, panel.position).Raycast(ray, out float hit) && hit < 3)
+            {
+                distance = hit;
                 for (int i = 0; i < rows.Length; i++)
                 {
-                    Vector3 local = rows[i].rectTransform.InverseTransformPoint(point);
+                    Vector3 local = rows[i].rectTransform.InverseTransformPoint(ray.GetPoint(hit));
                     if (rows[i].rectTransform.rect.Contains(new Vector2(local.x, local.y))) { hovered = i; break; }
                 }
             }
-            if (hovered != gazeSelection) { gazeTime = 0; gazeLatched = false; gazeSelection = hovered; }
-            if (hovered >= 0 && Time.unscaledTime - openTime > 0.8f)
-            {
-                Selection = hovered;
-                if (!gazeLatched)
-                {
-                    gazeTime += Time.unscaledDeltaTime;
-                    if (gazeTime >= 1.5f) { gazeLatched = true; Activate(hovered); }
-                }
-            }
-            else gazeTime = 0;
-            SetDwellProgress(gazeTime / 1.5f);
-            Refresh();
+            line.enabled = true; line.SetPosition(0, ray.origin); line.SetPosition(1, ray.GetPoint(distance));
+            line.startColor = line.endColor = hovered >= 0 ? Color.cyan : Color.white;
+            clicked = ready && pointer.Pressed && hovered >= 0;
+            if (pointer.Pinching) ready = false;
+            return hovered;
         }
-        private void SetDwellProgress(float progress)
-        {
-            if (dwellBar == null) return;
-            // A sprite-less Unity Image ignores Filled mode; size its visible geometry instead.
-            dwellBar.enabled = progress > 0;
-            dwellBar.rectTransform.localScale = new Vector3(Mathf.Clamp01(progress), 1, 1);
-        }
+        private void HideRays() { if (leftRay != null) leftRay.enabled = false; if (rightRay != null) rightRay.enabled = false; }
+        private void OnDestroy() { if (rayMaterial != null) Destroy(rayMaterial); }
         public void Activate(int index)
         {
             switch (index)
@@ -110,7 +116,7 @@ namespace Hapbeat.Boxing
                 rows[i].text = (i == Selection ? ">  " : "   ") + labels[i];
                 rows[i].color = i == Selection ? new Color(0.25f, 0.95f, 1) : new Color(0.8f, 0.85f, 0.92f);
             }
-            hint.text = (UsesGaze ? "LOOK AT AN OPTION FOR 1.5s\nLEFT OPEN PALM TOWARD YOUR FACE: HOLD 0.8s FOR MENU" :
+            hint.text = (UsesHandPointer ? "POINT YOUR INDEX FINGER - PINCH TO SELECT\nLEFT OPEN PALM TOWARD YOUR FACE: HOLD 0.8s FOR MENU" :
                 "EITHER STICK: SELECT   A / X: CONFIRM\nMENU / B / Y: PAUSE") + "\nCLEAR YOUR PLAY AREA - DO NOT HIT REAL OBJECTS";
         }
     }
