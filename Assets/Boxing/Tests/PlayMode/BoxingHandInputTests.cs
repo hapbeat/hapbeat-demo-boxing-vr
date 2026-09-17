@@ -49,6 +49,7 @@ namespace Hapbeat.Boxing.Tests
                     if (id == XRHandJointID.IndexProximal) p = palm;
                     if (id == XRHandJointID.IndexTip) p = palm + direction * .10f;
                     if (id == XRHandJointID.ThumbTip) p = palm + direction * .10f + Vector3.right * (pinch ? .015f : .07f);
+                    rotation=Quaternion.LookRotation(menuTarget-(palm+direction*.1f+Vector3.right*(pinch ? .0075f : .035f)));
                 }
                 bool valid = tracked && (!wristOnly || id == XRHandJointID.Wrist);
                 joints[i] = XRHandProviderUtility.CreateJoint(side, valid ? XRHandJointTrackingState.Pose : XRHandJointTrackingState.None, id, new Pose(p, rotation));
@@ -60,6 +61,7 @@ namespace Hapbeat.Boxing.Tests
     {
         private XRHandSubsystem hands;
         private XRSimulatedHMD head;
+        private MetaAimHand testAim;
         public override void Setup()
         {
             base.Setup();
@@ -71,7 +73,7 @@ namespace Hapbeat.Boxing.Tests
             BoxingTestHandProvider.pointerSide = Handedness.Right;
             InputSystem.RegisterLayout<XRSimulatedHMD>(); head = InputSystem.AddDevice<XRSimulatedHMD>();
         }
-        public override void TearDown() { hands?.Destroy(); hands = null; base.TearDown(); }
+        public override void TearDown() { if(MetaAimHand.right==testAim) MetaAimHand.right=null; testAim=null; hands?.Destroy(); hands = null; base.TearDown(); }
         private void StartHands()
         {
             const string id = "Boxing.TestHands";
@@ -102,12 +104,16 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.input.Current.leftClosed, Is.True); Assert.That(game.input.HasOverride, Is.False);
             yield return Pump(2.1f, game, true);
             Assert.That(game.menu.IsOpen, Is.True, "Looking alone must never select.");
+            var ghosts=Object.FindObjectsByType<BoxingMenuHand>(FindObjectsSortMode.None);
+            Assert.That(ghosts.Length,Is.EqualTo(2));
+            foreach(var ghost in ghosts) Assert.That(ghost.mesh.enabled,Is.True,"Tracked menu hands must be visible.");
             BoxingTestHandProvider.menuTarget = game.input.headCamera.transform.parent.InverseTransformPoint(game.menu.rows[0].transform.position);
             BoxingTestHandProvider.pointMenu = true;
             yield return Pump(.2f, game);
             BoxingTestHandProvider.pinch = true;
             yield return Pump(.2f, game);
             Assert.That(game.menu.IsOpen, Is.False, "Measured fingertip ray and pinch must start without controllers.");
+            foreach(var ghost in ghosts) Assert.That(ghost.mesh.enabled,Is.False,"Ghost hands are menu-only.");
             BoxingTestHandProvider.pointMenu = false;
             yield return Pump(0.4f, game);
             Assert.That(game.Round.Countdown, Is.LessThan(3));
@@ -145,6 +151,23 @@ namespace Hapbeat.Boxing.Tests
             BoxingTestHandProvider.pinch=false; yield return Pump(.2f,game);
             BoxingTestHandProvider.pinch=true; yield return Pump(.2f,game);
             Assert.That(game.tuning.impactMode,Is.EqualTo(original)); Assert.That(game.feedback.Sends,Is.Zero);
+        }
+        [UnityTest] public IEnumerator MetaAimDirectionAndPinchMidpointDriveMenuNotIndexDirection()
+        {
+            yield return SceneManager.LoadSceneAsync("Boxing"); var game=Object.FindAnyObjectByType<BoxingGame>();
+            game.feedback.forceSilent=true; game.feedback.sdkRoot.SetActive(false);
+            StartHands(); BoxingTestHandProvider.rightTracked=true;
+            BoxingTestHandProvider.pointMenu=true; BoxingTestHandProvider.menuTarget=new Vector3(1,1.4f,.3f);
+            InputSystem.RegisterLayout<MetaAimHand>(); testAim=InputSystem.AddDevice<MetaAimHand>(); MetaAimHand.right=testAim;
+            Set(testAim.isTracked,1); Set(testAim.trackingState,3); Set(testAim.aimFlags,(int)(MetaAimFlags.Computed|MetaAimFlags.Valid));
+            Set(testAim.deviceRotation,Quaternion.identity); Set(testAim.pinchStrengthIndex,0);
+            yield return Pump(.4f,game);
+            Assert.That(game.input.RightPointer.Valid,Is.True);
+            Assert.That(Vector3.Dot(game.input.RightPointer.Ray.direction,game.input.headCamera.transform.parent.forward),Is.GreaterThan(.999f));
+            var hand=hands.rightHand; hand.GetJoint(XRHandJointID.IndexTip).TryGetPose(out var tip); hand.GetJoint(XRHandJointID.ThumbTip).TryGetPose(out var thumb);
+            Assert.That(Vector3.Distance(game.input.RightPointer.Ray.origin,game.input.headCamera.transform.parent.TransformPoint((tip.position+thumb.position)*.5f)),Is.LessThan(.001f));
+            Set(testAim.aimFlags,(int)(MetaAimFlags.Computed|MetaAimFlags.Valid|MetaAimFlags.SystemGesture));
+            yield return Pump(.2f,game); Assert.That(game.input.RightPointer.Valid,Is.False);
         }
         [UnityTest] public IEnumerator PickingUpControllersAfterHandlessStartupDoesNotRequireRestart()
         {

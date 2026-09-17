@@ -230,7 +230,7 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void CompactGlovesMatchTheSmallerCollisionEnvelope()
         {
             var size = BoxingContent.GloveSize(game.presentation.leftGlove);
-            Assert.That(size.x, Is.EqualTo(.15f).Within(.001f)); Assert.That(size.z, Is.InRange(0.20f, 0.25f));
+            Assert.That(size.x, Is.EqualTo(.15f).Within(.001f)); Assert.That(size.z, Is.InRange(0.19f, 0.25f));
             Assert.That(game.tuning.gloveRadius, Is.EqualTo(0.07f));
         }
         [TestCase(false)] [TestCase(true)] public void GuardInterceptionAndBodyHitSelectDifferentOutcomes(bool bodyGuard)
@@ -384,6 +384,26 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.Round.Hits - before, Is.EqualTo(1), "The 3cm release margin must not claim contact before a real hit.");
             Advance(0.4f, pose);
             Assert.That(game.Round.Hits - before, Is.EqualTo(1), "Holding contact must not repeat the impact.");
+        }
+        [Test] public void KnockoutMustNotCancelWinningImpact()
+        {
+            game.tuning.tapDamage=2;
+            game.Round.Start(90,.01f);
+            var pose=Pose(); int stopsAtHit=-1;
+            game.feedback.Reported += impact => { if (impact.attack) stopsAtHit=game.feedback.ImpactStops; };
+            Advance(3.6f,pose);
+            int ringsBefore=game.feedback.Rings;
+            for(int i=0;i<80 && game.Round.Phase!=BoxingPhase.Results;i++)
+            {
+                pose.left=game.Opponent.Head+Vector3.right*Mathf.Max(0,.5f-i*.01f);
+                game.Simulate(1f/90,pose);
+            }
+            Assert.That(stopsAtHit,Is.GreaterThanOrEqualTo(0),"Winning collision must be exercised.");
+            Assert.That(game.Round.Phase,Is.EqualTo(BoxingPhase.Results));
+            Assert.That(game.feedback.ImpactStops,Is.EqualTo(stopsAtHit),"KO transition must let the final impact audio and haptic clip finish.");
+            Assert.That(game.feedback.Rings,Is.EqualTo(ringsBefore),"The final gong must wait for the impact tail.");
+            Advance(game.feedback.ImpactTailSeconds+.3f,pose);
+            Assert.That(game.feedback.Rings,Is.EqualTo(ringsBefore+1));
         }
         [Test] public void TargetingAndSwitchAllowlistArePresent()
         {

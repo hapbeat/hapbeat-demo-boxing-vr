@@ -34,6 +34,9 @@ namespace Hapbeat.Boxing
         private readonly List<XRDisplaySubsystem> displays = new List<XRDisplaySubsystem>();
         private string lastPauseReport;
         public float ResultPresentationTime { get; private set; }
+        private float resultBellDelay;
+        private bool resultBellPlayed;
+        private int spokenCountdown;
 
         public void Initialize() { if (Opponent == null) Opponent = new BoxingOpponent(tuning); previousPhase = Round.Phase; }
         private void Awake() => Initialize();
@@ -82,6 +85,7 @@ namespace Hapbeat.Boxing
             Round.Start(tuning.roundSeconds, tuning.maximumHealth); Opponent.Reset(input.ReferenceEyeHeight);
             ResultPresentationTime=0;
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); menu.Close();
+            spokenCountdown=0; resultBellPlayed=false;
         }
         private void Update()
         {
@@ -98,6 +102,7 @@ namespace Hapbeat.Boxing
             {
                 // End the action before hiding it behind the menu. No combat runs here.
                 ResultPresentationTime += dt>0 && dt<=.1f ? dt : 0;
+                if(!resultBellPlayed && ResultPresentationTime>=resultBellDelay) { feedback.Ring(); resultBellPlayed=true; }
                 presentation.Render(this,pose,false);
                 if(ResultPresentationTime>=2.5f) menu.Open();
                 return;
@@ -139,6 +144,11 @@ namespace Hapbeat.Boxing
             }
             if (haveHistory && (Vector3.Distance(pose.left, previous.left) > 0.6f || Vector3.Distance(pose.right, previous.right) > 0.6f || Vector3.Distance(pose.head, previous.head) > 0.35f))
             { ResetHistory(); feedback.StopFeedback(); return; }
+            if(Round.Phase==BoxingPhase.Countdown)
+            {
+                int number=Mathf.CeilToInt(Round.Countdown);
+                if(number!=spokenCountdown) { feedback.SpeakCountdown(number); spokenCountdown=number; }
+            }
             Round.Tick(dt, false);
             Opponent.Tick(dt, pose.head, Round.Phase == BoxingPhase.Fighting);
             sampledHead = pose.head;
@@ -163,8 +173,12 @@ namespace Hapbeat.Boxing
             }
             if (Round.Phase != previousPhase)
             {
-                if (Round.Phase == BoxingPhase.Results) { feedback.StopFeedback(); ResultPresentationTime=0; }
-                if (Round.Phase == BoxingPhase.Fighting || Round.Phase == BoxingPhase.Results) feedback.Ring();
+                if (Round.Phase == BoxingPhase.Results)
+                {
+                    ResultPresentationTime=0; resultBellPlayed=false;
+                    resultBellDelay=Mathf.Max(.25f,feedback.ImpactTailSeconds+.08f);
+                }
+                if (Round.Phase == BoxingPhase.Fighting) feedback.Ring();
                 previousPhase = Round.Phase;
             }
             SaveHistory(pose);

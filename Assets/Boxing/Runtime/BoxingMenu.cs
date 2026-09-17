@@ -102,7 +102,7 @@ namespace Hapbeat.Boxing
                 case 3: game.tuning.impactMode = game.tuning.impactMode == ImpactMode.Continuous ? ImpactMode.WeakHard : ImpactMode.Continuous; break;
                 case 4: game.RecenterPlayer(); Open(); break;
                 case 5: game.feedback.hapticsEnabled = !game.feedback.hapticsEnabled; if (!game.feedback.hapticsEnabled) game.feedback.StopFeedback(); break;
-                case 6: game.feedback.soundEnabled = !game.feedback.soundEnabled; if (!game.feedback.soundEnabled) { game.feedback.audioSource.Stop(); game.feedback.bellSource.Stop(); } break;
+                case 6: game.feedback.soundEnabled = !game.feedback.soundEnabled; if (!game.feedback.soundEnabled) { game.feedback.audioSource.Stop(); game.feedback.bellSource.Stop(); if(game.feedback.voiceSource!=null) game.feedback.voiceSource.Stop(); } break;
             }
         }
         private void Refresh()
@@ -116,7 +116,7 @@ namespace Hapbeat.Boxing
                 rows[i].text = (i == Selection ? ">  " : "   ") + labels[i];
                 rows[i].color = i == Selection ? new Color(0.25f, 0.95f, 1) : new Color(0.8f, 0.85f, 0.92f);
             }
-            hint.text = (UsesHandPointer ? "POINT YOUR INDEX FINGER - PINCH TO SELECT\nLEFT OPEN PALM TOWARD YOUR FACE: HOLD 0.8s FOR MENU" :
+            hint.text = (UsesHandPointer ? "AIM YOUR HAND - PINCH THUMB AND INDEX TO SELECT\nLEFT OPEN PALM TOWARD YOUR FACE: HOLD 0.8s FOR MENU" :
                 "EITHER STICK: SELECT   A / X: CONFIRM\nMENU / B / Y: PAUSE") + "\nCLEAR YOUR PLAY AREA - DO NOT HIT REAL OBJECTS";
         }
     }

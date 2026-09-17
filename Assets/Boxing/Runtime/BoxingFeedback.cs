@@ -10,7 +10,11 @@ namespace Hapbeat.Boxing
         public GameObject sdkRoot;
         // Per receiver: glove soft/hard, body soft/hard. Surface is independent of attack direction.
         public HapbeatUnityEventTrigger[] impactTriggers = new HapbeatUnityEventTrigger[12];
-        public AudioSource audioSource, bellSource;
+        public AudioSource audioSource, bellSource, voiceSource;
+        public AudioClip[] countdownVoice = new AudioClip[3];
+        public int LastSpokenNumber { get; private set; }
+        public int VoiceCues { get; private set; }
+        public float ImpactTailSeconds { get; private set; }
         public AudioClip[] contactSounds = new AudioClip[4];
         public AudioClip bell;
         public bool soundEnabled = true;
@@ -19,6 +23,7 @@ namespace Hapbeat.Boxing
         public int Reports { get; private set; }
         public int Sends { get; private set; }
         public int Rings { get; private set; }
+        public int ImpactStops { get; private set; }
         public BoxingImpact LastImpact { get; private set; }
         public event Action<BoxingImpact> Reported;
         public bool CanSend => !Application.isBatchMode && !forceSilent && hapticsEnabled;
@@ -29,10 +34,14 @@ namespace Hapbeat.Boxing
                 if (sdkRoot != null) sdkRoot.SetActive(false);
                 if (audioSource != null) audioSource.mute = true;
                 if (bellSource != null) bellSource.mute = true;
+                if (voiceSource != null) voiceSource.mute = true;
             }
         }
         public void Impact(BoxingImpact impact)
         {
+            var clip=contactSounds[SoundIndex(impact)];
+            // Haptic tails are finite (max 0.19s); preserve the whole sound as well.
+            ImpactTailSeconds=Mathf.Max(ImpactTailSeconds,.19f,clip!=null ? clip.length : 0);
             LastImpact = impact; Reports++; Reported?.Invoke(impact);
             if (CanSend)
             {
@@ -58,6 +67,14 @@ namespace Hapbeat.Boxing
             if (!Application.isBatchMode && !forceSilent && soundEnabled && bellSource != null && bell != null)
             { bellSource.Stop(); bellSource.PlayOneShot(bell, 0.5f); }
         }
+        private void Update() => ImpactTailSeconds=Mathf.Max(0,ImpactTailSeconds-Time.unscaledDeltaTime);
+        public void SpeakCountdown(int number)
+        {
+            if(number<1 || number>3) return;
+            LastSpokenNumber=number; VoiceCues++;
+            if(!Application.isBatchMode && !forceSilent && soundEnabled && voiceSource!=null && countdownVoice[number-1]!=null)
+            { voiceSource.Stop(); voiceSource.PlayOneShot(countdownVoice[number-1],.75f); }
+        }
         private void PlaySound(AudioClip clip, float volume)
         {
             if (!Application.isBatchMode && !forceSilent && soundEnabled && audioSource != null && clip != null)
@@ -65,12 +82,14 @@ namespace Hapbeat.Boxing
         }
         public void StopImpacts()
         {
+            ImpactStops++;
+            ImpactTailSeconds=0;
             foreach (var trigger in impactTriggers)
                 if (trigger != null) { trigger.FlushPendingDelayCoroutines(); if (!Application.isBatchMode && !forceSilent) trigger.Stop(); }
             if (!Application.isBatchMode && !forceSilent && HapbeatManager.Instance != null && HapbeatManager.Instance.IsConnected) HapbeatManager.Instance.StopAll();
             if (audioSource != null) audioSource.Stop();
         }
-        public void StopFeedback() { StopImpacts(); if (bellSource != null) bellSource.Stop(); }
+        public void StopFeedback() { StopImpacts(); if (bellSource != null) bellSource.Stop(); if(voiceSource!=null) voiceSource.Stop(); }
         private void OnDisable() => StopFeedback();
     }
 }

@@ -1,0 +1,50 @@
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.XR.Hands;
+
+namespace Hapbeat.Boxing.Editor
+{
+    public static class BoxingHandPolish
+    {
+        public static void Install(BoxingGame game)
+        {
+            var material=AssetDatabase.LoadAssetAtPath<Material>("Assets/Boxing/Art/UnityHands/Ghost.mat");
+            if(material==null) { material=new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(material,"Assets/Boxing/Art/UnityHands/Ghost.mat"); }
+            material.SetColor("_BaseColor",new Color(.45f,.85f,1,.48f));
+            material.SetFloat("_Surface",1); material.SetFloat("_ZWrite",0);
+            material.SetFloat("_SrcBlend",(float)BlendMode.SrcAlpha); material.SetFloat("_DstBlend",(float)BlendMode.OneMinusSrcAlpha);
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); material.renderQueue=(int)RenderQueue.Transparent;
+            EditorUtility.SetDirty(material);
+            foreach(var old in Object.FindObjectsByType<BoxingMenuHand>(FindObjectsInactive.Include,FindObjectsSortMode.None)) Object.DestroyImmediate(old.gameObject);
+            foreach(var side in new[]{Handedness.Left,Handedness.Right})
+            {
+                var root=new GameObject(side+" menu ghost hand"); root.transform.SetParent(game.input.headCamera.transform.parent,false);
+                var model=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Boxing/Art/UnityHands/"+side+"Hand.fbx"));
+                model.transform.SetParent(root.transform,false);
+                foreach(var animator in model.GetComponentsInChildren<Animator>()) Object.DestroyImmediate(animator);
+                var tracking=root.AddComponent<XRHandTrackingEvents>(); tracking.handedness=side;
+                tracking.updateType=XRHandTrackingEvents.UpdateTypes.Dynamic|XRHandTrackingEvents.UpdateTypes.BeforeRender;
+                var driver=root.AddComponent<XRHandSkeletonDriver>(); driver.handTrackingEvents=tracking;
+                driver.jointTransformReferences=new List<JointToTransformReference>();
+                driver.rootTransform=model.GetComponentsInChildren<Transform>().Single(t=>t.name.EndsWith("Wrist"));
+                var missing=new List<string>(); driver.FindJointsFromRoot(missing); driver.InitializeFromSerializedReferences();
+                if(missing.Count!=0) throw new System.InvalidOperationException("Missing ghost hand joints: "+string.Join(",",missing));
+                var mesh=model.GetComponentInChildren<SkinnedMeshRenderer>(); mesh.sharedMaterial=material;
+                mesh.enabled=false; mesh.updateWhenOffscreen=true; mesh.shadowCastingMode=ShadowCastingMode.Off;
+                var visual=root.AddComponent<BoxingMenuHand>(); visual.menu=game.menu; visual.tracking=tracking; visual.mesh=mesh;
+            }
+            var feedback=game.feedback;
+            if(feedback.voiceSource==null)
+            {
+                var voice=new GameObject("Countdown voice"); voice.transform.SetParent(feedback.transform,false);
+                feedback.voiceSource=voice.AddComponent<AudioSource>(); feedback.voiceSource.playOnAwake=false; feedback.voiceSource.spatialBlend=0;
+            }
+            feedback.countdownVoice=new AudioClip[3];
+            for(int i=0;i<3;i++) feedback.countdownVoice[i]=AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Boxing/Audio/Voice/{i+1}.ogg");
+            EditorUtility.SetDirty(feedback);
+        }
+    }
+}

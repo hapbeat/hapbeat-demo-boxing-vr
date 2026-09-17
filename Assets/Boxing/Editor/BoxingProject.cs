@@ -122,6 +122,7 @@ namespace Hapbeat.Boxing.Editor
             BuildHaptics(game);
             BoxingContent.ConfigureModels(game);
             BoxingContent.ConfigureImpactVisuals(game.presentation);
+            BoxingHandPolish.Install(game);
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
             ConfigureSwitch(); AssetDatabase.SaveAssets(); Validate();

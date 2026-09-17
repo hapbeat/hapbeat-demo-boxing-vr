@@ -67,5 +67,40 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(p.z,Is.LessThanOrEqualTo(.151f));
             Assert.That(visual.Sample(false,ref p,ref r,.14),Is.False);
         }
+        [Test] public void PlayerGloveAnatomyMatchesTrackedWristFrame()
+        {
+            foreach(var pair in new[]{(game.presentation.leftGlove,1f),(game.presentation.rightGlove,-1f)})
+            {
+                var mesh=pair.Item1.GetComponentInChildren<MeshFilter>().sharedMesh;
+                Vector3 thumb=default,palm=default,cuff=default; int nt=0,np=0,nc=0;
+                var colors=mesh.colors; var vertices=mesh.vertices;
+                Assert.That(colors.Length,Is.EqualTo(vertices.Length));
+                for(int i=0;i<vertices.Length;i++)
+                {
+                    if(colors[i].r>.9f) {thumb+=vertices[i]; nt++;}
+                    if(colors[i].g>.9f) {palm+=vertices[i]; np++;}
+                    if(colors[i].b>.9f) {cuff+=vertices[i]; nc++;}
+                }
+                Assert.That(nt,Is.GreaterThan(0)); Assert.That(np,Is.GreaterThan(0)); Assert.That(nc,Is.GreaterThan(0));
+                Assert.That((thumb/nt).x*pair.Item2,Is.GreaterThan(.02f),"Thumb must point inward, not outside the hand.");
+                Assert.That((palm/np).y,Is.LessThan(-.015f),"Folded fingers belong on the palm, not the dorsum.");
+                Assert.That((cuff/nc).z,Is.LessThan(-.04f),"Cuff must sit behind the knuckles.");
+            }
+        }
+        [Test] public void CountdownVoiceAssetsAndGhostHandsAreInstalled()
+        {
+            Assert.That(game.feedback.voiceSource,Is.Not.Null);
+            foreach(var clip in game.feedback.countdownVoice) { Assert.That(clip,Is.Not.Null); Assert.That(clip.length,Is.InRange(.1f,1f)); }
+            Assert.That(Object.FindObjectsByType<BoxingMenuHand>(FindObjectsInactive.Include,FindObjectsSortMode.None).Length,Is.EqualTo(2));
+        }
+        [Test] public void CountdownSpeaksThreeTwoOneOnceAndRestarts()
+        {
+            var pose=BoxingSceneTests.Pose(); game.input.SetTestPose(pose); game.StartRound();
+            int cues=game.feedback.VoiceCues;
+            for(int i=0;i<340;i++) game.Simulate(.01f,pose);
+            Assert.That(game.feedback.VoiceCues-cues,Is.EqualTo(3)); Assert.That(game.feedback.LastSpokenNumber,Is.EqualTo(1));
+            game.StartRound(); for(int i=0;i<25;i++) game.Simulate(.01f,pose);
+            Assert.That(game.feedback.LastSpokenNumber,Is.EqualTo(3));
+        }
     }
 }

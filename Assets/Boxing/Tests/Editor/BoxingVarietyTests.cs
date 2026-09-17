@@ -8,12 +8,12 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void PinchRequiresReleaseAndMeasuredJoints()
         {
             var p = new BoxingHandPointer(); Vector3 tip = Vector3.forward * .1f;
-            p.Sample(true, tip, Vector3.zero, tip); Assert.That(p.Pressed, Is.False);
-            p.Sample(true, tip, Vector3.zero, tip + Vector3.right * .07f);
-            p.Sample(true, tip, Vector3.zero, tip); Assert.That(p.Pressed, Is.True);
-            p.Sample(true, tip, Vector3.zero, tip); Assert.That(p.Pressed, Is.False);
-            p.Sample(false, default, default, default); Assert.That(p.Valid, Is.False);
-            p.Sample(true, tip, Vector3.zero, tip); Assert.That(p.Pressed, Is.False);
+            p.Sample(true, tip, Vector3.forward, true, false); Assert.That(p.Pressed, Is.False);
+            p.Sample(true, tip, Vector3.forward, false, true);
+            p.Sample(true, tip, Vector3.forward, true, false); Assert.That(p.Pressed, Is.True);
+            p.Sample(true, tip, Vector3.forward, true, false); Assert.That(p.Pressed, Is.False);
+            p.Sample(false, default, default, false, false); Assert.That(p.Valid, Is.False);
+            p.Sample(true, tip, Vector3.forward, true, false); Assert.That(p.Pressed, Is.False);
         }
         [Test] public void FourAttackTypesReachDistinctHeadAndBodyHeights()
         {

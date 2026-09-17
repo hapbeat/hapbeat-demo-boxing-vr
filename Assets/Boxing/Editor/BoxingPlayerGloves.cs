@@ -10,20 +10,23 @@ namespace Hapbeat.Boxing.Editor
         public static void Install(BoxingPresentation view)
         {
             var avatar=view.enemyAvatar;
-            Build(view.leftGlove,avatar,avatar.rightHand,"Left");
-            Build(view.rightGlove,avatar,avatar.leftHand,"Right");
+            // Use the anatomical tags, not the opponent's screen-space handedness.
+            // FBX bone frame -> tracked wrist frame reverses the local lateral axis.
+            Build(view.leftGlove,avatar,avatar.leftHand,"Left");
+            Build(view.rightGlove,avatar,avatar.rightHand,"Right");
         }
         private static void Build(Transform root,BoxingOpponentAvatar avatar,Transform hand,string side)
         {
             var source=avatar.skin.sharedMesh;
             int bone=Array.IndexOf(avatar.skin.bones,hand);
-            var vertices=source.vertices; var weights=source.boneWeights; var sourceNormals=source.normals;
-            var points=new List<Vector3>(); var normals=new List<Vector3>(); var map=new Dictionary<int,int>();
+            var vertices=source.vertices; var weights=source.boneWeights; var sourceNormals=source.normals; var sourceColors=source.colors;
+            var points=new List<Vector3>(); var normals=new List<Vector3>(); var colors=new List<Color>(); var map=new Dictionary<int,int>();
             var normalMatrix=source.bindposes[bone].inverse.transpose;
             Quaternion orientation=Quaternion.LookRotation(Vector3.up,Vector3.forward);
             for(int i=0;i<vertices.Length;i++)
                 if(weights[i].boneIndex0==bone && weights[i].weight0>.9f)
                 { map[i]=points.Count; points.Add(orientation*source.bindposes[bone].MultiplyPoint3x4(vertices[i]));
+                  colors.Add(sourceColors.Length==vertices.Length ? sourceColors[i] : Color.black);
                   normals.Add(Vector3.Scale(orientation*normalMatrix.MultiplyVector(sourceNormals[i]),new Vector3(1,1/BoxingOpponentAvatar.GloveDepthRatio,1)).normalized); }
             var bounds=new Bounds(points[0],Vector3.zero);
             foreach(var p in points) bounds.Encapsulate(p);
@@ -41,7 +44,7 @@ namespace Hapbeat.Boxing.Editor
                     { output.Add(map[input[i]]); output.Add(map[input[i+1]]); output.Add(map[input[i+2]]); }
                 mesh.SetTriangles(output,s);
             }
-            mesh.SetNormals(normals); mesh.RecalculateBounds(); EditorUtility.SetDirty(mesh);
+            mesh.SetNormals(normals); mesh.SetColors(colors); mesh.RecalculateBounds(); EditorUtility.SetDirty(mesh);
             for(int i=root.childCount-1;i>=0;i--) UnityEngine.Object.DestroyImmediate(root.GetChild(i).gameObject);
             root.localScale=Vector3.one;
             var model=new GameObject("Boxer glove "+side); model.transform.SetParent(root,false);

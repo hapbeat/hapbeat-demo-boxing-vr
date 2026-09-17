@@ -11,20 +11,18 @@ namespace Hapbeat.Boxing
         public bool Pinching { get; private set; }
         private bool armed;
         public void Reset() { Valid = Pressed = Pinching = armed = false; Ray = default; }
-        public void Sample(bool valid, Vector3 tip, Vector3 knuckle, Vector3 thumb)
+        public void Sample(bool valid, Vector3 origin, Vector3 direction, bool pinched, bool released)
         {
             Pressed = false;
-            if (!valid || (tip - knuckle).sqrMagnitude < .0001f) { Reset(); return; }
-            float gap = Vector3.Distance(tip, thumb);
+            if (!valid || direction.sqrMagnitude < .5f) { Reset(); return; }
             Valid = true;
-            if (gap > .045f) { Pinching = false; armed = true; }
-            // Keep the last pointing direction while the index bends into a pinch.
-            if (!Pinching && gap > .032f) Ray = new Ray(tip, (tip - knuckle).normalized);
-            if (gap < .025f && !Pinching)
+            if (released) { Pinching = false; armed = true; }
+            // Aim is supplied by the runtime, not by the bending index finger.
+            Ray = new Ray(origin, direction.normalized);
+            if (pinched && !Pinching)
             {
                 Pinching = true; Pressed = armed; armed = false;
             }
-            Valid = Ray.direction.sqrMagnitude > .5f;
         }
     }
 }

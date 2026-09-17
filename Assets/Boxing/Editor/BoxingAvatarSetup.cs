@@ -25,6 +25,7 @@ namespace Hapbeat.Boxing.Editor
             if (game.presentation.enemyAvatar != null) Object.DestroyImmediate(game.presentation.enemyAvatar.gameObject);
             Attach(game.presentation);
             BoxingPlayerGloves.Install(game.presentation);
+            BoxingHandPolish.Install(game);
             game.Initialize(); game.presentation.enemyAvatar.Render(game.Opponent, 0);
             EditorUtility.SetDirty(game.presentation);
             EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); AssetDatabase.SaveAssets();
@@ -95,6 +96,12 @@ namespace Hapbeat.Boxing.Editor
             camera.transform.SetPositionAndRotation(pose.head,Quaternion.identity);
             game.Opponent.Reset(1.65f); game.presentation.Render(game,pose,true);
             Capture(game,camera,"Logs/boxing-avatar-player-view.png");
+            game.presentation.enemyAvatar.gameObject.SetActive(false);
+            game.presentation.leftGlove.gameObject.SetActive(true); game.presentation.rightGlove.gameObject.SetActive(true);
+            game.presentation.leftGlove.SetPositionAndRotation(new Vector3(-.12f,1.4f,.3f),Quaternion.LookRotation(Vector3.up,Vector3.back));
+            game.presentation.rightGlove.SetPositionAndRotation(new Vector3(.12f,1.4f,.3f),Quaternion.LookRotation(Vector3.up,Vector3.forward));
+            camera.transform.SetPositionAndRotation(new Vector3(0,1.4f,-.3f),Quaternion.identity); camera.fieldOfView=40;
+            Capture(game,camera,"Logs/boxing-gloves-back-palm.png");
             if(!hookCaptured || !crossCaptured) throw new System.InvalidOperationException("Missing hook/cross preview");
             Debug.Log("BOXING_AVATAR_PREVIEW: rest, head hit, body hit, straight, cross, hook and player view rendered silently");
         }

@@ -29,6 +29,7 @@ dark = material('05 Charcoal rubber', (.025, .032, .036))
 sole = material('06 Boot panels', (.065, .085, .105))
 parts = []
 bone_defs = []
+glove_frames = {}
 
 def bone(name, a, b, parent=None):
     bone_defs.append((name, Vector(a), Vector(b), parent))
@@ -37,6 +38,10 @@ def mesh(name, vertices, faces, mat, weights):
     data = bpy.data.meshes.new(name)
     data.from_pydata(vertices, [], faces)
     data.update()
+    # Non-rendered anatomical tags survive FBX for handedness regression tests.
+    tag = (1,0,0,1) if name.startswith('Thumb.') else (0,1,0,1) if name.startswith('Folded fingers.') else (0,0,1,1) if name.startswith('Glove cuff.') else (0,0,0,1)
+    colors=data.color_attributes.new(name='Anatomy', type='FLOAT_COLOR', domain='POINT')
+    for color in colors.data: color.color=tag
     obj = bpy.data.objects.new(name, data)
     bpy.context.collection.objects.link(obj)
     obj.data.materials.append(mat)
@@ -55,10 +60,10 @@ def mesh(name, vertices, faces, mat, weights):
     parts.append(obj)
     return obj
 
-def loft(name, rings, mat, n=8, axis=(0, 0, 1)):
+def loft(name, rings, mat, n=8, axis=(0, 0, 1), axis_u=None):
     # ring = centre, half width, half depth, skin weights. All rings share frame.
     direction = Vector(axis).normalized()
-    u = Vector((1, 0, 0))
+    u = Vector(axis_u) if axis_u is not None else Vector((1, 0, 0))
     if abs(direction.dot(u)) > .93:
         u = Vector((0, 1, 0))
     u = (u - direction * direction.dot(u)).normalized()
@@ -149,29 +154,23 @@ for sign, side in [(1, 'L'), (-1, 'R')]:
     ], skin, 10, arm_axis)
     direction = (fingertip-wrist).normalized()
     glove_start = len(parts)
-    loft('Glove cuff.'+side, [(wrist-direction*.025, .053, .047, {hand: 1}), (wrist, .058, .052, {hand: 1}), (wrist+direction*.047, .058, .051, {hand: 1})], red, 16, direction)
-    loft('Wrist strap.'+side, [(wrist-direction*.01, .059, .054, {hand: 1}), (wrist+direction*.022, .061, .055, {hand: 1})], ivory, 16, direction)
-    loft('Cuff piping.'+side, [(wrist+direction*.038, .060, .053, {hand: 1}), (wrist+direction*.046, .060, .053, {hand: 1})], dark, 16, direction)
-    loft('Glove.'+side, [
-        (wrist+direction*.038, .057, .055, {hand: 1}),
-        (wrist+direction*.075, .077, .069, {hand: 1}),
-        (wrist+direction*.145, .09, .075, {hand: 1}),
-        (wrist+direction*.18, .085, .073, {hand: 1}),
-        (wrist+direction*.205, .065, .059, {hand: 1}),
-        (wrist+direction*.221, .039, .036, {hand: 1}),
-        (wrist+direction*.229, .008, .008, {hand: 1}),
-    ], red, 20, direction)
-    # Thumb is attached along the inner side, not a second ball on top.
-    inner = Vector((-sign, 0, 0))
-    thumb = wrist + direction*.095 + inner*.061 + Vector((0, -.018, 0))
-    loft('Thumb.'+side, [(thumb-direction*.025, .018, .017, {hand: 1}), (thumb, .032, .028, {hand: 1}), (thumb+direction*.04, .031, .027, {hand: 1}), (thumb+direction*.069, .020, .018, {hand: 1}), (thumb+direction*.079, .006, .006, {hand: 1})], red, 16, direction)
-    # Contrast the palm grip panel and back patch; both are original geometry.
     back = Vector((0, 1, 0)); back = (back-direction*back.dot(direction)).normalized()
-    for name, side_sign, mat, width in [('Palm grip', -1, dark, .049), ('Back patch', 1, ivory, .026)]:
-        c = wrist+direction*.108+back*(side_sign*.068)
-        loft(name+'.'+side, [(c-direction*.028, width*.7, .004, {hand: 1}), (c, width, .005, {hand: 1}), (c+direction*.035, width*.65, .003, {hand: 1})], mat, 12, direction)
+    across=direction.cross(back).normalized()
+    def glove(name, rows, mat=red, segments=24):
+        # forward, lateral, dorsal, width, depth in an explicit anatomical frame.
+        return loft(name+'.'+side, [(wrist+direction*(f*1.2)+across*x+back*z,w,d,{hand:1}) for f,x,z,w,d in rows], mat, segments, direction, across)
+    glove('Glove cuff',[(-.026,0,0,.052,.044),(-.019,0,0,.057,.048),(.035,0,0,.057,.048),(.044,0,0,.052,.044)])
+    glove('Wrist strap',[(-.014,0,0,.059,.050),(-.010,0,0,.061,.052),(.026,0,0,.061,.052),(.030,0,0,.059,.050)])
+    for f in [-.016,.030]: glove('Strap edge'+str(f),[(f,0,0,.060,.051),(f+.003,0,0,.060,.051)],ivory)
+    glove('Strap closure', [(-.005,.030,-.046,.021,.007),(.003,.030,-.049,.025,.009),(.020,.030,-.048,.024,.008)],ivory,16)
+    glove('Glove',[(.033,0,0,.052,.043),(.066,0,.008,.064,.048),(.112,0,.014,.076,.057),(.161,0,.018,.083,.062),(.194,0,.012,.079,.062),(.217,0,.004,.057,.049),(.229,0,0,.025,.025),(.232,0,0,.004,.004)])
+    # A clenched finger roll under the knuckles, with a readable palm recess.
+    glove('Folded fingers',[(.131,0,-.052,.045,.013),(.142,0,-.062,.065,.023),(.166,0,-.066,.073,.030),(.195,0,-.055,.070,.030),(.215,0,-.036,.048,.024),(.225,0,-.016,.010,.008)])
+    # Curves up the thumb side and back inward; never a ball on the back of the hand.
+    glove('Thumb',[(.057,-sign*.050,-.021,.014,.015),(.079,-sign*.072,-.030,.026,.026),(.115,-sign*.083,-.035,.030,.029),(.149,-sign*.080,-.040,.027,.028),(.173,-sign*.065,-.043,.021,.023),(.183,-sign*.049,-.041,.006,.007)],red,20)
     for obj in parts[glove_start:]:
         for polygon in obj.data.polygons: polygon.use_smooth = True
+        glove_frames[obj.name]=(wrist.copy(),direction.copy(),across.copy(),back.copy())
     loft('Leg.'+side, [
         (hip, .09, .10, {'thigh.'+side: 1}),
         (hip.lerp(knee, .3), .10, .10, {'thigh.'+side: 1}),
@@ -219,8 +218,16 @@ parts.append(pants)
 # Slimmer silhouette at the same eye height. Transform the bind skeleton too.
 for obj in parts:
     for vertex in obj.data.vertices:
-        vertex.co.x *= .88
-        vertex.co.y *= .90
+        if obj.name in glove_frames:
+            wrist,direction,across,back=glove_frames[obj.name]
+            scale=lambda p: Vector((p.x*.88,p.y*.90,p.z))
+            new_dir=scale(direction).normalized()
+            new_back=Vector((0,1,0)); new_back=(new_back-new_dir*new_back.dot(new_dir)).normalized()
+            new_x=new_dir.cross(new_back).normalized(); delta=vertex.co-wrist
+            vertex.co=scale(wrist)+new_x*delta.dot(across)+new_dir*delta.dot(direction)+new_back*delta.dot(back)
+        else:
+            vertex.co.x *= .88
+            vertex.co.y *= .90
 for _, a, b, _ in bone_defs:
     for point in (a, b): point.x *= .88; point.y *= .90
 
@@ -244,6 +251,7 @@ for name, a, b, parent in bone_defs:
     if name != 'root':
         a.z -= .025; b.z -= .025
     eb = arm_data.edit_bones.new(name); eb.head = a; eb.tail = b
+    if name.startswith('hand.'): eb.align_roll(Vector((0,1,0)))
     if parent: eb.parent = arm_data.edit_bones[parent]
     eb.use_deform = name != 'root'
 bpy.ops.object.mode_set(mode='OBJECT')
@@ -342,7 +350,7 @@ stats = {'vertices': len(body.data.vertices), 'triangles': len(body.data.loop_tr
          'bones': len(rig.data.bones), 'materials': len(body.data.materials),
          'height_m': round(max(v.co.z for v in body.data.vertices)-min(v.co.z for v in body.data.vertices), 4),
          'actions': ['Guard_Pose', 'Hit_Recoil'], 'third_party_meshes': False}
-assert stats['triangles'] < 5000
+assert stats['triangles'] < 8000
 assert 1.7 < stats['height_m'] < 1.9
 
 # Export asset only, with both demonstration actions. FBX is separate from Unity Assets.

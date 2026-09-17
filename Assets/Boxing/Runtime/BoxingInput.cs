@@ -207,10 +207,23 @@ namespace Hapbeat.Boxing
             if (!enabled || hands == null || !hands.running) { pointer.Reset(); return; }
             XRHand hand = left ? hands.leftHand : hands.rightHand;
             if (!hand.isTracked || !hand.GetJoint(XRHandJointID.IndexTip).TryGetPose(out var tip) ||
-                !hand.GetJoint(XRHandJointID.IndexProximal).TryGetPose(out var knuckle) ||
+                !hand.GetJoint(XRHandJointID.Wrist).TryGetPose(out var wrist) ||
                 !hand.GetJoint(XRHandJointID.ThumbTip).TryGetPose(out var thumb)) { pointer.Reset(); return; }
             var space = headCamera.transform.parent;
-            pointer.Sample(true, space.TransformPoint(tip.position), space.TransformPoint(knuckle.position), space.TransformPoint(thumb.position));
+            var aim = left ? MetaAimHand.left : MetaAimHand.right;
+            float gap = Vector3.Distance(tip.position,thumb.position);
+            Quaternion rotation=wrist.rotation;
+            bool pinched=gap<.025f, released=gap>.045f;
+            if(aim!=null && aim.added)
+            {
+                var flags=(MetaAimFlags)aim.aimFlags.ReadValue();
+                if(!aim.isTracked.isPressed || (flags&MetaAimFlags.Valid)==0 || (flags&MetaAimFlags.SystemGesture)!=0) { pointer.Reset(); return; }
+                rotation=aim.deviceRotation.ReadValue();
+                pinched=aim.indexPressed.isPressed; released=aim.pinchStrengthIndex.ReadValue()<.5f;
+            }
+            // XRI PinchPointFollow uses the midpoint; Meta Aim supplies a stable UI direction.
+            pointer.Sample(true, space.TransformPoint((tip.position+thumb.position)*.5f),
+                space.rotation*rotation*Vector3.forward, pinched, released);
         }
         private bool ReadWideVisual(BoxingWideMotionFeature wide,bool left,bool measured,ref Vector3 position,ref Quaternion rotation)
         {

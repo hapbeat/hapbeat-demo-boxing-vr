@@ -1,7 +1,8 @@
 param(
     [ValidateSet('Wmm','Avatar','AvatarPreview','Reach','Content','ContentPreview','Polish','Upgrade','Configure','Validate','Tests','InputTests','Smoke','Capture','Windows','Android','Simulator','AirLink','SimulatorSmoke')]
     [string]$Task = 'Validate',
-    [string]$UnityExe = 'M:/GameEngine/Unity/Editor/6000.3.12f1/Editor/Unity.exe'
+    [string]$UnityExe = 'M:/GameEngine/Unity/Editor/6000.3.12f1/Editor/Unity.exe',
+    [string]$TestFilter = ''
 )
 $ErrorActionPreference = 'Stop'
 $project = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -36,6 +37,7 @@ else {
     $arguments += @('-executeMethod', $method)
     if ($Task -notin @('Smoke','SimulatorSmoke')) { $arguments += '-quit' }
 }
+if ($TestFilter -and $Task -in @('Tests','InputTests')) { $arguments += @('-testFilter', $TestFilter) }
 $process = Start-Process -FilePath $UnityExe -ArgumentList $arguments -WindowStyle Hidden -PassThru
 Write-Output "Unity $Task PID=$($process.Id)"
 $process.WaitForExit()
