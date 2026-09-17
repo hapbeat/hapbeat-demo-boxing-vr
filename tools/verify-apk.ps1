@@ -12,12 +12,12 @@ $badging = (& $aaptPath dump badging $apkPath) -join "`n"
 if ($LASTEXITCODE -ne 0) { throw 'APK badging failed.' }
 $manifest = (& $aaptPath dump xmltree $apkPath 'AndroidManifest.xml') -join "`n"
 if ($LASTEXITCODE -ne 0) { throw 'APK manifest dump failed.' }
-foreach ($required in @("package: name='com.hapbeat.boxing'", "native-code: 'arm64-v8a'", 'android.permission.INTERNET', 'com.unity3d.player.UnityPlayerGameActivity')) {
+foreach ($required in @("package: name='com.hapbeat.boxing'", "native-code: 'arm64-v8a'", 'android.permission.INTERNET', 'com.oculus.permission.BODY_TRACKING', 'com.oculus.software.body_tracking', 'com.unity3d.player.UnityPlayerGameActivity')) {
     if (-not ($badging + $manifest).Contains($required)) { throw "APK requirement missing: $required" }
 }
 if (-not $manifest.Contains('quest3s')) { throw 'Quest 3S support is missing.' }
 if (-not $manifest.Contains('oculus.software.handtracking')) { throw 'Optional hand tracking feature is missing.' }
-if ($badging -match "(?m)^uses-feature: name='[^']*(eye_tracking|handtracking)") { throw 'Optional tracking was marked required.' }
+if ($badging -match "(?m)^uses-feature: name='[^']*(eye_tracking|handtracking|body_tracking)") { throw 'Optional tracking was marked required.' }
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::OpenRead($apkPath)
 try {

@@ -90,14 +90,21 @@ namespace Hapbeat.Boxing
                 if (mode == BoxingInputMode.Hands)
                 {
                     FindHands();
+                    var wide=BoxingWideMotionFeature.Active;
+                    wide?.Prepare();
                     bool l = ReadHand(true, out frame.left, out frame.leftRotation, out frame.leftClosed);
                     bool r = ReadHand(false, out frame.right, out frame.rightRotation, out frame.rightClosed);
                     frame.valid = headValid && l && r;
                     bool lv = leftVisual.Sample(l,ref frame.left,ref frame.leftRotation,frame.timestamp);
                     bool rv = rightVisual.Sample(r,ref frame.right,ref frame.rightRotation,frame.timestamp);
+                    bool lw=ReadWideVisual(wide,true,l,ref frame.left,ref frame.leftRotation);
+                    bool rw=ReadWideVisual(wide,false,r,ref frame.right,ref frame.rightRotation);
+                    if(lw) { lv=true; leftVisual.Reset(); }
+                    if(rw) { rv=true; rightVisual.Reset(); }
                     frame.visualValid = headValid && lv && rv;
                     TrackingStatus = !headValid ? "HMD NOT TRACKED" : hands == null || !hands.running ? "WAITING FOR HAND SUBSYSTEM" :
                         !l || !r ? $"WRIST TRACKING: LEFT {(l ? "OK" : "LOST")} / RIGHT {(r ? "OK" : "LOST")}" : "HANDS READY";
+                    if(headValid && (lw || rw)) TrackingStatus="WMM ESTIMATED - COMBAT PAUSED";
                     bool controllerIntent = xr.confirm || xr.menu || Mathf.Abs(xr.navigate) > 0.6f;
                     controllerFallback = !frame.valid && headValid && xr.leftTracked && xr.rightTracked &&
                         (previousMode == BoxingInputMode.Controllers || controllerIntent);
@@ -188,6 +195,14 @@ namespace Hapbeat.Boxing
             position = space.TransformPoint(wrist.position + wrist.rotation * new Vector3(0, 0, .09f));
             rotation = space.rotation * wrist.rotation;
             closed = true;
+            return true;
+        }
+        private bool ReadWideVisual(BoxingWideMotionFeature wide,bool left,bool measured,ref Vector3 position,ref Quaternion rotation)
+        {
+            if(measured || wide==null || !wide.TryGetVisual(left,out var wrist)) return false;
+            var space=headCamera.transform.parent;
+            position=space.TransformPoint(wrist.position+wrist.rotation*new Vector3(0,0,.09f));
+            rotation=space.rotation*wrist.rotation;
             return true;
         }
     }

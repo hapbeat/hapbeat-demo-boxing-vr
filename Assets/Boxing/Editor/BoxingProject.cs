@@ -170,7 +170,7 @@ namespace Hapbeat.Boxing.Editor
                     string type = feature.GetType().Name;
                     feature.enabled = type == "OculusTouchControllerProfile" || type == "MetaQuestTouchPlusControllerProfile" ||
                         type == "HandTracking" || type == "HandInteractionProfile" || type == "MetaHandTrackingAim" ||
-                        type == "HandCommonPosesInteraction" || (group == BuildTargetGroup.Android && type == "MetaQuestFeature");
+                        type == "HandCommonPosesInteraction" || (group == BuildTargetGroup.Android && (type == "MetaQuestFeature" || type == "BoxingWideMotionFeature"));
                     EditorUtility.SetDirty(feature);
                 }
                 EditorUtility.SetDirty(xr); EditorUtility.SetDirty(settings);

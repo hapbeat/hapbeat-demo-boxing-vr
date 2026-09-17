@@ -345,11 +345,14 @@ namespace Hapbeat.Boxing.Tests
             Advance(10, Pose()); Assert.That(game.Round.TimeLeft, Is.EqualTo(time)); Assert.That(game.Opponent.Left, Is.EqualTo(enemy));
             game.menu.Close(); Advance(1, Pose()); Assert.That(game.Round.TimeLeft, Is.LessThan(time));
         }
-        [Test] public void LostTrackingAndRestoredDistantFistsNeverCreateGhostHits()
+        [TestCase(false)] [TestCase(true)] public void LostTrackingAndRestoredDistantFistsNeverCreateGhostHits(bool wideVisual)
         {
             Advance(4, Pose()); int hits = game.feedback.Reports; float time = game.Round.TimeLeft;
-            var missing = Pose(); missing.valid = false; Advance(4, missing);
+            var missing = Pose(); missing.valid = false; missing.visualValid=wideVisual;
+            missing.left=game.Opponent.Head; missing.right=game.Opponent.Body;
+            Advance(4, missing);
             Assert.That(game.Round.TimeLeft, Is.EqualTo(time)); Assert.That(game.feedback.Reports, Is.EqualTo(hits));
+            Assert.That(game.presentation.leftGlove.gameObject.activeSelf,Is.EqualTo(wideVisual));
             var restored = Pose(); restored.left = game.Opponent.Head; restored.right = game.Opponent.Head;
             Advance(0.3f, restored); Assert.That(game.Round.Hits, Is.Zero);
         }

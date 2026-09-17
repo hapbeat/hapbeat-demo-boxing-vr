@@ -94,6 +94,18 @@ MCUのCに `boxing` を設定し、切替元APKのallowlistにもboxingを追加
 
 ## 検証・ビルド
 
+### Wide Motion Mode（Quest単体のみ）
+
+Androidビルドでは `Boxing Wide Motion (visual only)` OpenXR Featureを有効にし、Body Trackingを任意機能として宣言します。対応ランタイムでは実行時にBody Tracking権限を要求します。拒否・非対応・初期化失敗時も通常のXR Handsとコントローラー入力は維持します。Editor／Air LinkではWMMを起動しません。
+
+Metaの `XR_META_hand_tracking_wide_motion_mode` を使う補助トラッカーを左右に作成します。通常のXR Handsが取得できる間はその実測姿勢が優先され、失われた場合だけWMMの手首姿勢を表示に使います。WMM1は推定の出所を区別できないため、補助トラッカーの値はすべて表示専用とし、120ms予測を重ねません。視野外の正確なパンチや強さを再現するものではありません。
+
+WMM表示中も実測追跡の喪失時はラウンドを一時停止し、パンチ履歴を破棄します（`WMM ESTIMATED - COMBAT PAUSED`）。再認識時は既存の安定待ちを通し、位置飛びによる命中を防ぎます。視野外でもラウンドを進める仕様にはしていません。
+
+参照: [Meta WMM仕様](https://developers.meta.com/horizon/documentation/native/android/native-wide-motion-mode/)、[独立した通常／WMMトラッカーの公式サンプル](https://github.com/meta-quest/Meta-OpenXR-SDK/blob/main/Samples/XrSamples/XrHandTrackingWideMotionMode/Src/xr_hand_helper.h)。APKのビルド成功と実機でのWMM動作確認は別です。
+
+### コマンド
+
 Unity Editorを閉じて、PowerShellから実行します。Unityの場所が異なる場合は `-UnityExe` を指定します。
 
 ```powershell
