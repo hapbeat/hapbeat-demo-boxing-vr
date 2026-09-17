@@ -14,7 +14,7 @@ namespace Hapbeat.Boxing
         public Image dwellBar;
         public bool IsOpen { get; private set; }
         public int Selection { get; private set; }
-        public bool UsesGaze => input.mode == BoxingInputMode.Hands;
+        public bool UsesGaze => input.ActiveMode == BoxingInputMode.Hands;
         private bool navigationReady = true;
         private float gazeTime, openTime;
         private int gazeSelection = -1;
@@ -110,7 +110,7 @@ namespace Hapbeat.Boxing
                 rows[i].text = (i == Selection ? ">  " : "   ") + labels[i];
                 rows[i].color = i == Selection ? new Color(0.25f, 0.95f, 1) : new Color(0.8f, 0.85f, 0.92f);
             }
-            hint.text = (UsesGaze ? "LOOK AT AN OPTION FOR 1.5s\nHANDS: OPEN BOTH FOR 1.2s TO PAUSE" :
+            hint.text = (UsesGaze ? "LOOK AT AN OPTION FOR 1.5s\nLEFT OPEN PALM TOWARD YOUR FACE: HOLD 0.8s FOR MENU" :
                 input.mode == BoxingInputMode.Desktop ? "ARROWS: SELECT   ENTER: CONFIRM\nESC: PAUSE   Q / E: PUNCH   SPACE: GUARD" :
                 "EITHER STICK: SELECT   A / X: CONFIRM\nMENU / B / Y: PAUSE") + "\nCLEAR YOUR PLAY AREA - DO NOT HIT REAL OBJECTS";
         }

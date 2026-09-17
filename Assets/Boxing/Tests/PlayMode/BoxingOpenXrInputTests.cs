@@ -82,6 +82,25 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(controls.Read().navigate, Is.LessThan(-0.6f));
         }
 
+        [Test] public void LateControllerCannotMixPoseWithPreviouslyActiveHandDevice()
+        {
+            InputSystem.RegisterLayout<HandInteractionProfile.HandInteraction>();
+            InputSystem.RegisterLayout<OculusTouchControllerProfile.OculusTouchController>();
+            var hand = InputSystem.AddDevice<HandInteractionProfile.HandInteraction>();
+            InputSystem.SetDeviceUsage(hand, new InternedString("LeftHand"));
+            using var controls = new BoxingXrControls();
+            Set(hand.devicePosition, new Vector3(1, 2, 3)); Set(hand.deviceRotation, Quaternion.Euler(0, 80, 0));
+            Set(hand.isTracked, 1); Set(hand.trackingState, 3);
+            InputSystem.Update();
+            Set(hand.isTracked, 0); Set(hand.trackingState, 0);
+            var controller = InputSystem.AddDevice<OculusTouchControllerProfile.OculusTouchController>();
+            InputSystem.SetDeviceUsage(controller, new InternedString("LeftHand"));
+            Set(controller.devicePosition, new Vector3(-0.2f, 1.2f, 0.3f)); Set(controller.deviceRotation, Quaternion.identity);
+            Set(controller.isTracked, 1); Set(controller.trackingState, 3); InputSystem.Update();
+            Assert.That(controls.Read().leftTracked, Is.True);
+            Assert.That(controls.Read().left.position, Is.EqualTo(new Vector3(-0.2f, 1.2f, 0.3f)), "All pose fields must come from the same physical controller, not stale hand controls.");
+        }
+
         [UnityTest]
         public IEnumerator FirstTrackedPoseAndRecenterUseSceneStartMarker()
         {
@@ -94,7 +113,7 @@ namespace Hapbeat.Boxing.Tests
             InputSystem.QueueStateEvent(head, new XRSimulatedHMDState { isTracked = true, trackingState = 3, centerEyePosition = new Vector3(0.8f, 1.65f, -0.6f), centerEyeRotation = Quaternion.Euler(0, 120, 0), deviceRotation = Quaternion.Euler(0, 120, 0) });
             InputSystem.Update(); yield return null; yield return null;
             Assert.That(Mathf.Abs(Mathf.DeltaAngle(game.input.headCamera.transform.eulerAngles.y, 0)), Is.LessThan(0.1f));
-            Assert.That(Vector3.Distance(Vector3.ProjectOnPlane(game.input.headCamera.transform.position, Vector3.up), new Vector3(0, 0, 0.4f)), Is.LessThan(0.001f));
+            Assert.That(Vector3.Distance(Vector3.ProjectOnPlane(game.input.headCamera.transform.position, Vector3.up), new Vector3(0, 0, 0.2f)), Is.LessThan(0.001f));
             Assert.That(game.input.startPoint, Is.Not.Null);
             game.input.startPoint.position = new Vector3(0.4f, 0.003f, -0.2f);
             game.input.startPoint.rotation = Quaternion.Euler(0, 35, 0);
@@ -111,7 +130,7 @@ namespace Hapbeat.Boxing.Tests
             InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
             yield return SceneManager.LoadSceneAsync("Boxing");
             var game = Object.FindAnyObjectByType<BoxingGame>();
-            Assert.That(game.input.mode, Is.EqualTo(BoxingInputMode.Controllers), "Authoritative scene must start in Controllers.");
+            game.UseControllers(); // Explicit controller mode must remain controller-only despite gaze or tracking delays.
             game.menu.Open();
             game.input.headCamera.transform.LookAt(game.menu.rows[2].transform.position);
             // No tracked device yet: same delay as waiting for Air Link controllers.

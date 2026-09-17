@@ -18,7 +18,8 @@ namespace Hapbeat.Boxing.Editor
         {
             var scene = EditorSceneManager.OpenScene(BoxingProject.ScenePath);
             var game = UnityEngine.Object.FindFirstObjectByType<BoxingGame>();
-            game.input.startPoint.position = new Vector3(0, 0.003f, 0.4f);
+            game.input.startPoint.position = new Vector3(0, 0.003f, 0.2f);
+            game.input.mode = BoxingInputMode.Hands;
             game.input.startPoint.rotation = Quaternion.identity;
             game.input.debugStickMovement = true;
             game.input.debugMoveSpeed = 0.45f;

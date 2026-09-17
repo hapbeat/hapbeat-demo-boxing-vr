@@ -60,7 +60,7 @@ namespace Hapbeat.Boxing
                 game.Round.Phase == BoxingPhase.Ready ? game.tuning.roundSeconds.ToString("0") + " SECOND ROUND" : Mathf.CeilToInt(game.Round.TimeLeft).ToString("00") + "s";
             scoreText.text = "SCORE " + game.Round.Score + "     HIT " + game.Round.Hits + "     BLOCK " + game.Round.Blocks + "     DODGE " + game.Round.Dodges;
             RenderHealth(game.Round);
-            statusText.text = game.input.mode + "  |  " + (game.feedback.CanSend ? "HAPBEAT " + (Hapbeat.HapbeatManager.Instance != null ? Hapbeat.HapbeatManager.Instance.AliveDeviceCount : 0) + " DEVICE(S)" : "HAPTICS OFF") +
+            statusText.text = game.input.ActiveMode + "  |  " + (game.feedback.CanSend ? "HAPBEAT " + (Hapbeat.HapbeatManager.Instance != null ? Hapbeat.HapbeatManager.Instance.AliveDeviceCount : 0) + " DEVICE(S)" : "HAPTICS OFF") +
                 "  |  " + (game.Round.Phase == BoxingPhase.Results ? (game.Round.PlayerHealth <= 0 ? "KO - OPPONENT WINS" : game.Round.EnemyHealth <= 0 ? "KO - YOU WIN" : "ROUND COMPLETE") : game.Paused ? game.PauseReason : game.tuning.impactMode.ToString());
             flashTime = Mathf.Max(0, flashTime - Time.unscaledDeltaTime);
             impactText.text = flashTime > 0 ? lastImpact : "";

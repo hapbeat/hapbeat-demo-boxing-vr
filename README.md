@@ -20,11 +20,13 @@ Unity XRI 3.3.1の標準シミュレーターPrefab・入力設定を使用し�
 2. Meta Horizon LinkでQuestをAir Link接続します。WindowsのOpenXR runtimeはMeta Horizon Linkを選択してください。
 3. `Hapbeat Boxing > Editor Input > Air Link` を選び、Unityのactive build targetをWindowsにしてPlayを押します。起動時メニューの `START 90s ROUND` を選択します。
 
-左右Touchコントローラーが既定です。A/Xで決定、左右どちらのスティックでも上下で選択、Menu/B/Yでメニューを開閉します。Controllersモードでは起動待ち・追跡喪失中も視線で選択や入力モードを変更しません。明示的にHandsモードを選んだ場合だけ、選択肢を1.5秒見つめて操作できます。起動時のHMD位置・向きをリング上の開始位置に合わせます。必要ならメニューから `RECENTER` を選択します。
+手追跡（Hands）が既定です。起動時からメニューを表示し、選択肢を1.5秒見つめて決定できます。コントローラーは不要です。起動時のHMD位置・向きをリング上の開始位置に合わせます。必要ならメニューから `RECENTER` を選択します。
+
+手が取れない場合は、追跡された左右Touchを持ってA/X・Menu/B/Yまたはスティックを操作すると一時的にコントローラー入力を使います。A/Xで決定、左右どちらのスティックでも上下で選択、Menu/B/Yでメニューを開閉します。両手の手追跡が復帰するとHandsへ戻ります。INPUTを明示的にControllersへ変更した場合は、追跡喪失中も視線操作やHandsへの自動切替はしません。
 
 周囲の物を片付け、現実の物体や人を殴らない範囲で試してください。コントローラーのストラップを使い、強く振り切らず弱いパンチから確認します。移動距離・速度の応答は力の測定ではなくゲーム用の演出です。
 
-`INPUT: Hands` にするとXR Handsの手関節からグローブを動かします。握った手でパンチし、両手を1.2秒開くとメニューが出ます。Meta Horizon Linkの手追跡利用には対応する開発機能を有効にする必要があります。手の交差・遮蔽で追跡が途切れる場合はControllersへ切り替えてください。追跡不能時・切替直後には攻撃判定を停止し、復帰移動をパンチとして扱いません。
+XR Handsの手関節からグローブを動かします。握った手でパンチし、左手を開いて顔の前で掌を自分に向け、0.8秒保持するとメニューを開閉します。右手が隠れていてもメニューを呼び出せます。選択は1.5秒の視線保持です。Meta Horizon Linkの手追跡利用には対応する開発機能を有効にする必要があります。追跡不能時・切替直後には攻撃判定を停止し、復帰移動をパンチとして扱いません。
 
 Meta公式: [Link開発設定](https://developers.meta.com/horizon/documentation/unity/unity-link/)、[手追跡](https://developers.meta.com/horizon/documentation/unity/unity-handtracking-overview/)。
 
@@ -32,7 +34,7 @@ Meta公式: [Link開発設定](https://developers.meta.com/horizon/documentation
 
 ### 開始位置・デバッグ移動
 
-開始マーカーをリング前方へ0.4m移動しました。相手の頭中心まで基準約0.68m、グローブ中心で接触するまで約0.42m（相手の前後動で約±0.10m）です。開始時とRECENTER時にはマーカーのXZ位置・向きに頭を合わせ、追跡した身長は維持します。Sceneの`Start position`で調整できます。
+開始マーカーはリング前方へ0.2mです。前の設定から20cm離し、相手の頭中心まで基準約0.88m、グローブ中心で接触するまで約0.62m（相手の前後動で約±0.10m）です。開始時とRECENTER時にはマーカーのXZ位置・向きに頭を合わせ、追跡した身長は維持します。Sceneの`Start position`で調整できます。
 
 Controllersモードでは、メニューを閉じた追跡安定中に左スティックでデバッグ移動できます。マーカーの向きを基準に0.45m/s、開始点から0.6m以内、相手から0.5m以上を保ちます。メニュー中は従来どおり選択だけです。移動中は攻撃を無効化します。展示時は`BoxingInput.debugStickMovement`をOFFにしてください。RECENTERでデバッグ移動分も戻ります。
 
@@ -51,9 +53,9 @@ Controllersモードでは、メニューを閉じた追跡安定中に左ステ
 
 `BoxingGame.RecenterPlayer()`、`UseHandTracking()`、`UseControllers()`、`StartRound()`が外部操作用のローカル呼び出し口です。Unityのメインスレッドで呼びます。M5スイッチャーの現行契約はデモ切替のみなので、リセンター等のネットワーク命令は**未接続**です。次の通信拡張はcontracts-firstで追加し、この呼び出し口へ接続します。
 
-Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です。Controllersからの自動切替はしません。現在はメニューのINPUTをHandsへ切り替えます。Linkで`HAND SUBSYSTEM UNAVAILABLE`が出る場合は、Meta Horizon Linkの開発ランタイム機能とQuestの手追跡設定を確認してください。`SHOW BOTH HANDS`はサブシステムは動いているものの両手の必要な関節を取得できない状態です。実機Handsの動作は自動入力テストでは保証しません。
+Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です。起動後に手のサブシステムが使えるようになった場合も再取得します。Linkで`HAND SUBSYSTEM UNAVAILABLE`が出る場合は、Meta Horizon Linkの開発ランタイム機能とQuestの手追跡設定を確認してください。`SHOW BOTH HANDS`はサブシステムは動いているものの両手の必要な関節を取得できない状態です。実機Handsの動作は自動入力テストでは保証しません。
 
-- 開始位置・正面はシーンの `Arena - original procedural assets / Start position` で調整できます。PositionのX/ZとRotationのYを使い、既定の `(0, 0.003, 0)`・Y回転`0`は相手に正対します。高さはHMDの追跡値を維持します。`XR Origin (Boxing)` のBoxingInputにあるStart Pointが参照先です。Main Cameraを直接回転しても追跡値で上書きされます。初回追跡時・ラウンド開始時・RECENTER時にこの開始位置へ合わせます。
+- 開始位置・正面はシーンの `Arena - original procedural assets / Start position` で調整できます。PositionのX/ZとRotationのYを使い、既定の `(0, 0.003, 0.2)`・Y回転`0`は相手に正対します。高さはHMDの追跡値を維持します。`XR Origin (Boxing)` のBoxingInputにあるStart Pointが参照先です。Main Cameraを直接回転しても追跡値で上書きされます。初回追跡時・ラウンド開始時・RECENTER時にこの開始位置へ合わせます。
 - Air Link中はPCのGameビューではなくOpenXRセッションのフォーカスを使って停止判定します。`HEADSET PAUSED - OPENXR NOT FOCUSED` はQuestのシステム画面等でVR側のフォーカスがない状態、`APPLICATION PAUSED` はアプリ中断、`GAME WINDOW NOT FOCUSED` はネイティブXRがないDesktop／Simulator側のウィンドウ非アクティブを表します。実際の追跡喪失・安全範囲逸脱による停止は維持します。
 - プレイヤーの判定は左右グローブと頭。プレイヤーの腕は描画・判定しません。相手には見た目用の腕・脚があります。
 - 相手はジャブ、クロス、フックを繰り返し、小さく前後左右へ動きます。狙いは予備動作開始時に固定し、パンチ中は頭を追尾しません。
@@ -94,7 +96,7 @@ Unity Editorを閉じて、PowerShellから実行します。Unityの場所が�
 
 `Logs/` にテスト結果・実行ログ・画像が出ます。Smokeは実際のPlay Modeで90秒ラウンド、パンチ、ガード、回避、被弾、メニュー停止を再生し、3部位・弱打／強打・ゲイン変化・触覚送信ゼロ・エラーゼロを検証します。`Builds/Windows/HapbeatBoxing.exe`、`Builds/HapbeatBoxing.apk` が生成先です。
 
-InputTestsはUnity公式InputTestFixtureを使うPlay Modeの入力テストです。XRIシミュレーターに加え、OpenXRのOculus Touch／Touch Plusレイアウトを検査します。実シーンで起動時の追跡待ちにHandsへ自動切替されないこと、左右スティック選択、Aで開始、グローブ追従、カウントダウン進行を確認します。InputTestsはEditor InputをSimulatorにしてネイティブXRを無効にした状態で実行し、実機確認時はAir Linkへ戻してください。SimulatorSmokeは標準Prefabへキーボードイベントを渡し、頭・左右の個別移動、ボタン、追跡喪失／復帰を実際のゲーム入力で確認します。全自動検証は無音・実機送信なしです。ビルドでは詳細レポートからEditorシミュレーター資産の混入も検査します。
+InputTestsはUnity公式InputTestFixtureを使うPlay Modeの入力テストです。XRIシミュレーターに加え、OpenXRのOculus Touch／Touch Plusレイアウトを検査します。実シーンで明示的なControllersモードの維持、左右スティック選択、Aで開始、グローブ追従、カウントダウン進行を確認します。テスト用XR Handsプロバイダーで、コントローラーなし起動、遅れて届く手追跡、視線で開始、追跡復帰、左手だけでメニューを開く操作も検査します。Hand Interactionデバイスと遅れて認識したTouchの姿勢が混ざらない回帰テストを含みます。InputTestsはEditor InputをSimulatorにしてネイティブXRを無効にした状態で実行し、実機確認時はAir Linkへ戻してください。SimulatorSmokeは標準Prefabへキーボードイベントを渡し、頭・左右の個別移動、ボタン、追跡喪失／復帰を実際のゲーム入力で確認します。全自動検証は無音・実機送信なしです。ビルドでは詳細レポートからEditorシミュレーター資産の混入も検査します。
 
 各コマンドは終了コードだけでなく起動・インポートログも検査します。Unityは設定ファイルの構文エラー後もテストやScene検証を続ける場合があるため、`BOXING_SCENE_VALID` 単独では成功と扱いません。任意の起動ログは `./tools/assert-unity-log.ps1 -LogPath ./Logs/AirLinkEditor.log` で確認できます。Unityのシリアライズ済みファイルを一括で末尾空白除去しないでください。空のレイヤー名は明示的な空文字列として保持します。
 

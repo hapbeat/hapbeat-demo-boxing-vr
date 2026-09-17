@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
+using UnityEngine.InputSystem.XR;
 using UnityEngine.XR;
 
 namespace Hapbeat.Boxing
@@ -55,23 +57,32 @@ namespace Hapbeat.Boxing
 
         private sealed class TrackedPose
         {
-            private readonly InputAction position, rotation, tracked, state;
+            private readonly InputAction position, rotation;
             public TrackedPose(InputActionMap map, string name, string device, string prefix)
             {
                 position = map.AddAction(name + " Position", InputActionType.Value, device + "/" + prefix + "Position");
                 rotation = map.AddAction(name + " Rotation", InputActionType.Value, device + "/" + prefix + "Rotation");
-                tracked = map.AddAction(name + " Tracked", InputActionType.Button, device + "/isTracked");
-                // Tracking is persistent state, not a press edge. Air Link may already
-                // be tracking when this map starts (or is re-enabled with the scene).
-                tracked.wantsInitialStateCheck = true;
-                state = map.AddAction(name + " State", InputActionType.Value, device + "/trackingState");
             }
             public bool Read(out Pose pose)
             {
-                pose = new Pose(position.ReadValue<Vector3>(), rotation.ReadValue<Quaternion>());
+                pose = default;
                 const int required = (int)(InputTrackingState.Position | InputTrackingState.Rotation);
-                return tracked.IsPressed() && (state.ReadValue<int>() & required) == required &&
-                    position.controls.Count > 0 && rotation.controls.Count > 0;
+                // Value actions independently pick the strongest control. Hand Interaction
+                // also derives from XRController, so never combine their winning values.
+                foreach (var control in position.controls)
+                {
+                    var device = control.device;
+                    if (device is XRController && device.TryGetChildControl<Vector2Control>("primary2DAxis") == null) continue;
+                    var isTracked = device.TryGetChildControl<ButtonControl>("isTracked");
+                    var trackingState = device.TryGetChildControl<IntegerControl>("trackingState");
+                    if (isTracked == null || !isTracked.isPressed || trackingState == null || (trackingState.ReadValue() & required) != required) continue;
+                    foreach (var rotationControl in rotation.controls)
+                    {
+                        if (rotationControl.device != device || !(rotationControl is QuaternionControl q) || !(control is Vector3Control p)) continue;
+                        pose = new Pose(p.ReadValue(), q.ReadValue()); return true;
+                    }
+                }
+                return false;
             }
         }
     }

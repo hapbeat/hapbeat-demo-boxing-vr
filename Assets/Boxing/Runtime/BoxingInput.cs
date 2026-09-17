@@ -19,7 +19,9 @@ namespace Hapbeat.Boxing
         public Vector3 StartPosition => startPoint != null ? new Vector3(startPoint.position.x, 0, startPoint.position.z) : Vector3.zero;
         public float StartYaw => startPoint != null ? startPoint.eulerAngles.y : 0;
         public event System.Action Recentered;
-        public BoxingInputMode mode = BoxingInputMode.Controllers;
+        public BoxingInputMode mode = BoxingInputMode.Hands;
+        public BoxingInputMode ActiveMode => mode == BoxingInputMode.Hands && controllerFallback ? BoxingInputMode.Controllers : mode;
+        private bool controllerFallback;
         [Header("Debug locomotion (disable for exhibition)")]
         public bool debugStickMovement = true;
         [Min(0)] public float debugMoveSpeed = 0.45f;
@@ -37,8 +39,9 @@ namespace Hapbeat.Boxing
         private XRHandSubsystem hands;
         private readonly List<XRHandSubsystem> handSystems = new List<XRHandSubsystem>();
         private readonly List<XRInputSubsystem> inputSystems = new List<XRInputSubsystem>();
-        private bool oldMenu, oldConfirm, handMenuLatched, aligned;
-        private float openHandsTime, leftPunch, rightPunch;
+        private bool oldMenu, oldConfirm, aligned;
+        private float leftPunch, rightPunch;
+        private readonly BoxingHandMenuGesture handMenu = new BoxingHandMenuGesture();
         private float desktopYaw, desktopPitch;
         private BoxingXrControls xrControls;
         private BoxingGame game;
@@ -50,7 +53,7 @@ namespace Hapbeat.Boxing
         public void ClearTestPose() => HasOverride = false;
         public void SelectMode(BoxingInputMode next)
         {
-            mode = next; HasTracking = false; openHandsTime = 0; handMenuLatched = false;
+            mode = next; HasTracking = false; controllerFallback = false; handMenu.Reset();
         }
         public void Recenter()
         {
@@ -69,6 +72,7 @@ namespace Hapbeat.Boxing
             if (headDriver != null) headDriver.enabled = mode != BoxingInputMode.Desktop && !HasOverride;
             if (HasOverride) { Current = testPose; HasTracking = testPose.valid; return; }
             BoxerPose frame = new BoxerPose { timestamp = Time.realtimeSinceStartupAsDouble };
+            var previousMode = ActiveMode;
             if (mode == BoxingInputMode.Desktop) ReadDesktop(ref frame);
             else
             {
@@ -82,7 +86,21 @@ namespace Hapbeat.Boxing
                     Recenter();
                 }
                 frame.head = headCamera.transform.position; frame.headRotation = headCamera.transform.rotation;
-                if (mode == BoxingInputMode.Controllers)
+                controllerFallback = false;
+                if (mode == BoxingInputMode.Hands)
+                {
+                    FindHands();
+                    bool l = ReadHand(true, out frame.left, out frame.leftRotation, out frame.leftClosed);
+                    bool r = ReadHand(false, out frame.right, out frame.rightRotation, out frame.rightClosed);
+                    frame.valid = headValid && l && r;
+                    TrackingStatus = !headValid ? "HMD NOT TRACKED" : hands == null || !hands.running ? "HAND SUBSYSTEM UNAVAILABLE - CHECK LINK DEVELOPER FEATURES" :
+                        !l || !r ? "SHOW BOTH HANDS" : "HANDS READY";
+                    bool controllerIntent = xr.confirm || xr.menu || Mathf.Abs(xr.navigate) > 0.6f;
+                    controllerFallback = !frame.valid && headValid && xr.leftTracked && xr.rightTracked &&
+                        (previousMode == BoxingInputMode.Controllers || controllerIntent);
+                    if (!controllerFallback) MenuPressed = ReadHandMenu(headValid, frame.head);
+                }
+                if (ActiveMode == BoxingInputMode.Controllers)
                 {
                     bool l = xr.leftTracked, r = xr.rightTracked;
                     var lp = xr.left; var rp = xr.right;
@@ -103,16 +121,7 @@ namespace Hapbeat.Boxing
                         }
                     }
                 }
-                else
-                {
-                    FindHands();
-                    bool l = ReadHand(true, out frame.left, out frame.leftRotation, out frame.leftClosed);
-                    bool r = ReadHand(false, out frame.right, out frame.rightRotation, out frame.rightClosed);
-                    frame.valid = headValid && l && r;
-                    TrackingStatus = !headValid ? "HMD NOT TRACKED" : hands == null || !hands.running ? "HAND SUBSYSTEM UNAVAILABLE - CHECK LINK DEVELOPER FEATURES" :
-                        !l || !r ? "SHOW BOTH HANDS" : "HANDS READY";
-                }
-                MenuPressed = xr.menu && !oldMenu; ConfirmPressed = xr.confirm && !oldConfirm;
+                MenuPressed |= xr.menu && !oldMenu; ConfirmPressed = xr.confirm && !oldConfirm;
                 oldMenu = xr.menu; oldConfirm = xr.confirm; Navigate = xr.navigate;
             }
             if (Keyboard.current != null)
@@ -122,18 +131,12 @@ namespace Hapbeat.Boxing
                 if (Keyboard.current.upArrowKey.wasPressedThisFrame) Navigate = 1;
                 if (Keyboard.current.downArrowKey.wasPressedThisFrame) Navigate = -1;
             }
-            if (mode == BoxingInputMode.Hands)
-            {
-                bool open = frame.valid && !frame.leftClosed && !frame.rightClosed;
-                openHandsTime = open ? openHandsTime + Time.unscaledDeltaTime : 0;
-                if (!open) handMenuLatched = false;
-                if (openHandsTime > 1.2f && !handMenuLatched) { MenuPressed = true; handMenuLatched = true; }
-            }
+            if (previousMode != ActiveMode && game != null) { game.ResetHistory(); game.feedback.StopImpacts(); handMenu.Reset(); }
             Current = frame; HasTracking = frame.valid;
         }
         public Vector3 ApplyDebugMove(Vector2 stick, float dt, Vector3 opponentPosition)
         {
-            if (!debugStickMovement || mode != BoxingInputMode.Controllers || origin == null || headCamera == null ||
+            if (!debugStickMovement || ActiveMode != BoxingInputMode.Controllers || origin == null || headCamera == null ||
                 dt <= 0 || dt > 0.1f || stick.magnitude < 0.2f) return Vector3.zero;
             Vector3 head = Vector3.ProjectOnPlane(headCamera.transform.position, Vector3.up);
             Vector3 delta = Quaternion.Euler(0, StartYaw, 0) * new Vector3(stick.x, 0, stick.y);
@@ -149,6 +152,21 @@ namespace Hapbeat.Boxing
             if (hands != null && hands.running) return;
             SubsystemManager.GetSubsystems(handSystems);
             hands = handSystems.Find(s => s.running);
+        }
+        private bool ReadHandMenu(bool headValid, Vector3 head)
+        {
+            if (!headValid || hands == null || !hands.running || !hands.leftHand.isTracked ||
+                !hands.leftHand.GetJoint(XRHandJointID.Palm).TryGetPose(out var palm) ||
+                !hands.leftHand.GetJoint(XRHandJointID.Wrist).TryGetPose(out var wrist) ||
+                !hands.leftHand.GetJoint(XRHandJointID.MiddleProximal).TryGetPose(out var knuckle) ||
+                !hands.leftHand.GetJoint(XRHandJointID.MiddleTip).TryGetPose(out var middle) ||
+                !hands.leftHand.GetJoint(XRHandJointID.IndexTip).TryGetPose(out var index))
+            { handMenu.Reset(); return false; }
+            float palmLength = Vector3.Distance(knuckle.position, wrist.position);
+            bool open = Vector3.Distance(middle.position, palm.position) > palmLength * 1.15f &&
+                Vector3.Distance(index.position, palm.position) > palmLength;
+            var space = headCamera.transform.parent;
+            return handMenu.Update(true, open, space.TransformPoint(palm.position), space.rotation * palm.rotation * Vector3.down, head, Time.unscaledDeltaTime);
         }
         private bool ReadHand(bool left, out Vector3 position, out Quaternion rotation, out bool closed)
         {

@@ -75,7 +75,7 @@ namespace Hapbeat.Boxing.Editor
                 Box("Ceiling strip", arena, new Vector3(i * 2.5f, 4.5f, 0), new Vector3(0.12f, 0.06f, 10), white);
             }
             Box("Rear wall", arena, new Vector3(0, 2, 7.2f), new Vector3(20, 4, 0.2f), navy);
-            var floorMark = Box("Start position", arena, new Vector3(0, 0.003f, 0.4f), new Vector3(0.5f, 0.006f, 0.05f), gold);
+            var floorMark = Box("Start position", arena, new Vector3(0, 0.003f, 0.2f), new Vector3(0.5f, 0.006f, 0.05f), gold);
             var rig = new GameObject("XR Origin (Boxing)");
             var origin = rig.AddComponent<XROrigin>();
             var offset = new GameObject("Camera Offset"); offset.transform.SetParent(rig.transform, false);

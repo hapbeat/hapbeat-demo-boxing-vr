@@ -76,10 +76,10 @@ namespace Hapbeat.Boxing.Tests
                 input.headCamera.transform.position = new Vector3(0.3f, 1.65f, -0.4f);
                 input.headCamera.transform.rotation = Quaternion.Euler(0, 65, 0);
                 game.RecenterPlayer();
-                Assert.That(input.headCamera.transform.position.z, Is.EqualTo(0.4f).Within(0.001f));
+                Assert.That(input.headCamera.transform.position.z, Is.EqualTo(0.2f).Within(0.001f));
                 Assert.That(Mathf.DeltaAngle(input.headCamera.transform.eulerAngles.y, 0), Is.EqualTo(0).Within(0.01f));
                 float reach = game.Opponent.Head.z - input.StartPosition.z - game.tuning.enemyHeadRadius - game.tuning.gloveRadius;
-                Assert.That(reach, Is.InRange(0.35f, 0.5f));
+                Assert.That(reach, Is.InRange(0.55f, 0.7f));
                 Vector3 before = input.headCamera.transform.position;
                 Assert.That(input.ApplyDebugMove(Vector2.right, 0.1f, game.Opponent.Root).x, Is.GreaterThan(0));
                 Assert.That(input.headCamera.transform.position.x, Is.GreaterThan(before.x));
@@ -87,6 +87,12 @@ namespace Hapbeat.Boxing.Tests
                 input.debugStickMovement = false;
                 Assert.That(input.ApplyDebugMove(Vector2.up, 0.1f, game.Opponent.Root), Is.EqualTo(Vector3.zero));
             }
+            finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene); }
+        }
+        [Test] public void HandsAreTheAuthoredDefaultWithoutNeedingAControllerToSelectThem()
+        {
+            EditorSceneManager.OpenScene(Editor.BoxingProject.ScenePath);
+            try { Assert.That(Object.FindFirstObjectByType<BoxingInput>().mode, Is.EqualTo(BoxingInputMode.Hands)); }
             finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene); }
         }
     }
