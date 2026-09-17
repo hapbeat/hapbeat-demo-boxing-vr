@@ -64,6 +64,14 @@ Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です�
 - `IMPACT: WeakHard` はプレイヤーの距離強度0.65、敵は接触速度2.5m/sを境に波形を変更します。`Continuous` は同じ波形のゲインだけを連続変更します。接触速度0.25m/s未満は無視しますが、それ以上のプレイヤーの強度は速度ではなく距離で決まります。敵は6m/sで最大ゲインです。
 - `Assets/Boxing/Haptics/BoxingEventMap.asset` の12エントリー（左右手首／頭 × グローブ接触／身体接触 × 弱／強）で波形、絶対ゲイン、送信先を編集できます。攻撃側・防御側とも接触材質で音と触覚を選びます。頭への命中も身体接触に含みます。
 
+## 相手のリグ付きモデル
+
+相手はBlenderで制作した顔なしローポリボクサーです。`Assets/Boxing/Art/Boxer.fbx` と20本の骨を使用し、元データは `art-source/boxing-opponent/` にあります。`BoxingOpponentAvatar` が既存の拳・頭の判定位置へ骨格を合わせます。プレイヤー側のグローブ、衝突半径、攻撃の時刻・ダメージは変更していません。
+
+頭への命中は上体と頭を反らし、胴への命中は少し前屈して肘を寄せます。ガードはこの被弾リアクションを起こしません。メニュー／停止中はリアクションの時間も止まり、ラウンド再開時にリセットします。FBXに同梱した見本クリップは実行せず、ゲームの攻撃・ガードに同期した逆運動学（IK）で動かします。従来の攻撃距離が骨格の腕長を超える場合は腕を伸長して拳を判定位置に合わせます。実機での伸び方・遮蔽の見え方は調整対象です。
+
+`Hapbeat Boxing > Install Blender Opponent` は旧相手を差し替える初回操作です。通常は保存済みのBoxingシーンをそのまま開いてください。`./tools/run-unity.ps1 -Task AvatarPreview` は無音の姿勢画像を生成します。
+
 ## Hapbeat
 
 既定の送信先はGloveBallと同じ `*/pos_l_wrist`、`*/pos_r_wrist`、`*/pos_neck` です。デバイスのposition設定を合わせ、PC（Air Link時）またはQuest（APK時）と同じ到達可能なLANに接続してください。1台で試す場合はEventMapのtargetをそのデバイスのpositionに合わせます。

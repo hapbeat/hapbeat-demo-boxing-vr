@@ -94,28 +94,7 @@ namespace Hapbeat.Boxing.Editor
             var view = host.AddComponent<BoxingPresentation>(); game.presentation = view;
             view.leftGlove = Glove("Player Left", null, cyan, true);
             view.rightGlove = Glove("Player Right", null, red, false);
-            var enemy = new GameObject("Opponent - sparring partner").transform;
-            view.enemyHead = Sphere("Head", enemy, new Vector3(0, 1.65f, 1.08f), new Vector3(0.31f, 0.38f, 0.31f), skin);
-            // Face points toward the player (-Z), with headguard and inset face details.
-            Sphere("Headguard", view.enemyHead, new Vector3(0, 0.07f, 0.01f), new Vector3(0.34f, 0.15f, 0.32f), red, true);
-            for (int s = -1; s <= 1; s += 2)
-            {
-                Sphere("Eye", view.enemyHead, new Vector3(s * 0.060f, 0.014f, -0.145f), new Vector3(0.044f, 0.024f, 0.018f), dark, true);
-                Sphere("Cheek guard", view.enemyHead, new Vector3(s * 0.139f, -0.03f, -0.02f), new Vector3(0.07f, 0.17f, 0.25f), red, true);
-            }
-            view.enemyTorso = Sphere("Torso", enemy, new Vector3(0, 1.22f, 1.08f), new Vector3(0.52f, 0.66f, 0.30f), skin);
-            view.enemyHip = Sphere("Shorts", enemy, new Vector3(0, 0.86f, 1.08f), new Vector3(0.43f, 0.29f, 0.30f), navy);
-            Sphere("Waistband", view.enemyHip, new Vector3(0, 0.08f, 0), new Vector3(0.44f, 0.065f, 0.30f), white, true);
-            view.enemyLeftGlove = Glove("Enemy Left Glove", enemy, red, true);
-            view.enemyRightGlove = Glove("Enemy Right Glove", enemy, red, false);
-            view.enemyArms = Enumerable.Range(0, 4).Select(i => Primitive("Arm " + i, PrimitiveType.Capsule, enemy, skin)).ToArray();
-            view.enemyLegs = new Transform[6];
-            for (int i = 0; i < 2; i++)
-            {
-                view.enemyLegs[i * 3] = Primitive("Thigh", PrimitiveType.Capsule, enemy, skin);
-                view.enemyLegs[i * 3 + 1] = Primitive("Shin", PrimitiveType.Capsule, enemy, skin);
-                view.enemyLegs[i * 3 + 2] = Sphere("Boot", enemy, Vector3.zero, new Vector3(0.15f, 0.16f, 0.29f), dark);
-            }
+            BoxingAvatarSetup.Attach(view);
             var hud = Canvas("Ring scoreboard", new Vector3(0, 2.7f, 3.05f), Vector3.zero, new Vector2(1200, 260), 0.003f);
             view.timerText = Text("Timer", hud, new Vector2(0, 65), new Vector2(1100, 85), 60, "90s");
             view.scoreText = Text("Score", hud, new Vector2(0, -8), new Vector2(1150, 45), 27, "SCORE 0");
@@ -283,6 +262,8 @@ namespace Hapbeat.Boxing.Editor
             if (game == null || game.input == null || game.tuning == null || game.feedback == null || game.menu == null) throw new InvalidOperationException("Incomplete boxing scene");
             if (game.input.headDriver == null || game.input.headDriver.GetComponent<Camera>() != game.input.headCamera) throw new InvalidOperationException("Head tracked pose driver missing");
             if (game.input.startPoint == null) throw new InvalidOperationException("Scene start position marker missing");
+            if (game.presentation.enemyAvatar == null || game.presentation.enemyAvatar.skin == null || game.presentation.enemyAvatar.bones.Length != 20)
+                throw new InvalidOperationException("Rigged boxing opponent missing");
             foreach (var root in scene.GetRootGameObjects())
             foreach (var transform in root.GetComponentsInChildren<Transform>(true))
                 if (GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(transform.gameObject) != 0) throw new InvalidOperationException("Missing script: " + transform.name);

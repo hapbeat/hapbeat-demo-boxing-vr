@@ -71,6 +71,7 @@ namespace Hapbeat.Boxing
         public void UseControllers() { input.SelectMode(BoxingInputMode.Controllers); ResetHistory(); }
         public void StartRound()
         {
+            if (presentation != null && presentation.enemyAvatar != null) presentation.enemyAvatar.ResetReaction();
             if (input.HasTracking && !input.HasOverride) input.Recenter();
             Round.Start(tuning.roundSeconds, tuning.maximumHealth); Opponent.Reset(input.Current.head.y > 0.5f ? input.Current.head.y : 1.65f);
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); menu.Close();
@@ -179,15 +180,16 @@ namespace Hapbeat.Boxing
             float earliest = float.PositiveInfinity;
             Vector3 targetFrom = default, targetTo = default;
             var surface = ImpactSurface.Body;
-            void Candidate(Vector3 a, Vector3 b, float radius, ImpactSurface material)
+            bool hitHead = false;
+            void Candidate(Vector3 a, Vector3 b, float radius, ImpactSurface material, bool head = false)
             {
                 if (BoxingCollision.Sweep(from, to, tuning.gloveRadius, a, b, radius, out float t) && t < earliest)
-                { earliest = t; targetFrom = a; targetTo = b; surface = material; }
+                { earliest = t; targetFrom = a; targetTo = b; surface = material; hitHead = head; }
             }
             // Earliest surface wins; a glove interception cannot also damage the body behind it.
             Candidate(oldEnemyLeft, Opponent.Left, tuning.gloveRadius, ImpactSurface.Glove);
             Candidate(oldEnemyRight, Opponent.Right, tuning.gloveRadius, ImpactSurface.Glove);
-            Candidate(oldEnemyHead, Opponent.Head, tuning.enemyHeadRadius, ImpactSurface.Body);
+            Candidate(oldEnemyHead, Opponent.Head, tuning.enemyHeadRadius, ImpactSurface.Body, true);
             Candidate(oldEnemyBody, Opponent.Body, tuning.enemyBodyRadius, ImpactSurface.Body);
             bool hit = !float.IsPositiveInfinity(earliest);
             bool overlap = TouchingEnemy(to);
@@ -202,7 +204,11 @@ namespace Hapbeat.Boxing
             Vector3 headAtContact = Vector3.Lerp(previous.head, sampledHead, earliest);
             float strength = (side == ImpactZone.LeftGlove ? leftPunch : rightPunch).Consume(point - headAtContact, tuning);
             var impact = new BoxingImpact(side, speed, point, tuning, surface, strength);
-            if (surface == ImpactSurface.Body) Opponent.React(impact.gain);
+            if (surface == ImpactSurface.Body)
+            {
+                Opponent.React(impact.gain);
+                if (presentation != null && presentation.enemyAvatar != null) presentation.enemyAvatar.React(!hitHead, impact.gain);
+            }
             Report(impact);
         }
         private bool TouchingEnemy(Vector3 position) => Vector3.Distance(position, Opponent.Head) <= tuning.gloveRadius + tuning.enemyHeadRadius + 0.03f ||

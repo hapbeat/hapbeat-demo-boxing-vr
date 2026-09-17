@@ -5,7 +5,7 @@ A faceless boxer with red gloves, navy boxing shorts, chalk trim and dark boxing
 ## Deliverables
 
 - `boxer-codex.blend`: editable mesh, rig, two pose/animation examples and a studio presentation setup. Opens at the guard pose.
-- `boxer-codex.fbx`: only the skinned character and skeleton, with the two actions. No studio floor, camera or lights. Not yet imported or integrated into the Unity game.
+- `boxer-codex.fbx`: only the skinned character and skeleton, with the two actions. No studio floor, camera or lights. The Unity game uses a copy at `unity/boxing-vr/Assets/Boxing/Art/Boxer.fbx`.
 - `preview-hero.png`, `preview-front.png`, `preview-side.png`: rendered guard pose.
 - `preview-hit.png`: frame 7 of the recoil example.
 - `validation.json`, `round-trip-validation.json`: generated checks, including FBX reimport.
@@ -18,7 +18,7 @@ All vertices have normalized bone weights. The torso and each arm/leg have conne
 
 `Guard_Pose` is a static 30-frame guard sample. `Hit_Recoil` is a short 30fps example: upper body and head recoil around frame 7, then return by frame 24. Neither is a complete combat animation set. No inverse-kinematics controls, fingers, face rig, walking, root motion or Humanoid Avatar mapping are supplied. Large limb rotations may require weight/garment refinement; the provided guard and recoil are the reviewed poses.
 
-A rig is not essential for a whole-object tilt on impact. It is useful for independently bending the torso, neck and arms without moving the feet; this example demonstrates that. The existing Unity opponent logic is unchanged. Integration should map the mesh to the existing logical attack/guard transforms rather than letting a new visual model silently change hit volumes.
+A rig is not essential for a whole-object tilt on impact. It is useful for independently bending the torso, neck and arms without moving the feet; this example demonstrates that. Unity's `BoxingOpponentAvatar` drives these bones from the existing logical attack/guard targets and adds separate head/body hit reactions. The imported Animator is disabled so the example clips do not compete with runtime inverse kinematics. Hit volumes remain unchanged. If the logical strike exceeds anatomical arm length, the visual chain stretches to maintain contact alignment.
 
 ## Rebuild / verify
 

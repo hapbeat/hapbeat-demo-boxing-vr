@@ -6,8 +6,7 @@ namespace Hapbeat.Boxing
     public sealed class BoxingPresentation : MonoBehaviour
     {
         public Transform leftGlove, rightGlove;
-        public Transform enemyHead, enemyTorso, enemyHip, enemyLeftGlove, enemyRightGlove;
-        public Transform[] enemyArms, enemyLegs;
+        public BoxingOpponentAvatar enemyAvatar;
         public Text timerText, scoreText, cueText, statusText, impactText;
         public Transform hitBurst;
         public Image PlayerHealthBar { get; private set; }
@@ -32,30 +31,13 @@ namespace Hapbeat.Boxing
             bool menuOpen = game.menu != null && game.menu.IsOpen;
             timerText.transform.parent.gameObject.SetActive(!menuOpen);
             leftGlove.gameObject.SetActive(pose.valid && !menuOpen); rightGlove.gameObject.SetActive(pose.valid && !menuOpen);
-            enemyHead.parent.gameObject.SetActive(!menuOpen);
+            enemyAvatar.gameObject.SetActive(!menuOpen);
             if (pose.valid)
             {
                 leftGlove.SetPositionAndRotation(pose.left, pose.leftRotation);
                 rightGlove.SetPositionAndRotation(pose.right, pose.rightRotation);
             }
-            var enemy = game.Opponent;
-            enemyHead.position = enemy.Head; enemyTorso.position = enemy.Body;
-            enemyHip.position = enemy.Root + Vector3.up * (enemy.Head.y - 0.79f);
-            var guardRotation = Quaternion.Euler(35 * enemy.GuardWeight, 0, 0);
-            enemyLeftGlove.SetPositionAndRotation(enemy.Left, Quaternion.LookRotation((pose.head - enemy.Left).normalized) * guardRotation);
-            enemyRightGlove.SetPositionAndRotation(enemy.Right, Quaternion.LookRotation((pose.head - enemy.Right).normalized) * guardRotation);
-            DrawArm(enemyArms[0], enemyArms[1], enemy.Body + new Vector3(-0.23f, 0.19f, 0), enemy.Left, -1);
-            DrawArm(enemyArms[2], enemyArms[3], enemy.Body + new Vector3(0.23f, 0.19f, 0), enemy.Right, 1);
-            for (int i = 0; i < 2; i++)
-            {
-                float side = i == 0 ? -1 : 1;
-                Vector3 hip = enemyHip.position + Vector3.right * (side * 0.13f);
-                Vector3 foot = enemy.Root + new Vector3(side * 0.22f, 0.08f, side * 0.16f);
-                Vector3 knee = Vector3.Lerp(hip, foot, 0.52f) + Vector3.back * 0.12f;
-                Segment(enemyLegs[i * 3], hip, knee, 0.085f);
-                Segment(enemyLegs[i * 3 + 1], knee, foot, 0.06f);
-                enemyLegs[i * 3 + 2].position = foot + Vector3.back * 0.07f;
-            }
+            enemyAvatar.Render(game.Opponent, !game.Paused && valid ? Time.unscaledDeltaTime : 0);
             timerText.text = game.Round.Phase == BoxingPhase.Countdown ? Mathf.CeilToInt(game.Round.Countdown).ToString() :
                 game.Round.Phase == BoxingPhase.Ready ? game.tuning.roundSeconds.ToString("0") + " SECOND ROUND" : Mathf.CeilToInt(game.Round.TimeLeft).ToString("00") + "s";
             scoreText.text = "SCORE " + game.Round.Score + "     HIT " + game.Round.Hits + "     BLOCK " + game.Round.Blocks + "     DODGE " + game.Round.Dodges;
@@ -109,12 +91,6 @@ namespace Hapbeat.Boxing
             segment.position = (a + b) * 0.5f;
             segment.rotation = Quaternion.FromToRotation(Vector3.up, delta.normalized);
             segment.localScale = new Vector3(radius * 2, delta.magnitude * 0.5f, radius * 2);
-        }
-        private static void DrawArm(Transform upper, Transform lower, Vector3 shoulder, Vector3 hand, float side)
-        {
-            // Enemy-only articulated limbs; player's collision authority remains the three tracked points.
-            Vector3 mid = (shoulder + hand) * 0.5f + new Vector3(side * 0.12f, -0.16f, 0.03f);
-            Segment(upper, shoulder, mid, 0.058f); Segment(lower, mid, hand, 0.052f);
         }
     }
 }

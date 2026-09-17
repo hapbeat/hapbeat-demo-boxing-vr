@@ -16,6 +16,7 @@ namespace Hapbeat.Boxing.Editor
         private const string Active = "Boxing.Smoke.Active";
         private static double started;
         private static bool initialized, finished, capturedHud;
+        private static bool capturedAvatarStrike, capturedAvatarHead, capturedAvatarBody;
         private static int errors;
         private static int progressBucket = -1;
         private static BoxingGame game;
@@ -85,6 +86,14 @@ namespace Hapbeat.Boxing.Editor
                 Render(game.input.headCamera, "Logs/boxing-smoke-hud.png");
                 capturedHud = true;
             }
+            var avatar = game.presentation.enemyAvatar;
+            if (!capturedAvatarStrike && game.Opponent.Striking && game.Opponent.Head.z - (game.Opponent.AttackLeft ? game.Opponent.Left.z : game.Opponent.Right.z) > .55f)
+            { CaptureAvatar("strike"); capturedAvatarStrike = true; }
+            if (avatar.Reaction > .15f && (avatar.BodyReaction ? !capturedAvatarBody : !capturedAvatarHead))
+            {
+                CaptureAvatar(avatar.BodyReaction ? "body-hit" : "head-hit");
+                if (avatar.BodyReaction) capturedAvatarBody = true; else capturedAvatarHead = true;
+            }
             if (elapsed > 12 && game.Round.Phase == BoxingPhase.Countdown)
             { Finish(false, $"countdown stalled frame={Time.frameCount} editorPaused={EditorApplication.isPaused} reason={game.PauseReason}"); return; }
             if (elapsed > 125) { Finish(false, $"timeout phase={game.Round.Phase} paused={game.Paused} reason={game.PauseReason} time={game.Round.TimeLeft} valid={game.input.Current.valid}"); return; }
@@ -94,8 +103,16 @@ namespace Hapbeat.Boxing.Editor
             {
                 string summary = $"hits={game.Round.Hits} blocks={game.Round.Blocks} enemyBlocks={game.Round.EnemyBlocks} headHits={game.Round.Taken} dodges={game.Round.Dodges} soft={softImpacts} hard={hardImpacts} zones={zones} surfaces={surfaces} rings={game.feedback.Rings} gain={minGain:0.00}..{maxGain:0.00} sends={game.feedback.Sends} errors={errors}";
                 Finish(game.Round.Hits >= 3 && game.Round.Blocks >= 2 && game.Round.Taken >= 2 && game.Round.Dodges >= 1 &&
-                    softImpacts > 0 && hardImpacts > 0 && zones == 7 && surfaces == 15 && game.feedback.Rings == 2 && maxGain > minGain + 0.2f && game.feedback.Sends == 0 && errors == 0, summary);
+                    softImpacts > 0 && hardImpacts > 0 && zones == 7 && surfaces == 15 && game.feedback.Rings == 2 && maxGain > minGain + 0.2f && game.feedback.Sends == 0 && errors == 0 &&
+                    capturedAvatarStrike && capturedAvatarHead && capturedAvatarBody, summary + $" avatarStrike={capturedAvatarStrike} avatarHead={capturedAvatarHead} avatarBody={capturedAvatarBody}");
             }
+        }
+        private static void CaptureAvatar(string state)
+        {
+            var camera = game.input.headCamera; var position = camera.transform.position; var rotation = camera.transform.rotation;
+            camera.transform.SetPositionAndRotation(new Vector3(1.8f,1.8f,-1.5f), Quaternion.LookRotation(new Vector3(-1.8f,-.8f,2.58f)));
+            try { Render(camera,"Logs/boxing-live-" + state + ".png"); }
+            finally { camera.transform.SetPositionAndRotation(position,rotation); }
         }
         internal static void DriveInput()
         {

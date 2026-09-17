@@ -135,24 +135,10 @@ namespace Hapbeat.Boxing.Editor
         public static void ConfigureModels(BoxingGame game)
         {
             var v = game.presentation;
-            var ivory = Material("IconIvory", new Color(0.84f, 0.9f, 0.91f));
-            var navy = Material("IconNavy", new Color(0.055f, 0.13f, 0.19f));
             var dark = Material("IconInk", new Color(0.015f, 0.028f, 0.04f));
-            var amber = Material("IconAmber", new Color(1, 0.56f, 0.13f));
             var blue = Material("GloveBlue", new Color(0.07f, 0.55f, 0.73f));
-            var red = Material("GloveCoral", new Color(0.83f, 0.19f, 0.16f));
             Glove(v.leftGlove, blue, dark, true); Glove(v.rightGlove, blue, dark, false);
-            Glove(v.enemyLeftGlove, red, dark, true); Glove(v.enemyRightGlove, red, dark, false);
-            Clear(v.enemyHead); v.enemyHead.localScale = Vector3.one;
-            Shape(v.enemyHead, "Icon head", Vector3.zero, new Vector3(0.275f, 0.32f, 0.28f), ivory);
-            Clear(v.enemyTorso); v.enemyTorso.localScale = Vector3.one;
-            Shape(v.enemyTorso, "Jersey", new Vector3(0, 0.015f, 0), new Vector3(0.46f, 0.58f, 0.28f), navy);
-            Shape(v.enemyTorso, "Neck", new Vector3(0, 0.30f, 0), new Vector3(0.115f, 0.13f, 0.115f), ivory);
-            Clear(v.enemyHip); v.enemyHip.localScale = Vector3.one;
-            Shape(v.enemyHip, "Shorts", Vector3.zero, new Vector3(0.37f, 0.29f, 0.27f), navy);
-            Shape(v.enemyHip, "Belt", new Vector3(0, 0.10f, -0.005f), new Vector3(0.36f, 0.037f, 0.27f), amber);
-            foreach (var part in v.enemyArms.Concat(v.enemyLegs))
-                foreach (var renderer in part.GetComponentsInChildren<Renderer>()) renderer.sharedMaterial = part.name == "Boot" ? dark : ivory;
+            BoxingAvatarSetup.Attach(v);
             EditorUtility.SetDirty(v);
             Debug.Log("BOXING_GLOVE_BOUNDS " + GloveSize(v.leftGlove).ToString("F3"));
         }
