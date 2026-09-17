@@ -1,0 +1,12 @@
+{
+  "vertices": 1687,
+  "triangles": 3274,
+  "bones": 20,
+  "materials": 6,
+  "height_m": 1.783,
+  "actions": [
+    "Guard_Pose",
+    "Hit_Recoil"
+  ],
+  "third_party_meshes": false
+}

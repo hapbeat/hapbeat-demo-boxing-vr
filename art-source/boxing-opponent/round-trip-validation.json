@@ -1,0 +1,11 @@
+{
+  "blend_skin_weights": "PASS",
+  "recoil_head_displacement_m": 0.3119,
+  "fbx_round_trip": "PASS",
+  "fbx_meshes": 1,
+  "fbx_bones": 20,
+  "fbx_actions": [
+    "Boxer_Rig|Boxer_Rig|Guard_Pose",
+    "Boxer_Rig|Boxer_Rig|Hit_Recoil"
+  ]
+}
