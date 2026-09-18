@@ -36,7 +36,7 @@ namespace Hapbeat.Boxing
         [Min(0.01f)] public float punchStartSpeed = 0.4f;
         [Min(0.01f)] public float punchRestSeconds = 0.06f;
         [Min(0.1f)] public float punchMaximumSeconds = 1.2f;
-        public float punchReturnDepth = 0.45f;
+        [Min(.1f)] public float punchReturnDistance = 0.55f;
         [Min(0)] public float punchTapDistance = 0.10f;
         [Min(0.01f)] public float punchFullDistance = 0.32f;
         [Range(0, 1)] public float punchHardStrength = 0.65f;

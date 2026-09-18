@@ -92,8 +92,8 @@ namespace Hapbeat.Boxing
             transform.position += opponent.Head - HeadCenter;
             Solve(leftThigh, leftShin, leftFoot, lf, Vector3.back); leftFoot.rotation = lr;
             Solve(rightThigh, rightShin, rightFoot, rf, Vector3.back); rightFoot.rotation = rr;
-            Arm(leftUpper, leftFore, leftHand, leftCenter, opponent.Left, opponent.Head, -1, opponent.Hook && opponent.AttackLeft ? opponent.MotionWeight : 0);
-            Arm(rightUpper, rightFore, rightHand, rightCenter, opponent.Right, opponent.Head, 1, opponent.Hook && !opponent.AttackLeft ? opponent.MotionWeight : 0);
+            Arm(leftUpper, leftFore, leftHand, leftCenter, opponent.Left, opponent.Head, -1, opponent.Guarding && opponent.HookGuard && !opponent.BodyGuard ? opponent.GuardWeight : opponent.Hook && opponent.AttackLeft ? opponent.MotionWeight : 0);
+            Arm(rightUpper, rightFore, rightHand, rightCenter, opponent.Right, opponent.Head, 1, opponent.Guarding && opponent.HookGuard && !opponent.BodyGuard ? opponent.GuardWeight : opponent.Hook && !opponent.AttackLeft ? opponent.MotionWeight : 0);
             Reaction = Mathf.Max(0, Reaction - Mathf.Max(0, dt) * 2.8f);
         }
         private void Arm(Transform upper, Transform fore, Transform hand, Vector3 center, Vector3 target, Vector3 targetHead, float side, float hook)

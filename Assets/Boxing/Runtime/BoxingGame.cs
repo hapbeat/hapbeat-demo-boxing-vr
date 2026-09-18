@@ -34,10 +34,7 @@ namespace Hapbeat.Boxing
         private readonly List<XRDisplaySubsystem> displays = new List<XRDisplaySubsystem>();
         private string lastPauseReport;
         public float ResultPresentationTime { get; private set; }
-        private float resultBellDelay;
-        private bool resultBellPlayed;
-        private bool resultVoicePlayed;
-        private float resultVoiceDelay;
+        private bool calibrationPending;
         public float ResultDuration { get; private set; } = 2.5f;
         private int spokenCountdown;
 
@@ -75,7 +72,9 @@ namespace Hapbeat.Boxing
         public void ResetPunches() { leftPunch.Reset(); rightPunch.Reset(); }
         private void OnRecentered()
         {
-            Initialize(); Opponent.Reset(input.ReferenceEyeHeight); resolvedAttack=lastCompleted=0; ResetHistory();
+            Initialize(); Opponent.Reset(input.ReferenceEyeHeight,input.ReferenceFloorHeight);
+            presentation.CalibrateEnvironment(input.ReferenceFloorHeight,input.ReferenceEyeHeight);
+            resolvedAttack=lastCompleted=0; ResetHistory();
         }
         // Local operations for a future authenticated M5 command adapter. No new wire protocol here.
         public void RecenterPlayer() { input.Recenter(); OnRecentered(); feedback.StopImpacts(); }
@@ -84,11 +83,13 @@ namespace Hapbeat.Boxing
         public void StartRound()
         {
             if (presentation != null && presentation.enemyAvatar != null) presentation.enemyAvatar.ResetReaction();
-            if (input.HasTracking && !input.HasOverride) input.Recenter();
-            Round.Start(tuning.roundSeconds, tuning.maximumHealth); Opponent.Reset(input.ReferenceEyeHeight);
+            // Head height must not depend on controllers/both hands already being tracked.
+            input.Recenter(); OnRecentered();
+            calibrationPending=!input.HeadTracked && !input.HasOverride;
+            Round.Start(tuning.roundSeconds, tuning.maximumHealth);
             ResultPresentationTime=0;
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); menu.Close();
-            spokenCountdown=0; resultBellPlayed=resultVoicePlayed=false;
+            spokenCountdown=0;
         }
         private void Update()
         {
@@ -101,12 +102,12 @@ namespace Hapbeat.Boxing
         }
         public void Simulate(float dt, BoxerPose pose)
         {
+            if(calibrationPending && input.HeadTracked)
+            { input.Recenter(); OnRecentered(); calibrationPending=false; return; }
             if(Round.Phase==BoxingPhase.Results && previousPhase==BoxingPhase.Results && !menu.IsOpen)
             {
                 // End the action before hiding it behind the menu. No combat runs here.
                 ResultPresentationTime += dt>0 && dt<=.1f ? dt : 0;
-                if(!resultBellPlayed && ResultPresentationTime>=resultBellDelay) { feedback.Ring(); resultBellPlayed=true; }
-                if(!resultVoicePlayed && ResultPresentationTime>=resultVoiceDelay) { feedback.SpeakResult(Round.Outcome); resultVoicePlayed=true; }
                 presentation.Render(this,pose,false);
                 if(ResultPresentationTime>=ResultDuration) menu.Open();
                 return;
@@ -154,12 +155,12 @@ namespace Hapbeat.Boxing
                 if(number!=spokenCountdown) { feedback.SpeakCountdown(number); spokenCountdown=number; }
             }
             Round.Tick(dt, false);
+            Opponent.ObservePlayerStance(pose.head,pose.left,pose.right);
             Opponent.Tick(dt, pose.head, Round.Phase == BoxingPhase.Fighting);
             sampledHead = pose.head;
-            Vector3 forward = Vector3.ProjectOnPlane(Opponent.Root - pose.head, Vector3.up).normalized;
             bool leftMoving = leftPunch.Moving, rightMoving = rightPunch.Moving;
-            leftPunch.Sample(pose.left - pose.head, forward, dt, tuning);
-            rightPunch.Sample(pose.right - pose.head, forward, dt, tuning);
+            leftPunch.Sample(pose.left - pose.head, dt, tuning);
+            rightPunch.Sample(pose.right - pose.head, dt, tuning);
             if (haveHistory && Round.Phase == BoxingPhase.Fighting)
             {
                 if ((!leftMoving && leftPunch.Moving) || (!rightMoving && rightPunch.Moving))
@@ -179,16 +180,16 @@ namespace Hapbeat.Boxing
             {
                 if (Round.Phase == BoxingPhase.Results)
                 {
-                    ResultPresentationTime=0; resultBellPlayed=resultVoicePlayed=false;
-                    resultBellDelay=Mathf.Max(.25f,feedback.ImpactTailSeconds+.08f);
-                    resultVoiceDelay=resultBellDelay+(feedback.bell!=null ? feedback.bell.length : 0)+.15f;
-                    ResultDuration=Mathf.Max(2.5f,resultVoiceDelay+feedback.ResultClip(Round.Outcome).length+.35f);
+                    ResultPresentationTime=0;
+                    // Independent sources overlap the final hit without cancelling its tail.
+                    feedback.Ring(); feedback.SpeakResult(Round.Outcome);
+                    ResultDuration=Mathf.Max(2.5f,Mathf.Max(feedback.bell.length,feedback.ResultClip(Round.Outcome).length)+.35f);
                 }
                 if (Round.Phase == BoxingPhase.Fighting) feedback.Ring();
                 previousPhase = Round.Phase;
             }
             SaveHistory(pose);
-            if (presentation != null) presentation.Render(this, pose, true);
+            if (presentation != null) presentation.Render(this, pose, true,dt);
         }
         private void ResolveEnemy(BoxerPose p, float dt)
         {

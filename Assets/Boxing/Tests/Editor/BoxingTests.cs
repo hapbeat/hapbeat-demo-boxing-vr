@@ -117,7 +117,7 @@ namespace Hapbeat.Boxing.Tests
                 if (enemy.GuardWeight > 0.9f)
                 {
                     guarded++; Assert.That(enemy.Striking, Is.False);
-                    Assert.That(Mathf.Abs(enemy.Left.x - enemy.Head.x), Is.LessThan(0.13f));
+                    Assert.That(Mathf.Abs(enemy.Left.x - enemy.Head.x), Is.LessThan(enemy.HookGuard ? .28f : .13f));
                     Assert.That(enemy.Left.y, Is.GreaterThan((enemy.BodyGuard ? enemy.Body.y : enemy.Head.y) - 0.06f));
                 }
                 old = enemy.Guarding;
@@ -401,7 +401,8 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(stopsAtHit,Is.GreaterThanOrEqualTo(0),"Winning collision must be exercised.");
             Assert.That(game.Round.Phase,Is.EqualTo(BoxingPhase.Results));
             Assert.That(game.feedback.ImpactStops,Is.EqualTo(stopsAtHit),"KO transition must let the final impact audio and haptic clip finish.");
-            Assert.That(game.feedback.Rings,Is.EqualTo(ringsBefore),"The final gong must wait for the impact tail.");
+            Assert.That(game.feedback.Rings,Is.EqualTo(ringsBefore+1),"Gong and result voice start on the result frame without cancelling the impact.");
+            Assert.That(game.feedback.ResultVoiceCues,Is.EqualTo(1));
             Advance(game.feedback.ImpactTailSeconds+.3f,pose);
             Assert.That(game.feedback.Rings,Is.EqualTo(ringsBefore+1));
         }

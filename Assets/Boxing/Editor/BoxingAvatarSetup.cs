@@ -96,6 +96,16 @@ namespace Hapbeat.Boxing.Editor
             camera.transform.SetPositionAndRotation(pose.head,Quaternion.identity);
             game.Opponent.Reset(1.65f); game.presentation.Render(game,pose,true);
             Capture(game,camera,"Logs/boxing-avatar-player-view.png");
+            int guards=0;
+            for(int i=0;i<30000 && guards!=15;i++)
+            {
+                game.Opponent.Tick(.01f,pose.head,true);
+                int bit=1<<(int)game.Opponent.Guard;
+                if(game.Opponent.GuardWeight<.999f || (guards&bit)!=0) continue;
+                game.presentation.Render(game,pose,true);
+                Capture(game,camera,"Logs/boxing-guard-"+game.Opponent.Guard+".png"); guards|=bit;
+            }
+            if(guards!=15) throw new System.InvalidOperationException("Missing four-way guard preview");
             game.presentation.enemyAvatar.gameObject.SetActive(false);
             game.presentation.leftGlove.gameObject.SetActive(true); game.presentation.rightGlove.gameObject.SetActive(true);
             game.presentation.leftGlove.SetPositionAndRotation(new Vector3(-.12f,1.4f,.3f),Quaternion.LookRotation(Vector3.up,Vector3.back));

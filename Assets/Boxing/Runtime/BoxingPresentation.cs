@@ -7,6 +7,13 @@ namespace Hapbeat.Boxing
     {
         public Transform leftGlove, rightGlove;
         public Transform leftForearm, rightForearm;
+        public Transform arena;
+        public void CalibrateEnvironment(float floor,float eyeHeight)
+        {
+            if(arena!=null) { var p=arena.position; p.y=floor; arena.position=p; }
+            var board=timerText.transform.parent; var position=board.position;
+            position.y=floor+eyeHeight+1.05f; board.position=position;
+        }
         public BoxingOpponentAvatar enemyAvatar;
         public Text timerText, scoreText, cueText, statusText, impactText;
         public Transform hitBurst;
@@ -27,7 +34,7 @@ namespace Hapbeat.Boxing
                 if (lines != null) lines.startColor = lines.endColor = impact.surface == ImpactSurface.Glove ? new Color(0.4f, 0.85f, 1) : new Color(1, 0.65f, 0.25f);
             }
         }
-        public void Render(BoxingGame game, BoxerPose pose, bool valid)
+        public void Render(BoxingGame game, BoxerPose pose, bool valid, float deltaTime=0)
         {
             bool menuOpen = game.menu != null && game.menu.IsOpen;
             timerText.transform.parent.gameObject.SetActive(!menuOpen);
@@ -40,7 +47,7 @@ namespace Hapbeat.Boxing
                 leftGlove.SetPositionAndRotation(pose.left, pose.leftRotation);
                 rightGlove.SetPositionAndRotation(pose.right, pose.rightRotation);
             }
-            enemyAvatar.Render(game.Opponent, !game.Paused && valid ? Time.unscaledDeltaTime : 0);
+            enemyAvatar.Render(game.Opponent, !game.Paused && valid ? deltaTime : 0);
             string result = (game.Round.PlayerHealth<=0 || game.Round.EnemyHealth<=0 ? "KNOCKOUT" : "ROUND COMPLETE") + " - " +
                 (game.Round.Outcome==BoxingOutcome.Win ? "YOU WIN" : game.Round.Outcome==BoxingOutcome.Lose ? "YOU LOSE" : "DRAW");
             timerText.text = game.Round.Phase == BoxingPhase.Results ? result :

@@ -19,6 +19,8 @@ namespace Hapbeat.Boxing
         public Vector3 StartPosition => startPoint != null ? new Vector3(startPoint.position.x, 0, startPoint.position.z) : Vector3.zero;
         public float StartYaw => startPoint != null ? startPoint.eulerAngles.y : 0;
         public float ReferenceEyeHeight { get; private set; } = 1.65f;
+        public float ReferenceFloorHeight { get; private set; }
+        public bool HeadTracked { get; private set; }
         public event System.Action Recentered;
         public BoxingInputMode mode = BoxingInputMode.Hands;
         public BoxingInputMode ActiveMode => mode == BoxingInputMode.Hands && controllerFallback ? BoxingInputMode.Controllers : mode;
@@ -50,9 +52,9 @@ namespace Hapbeat.Boxing
         private BoxingGame game;
 
         private void OnEnable() { xrControls = new BoxingXrControls(); aligned = false; }
-        private void OnDisable() { xrControls?.Dispose(); xrControls = null; HasTracking = false; LeftPointer.Reset(); RightPointer.Reset(); }
+        private void OnDisable() { xrControls?.Dispose(); xrControls = null; HasTracking = HeadTracked = false; LeftPointer.Reset(); RightPointer.Reset(); }
 
-        public void SetTestPose(BoxerPose pose) { HasOverride = true; testPose = Current = pose; HasTracking = pose.valid; }
+        public void SetTestPose(BoxerPose pose) { HasOverride = true; testPose = Current = pose; HasTracking = pose.valid; HeadTracked=pose.valid; }
         public void ClearTestPose() => HasOverride = false;
         public void SelectMode(BoxingInputMode next)
         {
@@ -61,10 +63,15 @@ namespace Hapbeat.Boxing
         public void Recenter()
         {
             if (headCamera == null || origin == null) return;
-            origin.RotateAroundCameraUsingOriginUp(Mathf.DeltaAngle(headCamera.transform.eulerAngles.y, StartYaw));
-            var p = headCamera.transform.position;
-            origin.transform.position += StartPosition - new Vector3(p.x, 0, p.z);
-            ReferenceEyeHeight = Mathf.Clamp(headCamera.transform.position.y,.8f,2.2f);
+            if(!HasOverride)
+            {
+                origin.RotateAroundCameraUsingOriginUp(Mathf.DeltaAngle(headCamera.transform.eulerAngles.y, StartYaw));
+                var p = headCamera.transform.position;
+                origin.transform.position += StartPosition - new Vector3(p.x, 0, p.z);
+            }
+            ReferenceFloorHeight=origin.transform.position.y;
+            float eye=(HasOverride ? Current.head.y : headCamera.transform.position.y)-ReferenceFloorHeight;
+            ReferenceEyeHeight=Mathf.Max(.2f,eye);
             leftVisual.Reset(); rightVisual.Reset();
             aligned = true;
             Recentered?.Invoke();
@@ -80,6 +87,7 @@ namespace Hapbeat.Boxing
             {
                 var xr = xrControls.Read();
                 bool headValid = xr.headTracked;
+                HeadTracked=headValid;
                 FindHands();
                 ReadPointer(true, headValid && mode == BoxingInputMode.Hands, LeftPointer);
                 ReadPointer(false, headValid && mode == BoxingInputMode.Hands, RightPointer);

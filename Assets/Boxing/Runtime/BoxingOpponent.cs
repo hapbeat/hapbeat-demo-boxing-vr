@@ -3,6 +3,7 @@ using UnityEngine;
 namespace Hapbeat.Boxing
 {
     public enum BoxingAttack { HeadStraight, BodyStraight, HeadHook, BodyHook }
+    public enum BoxingGuard { HeadStraight, BodyStraight, HeadHook, BodyHook }
     // Fixed, readable combinations. Aim is committed before the strike, so leaning works.
     public sealed class BoxingOpponent
     {
@@ -14,7 +15,9 @@ namespace Hapbeat.Boxing
         public bool Striking { get; private set; }
         public bool Telegraphing { get; private set; }
         public bool Guarding { get; private set; }
-        public bool BodyGuard { get; private set; }
+        public BoxingGuard Guard { get; private set; }
+        public bool BodyGuard => Guard==BoxingGuard.BodyStraight || Guard==BoxingGuard.BodyHook;
+        public bool HookGuard => Guard==BoxingGuard.HeadHook || Guard==BoxingGuard.BodyHook;
         public float GuardWeight { get; private set; }
         public int AttackId { get; private set; }
         public bool AttackLeft { get; private set; }
@@ -42,17 +45,30 @@ namespace Hapbeat.Boxing
         private bool attacking, blocked;
         private Vector3 aim, strikeStart, blockedAt;
         private float height = 1.65f;
+        private float floorHeight;
+        private BoxingGuard likelyGuard;
+        private bool stanceObserved;
+        public void ObservePlayerStance(Vector3 head,Vector3 left,Vector3 right)
+        {
+            Vector3 l=left-head,r=right-head;
+            bool low=(l.y+r.y)*.5f<-.27f;
+            bool wide=(Mathf.Abs(l.x)+Mathf.Abs(r.x))*.5f>.26f;
+            likelyGuard=wide ? (low ? BoxingGuard.BodyHook : BoxingGuard.HeadHook) :
+                (low ? BoxingGuard.BodyStraight : BoxingGuard.HeadStraight);
+            stanceObserved=true;
+        }
         private float guardWait, guardTime;
         private System.Random random;
         private readonly BoxingTuning tuning;
         public BoxingOpponent(BoxingTuning tuning) { this.tuning = tuning; Reset(1.65f); }
-        public void Reset(float playerHeight)
+        public void Reset(float playerHeight,float floor=0)
         {
-            height = Mathf.Clamp(playerHeight, .8f, 2.2f); clock = attackTime = reaction = 0;
+            height = Mathf.Max(.2f,playerHeight); floorHeight=floor; clock = attackTime = reaction = 0;
             MotionWeight = BodyYaw = 0;
             observedPunches = 0; counterCooldown = 0; counterQueued = Counter = false; Attack = BoxingAttack.HeadStraight;
             pattern = AttackId = CompletedAttacks = 0; wait = 0.7f; attacking = Striking = Telegraphing = blocked = false;
-            random = new System.Random(1701); guardWait = tuning.guardInterval; guardTime = 0; Guarding = BodyGuard = false; GuardWeight = 0;
+            random = new System.Random(1701); guardWait = tuning.guardInterval; guardTime = 0; Guarding = false; GuardWeight = 0;
+            Guard=likelyGuard=BoxingGuard.HeadStraight; stanceObserved=false;
             SetRestPose();
         }
         public void React(float gain) => reaction = Mathf.Max(reaction, 0.10f + gain * 0.15f);
@@ -82,12 +98,15 @@ namespace Hapbeat.Boxing
                 guardWait -= dt;
                 if (guardTime > 0 || (guardWait <= 0 && !counterQueued))
                 {
-                    if (guardTime == 0) BodyGuard = !BodyGuard;
+                    // Commit once per guard: a readable weighted choice, not perfect prediction.
+                    if (guardTime == 0) Guard=stanceObserved && random.NextDouble()<.55 ? likelyGuard : (BoxingGuard)random.Next(4);
                     guardTime += dt; Guarding = true;
                     GuardWeight = Mathf.SmoothStep(0, 1, Mathf.Clamp01(Mathf.Min(guardTime, tuning.guardSeconds - guardTime) / 0.18f));
-                    Vector3 guardTarget = BodyGuard ? Body + new Vector3(0,.02f,-.26f) : Head + new Vector3(0,-.025f,-.25f);
-                    Left = Vector3.Lerp(Left, guardTarget + Vector3.left*.105f, GuardWeight);
-                    Right = Vector3.Lerp(Right, guardTarget + Vector3.right*.105f, GuardWeight);
+                    Vector3 guardTarget = BodyGuard ? Body : Head;
+                    guardTarget += new Vector3(0,BodyGuard ? .02f : -.005f,HookGuard ? -.025f : -.25f);
+                    float spread=HookGuard ? (BodyGuard ? .255f : .205f) : .055f;
+                    Left = Vector3.Lerp(Left, guardTarget + Vector3.left*spread, GuardWeight);
+                    Right = Vector3.Lerp(Right, guardTarget + Vector3.right*spread, GuardWeight);
                     if (guardTime >= tuning.guardSeconds) { guardTime = 0; guardWait = tuning.guardInterval * (0.65f + (float)random.NextDouble()); Guarding = false; }
                     return;
                 }
@@ -124,13 +143,13 @@ namespace Hapbeat.Boxing
             {
                 float t = Mathf.Clamp01((attackTime - pre - strike) / recover);
                 fist = Vector3.Lerp(blocked ? blockedAt : aim, rest, t * t * (3 - 2 * t));
-                if (t >= 1) { attacking = false; pattern++; CompletedAttacks++; wait = pattern % 3 == 1 ? 0.18f : tuning.enemyInterval; }
+                if (t >= 1) { attacking = false; pattern++; CompletedAttacks++; wait = pattern % 3 == 1 ? 0.18f : tuning.enemyInterval; guardWait=0; }
             }
             if (AttackLeft) Left = fist; else Right = fist;
         }
         private void SetRestPose()
         {
-            Root = new Vector3(0, 0, 1.08f);
+            Root = new Vector3(0, floorHeight, 1.08f);
             float bob = (Mathf.Cos(clock * 3) - 1) * .018f;
             float dip = BodyAttack ? .10f * Mathf.Sin(Mathf.PI * Mathf.Clamp01(attackTime / (tuning.telegraphSeconds + tuning.strikeSeconds + tuning.recoverSeconds))) : 0;
             Head = Root + new Vector3(Mathf.Sin(clock * 1.5f) * .025f, height + bob - dip, reaction * .24f - MotionWeight * (Hook ? .25f : .12f));

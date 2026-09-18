@@ -32,7 +32,7 @@ MonoBehaviour:
   punchStartSpeed: 0.4
   punchRestSeconds: 0.06
   punchMaximumSeconds: 1.2
-  punchReturnDepth: 0.45
+  punchReturnDistance: 0.55
   punchTapDistance: 0.1
   punchFullDistance: 0.32
   punchHardStrength: 0.65

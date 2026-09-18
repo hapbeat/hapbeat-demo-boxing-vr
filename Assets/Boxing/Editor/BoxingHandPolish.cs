@@ -11,6 +11,8 @@ namespace Hapbeat.Boxing.Editor
     {
         public static void Install(BoxingGame game)
         {
+            game.presentation.arena=GameObject.Find("Arena - original procedural assets").transform;
+            EditorUtility.SetDirty(game.presentation);
             var material=AssetDatabase.LoadAssetAtPath<Material>("Assets/Boxing/Art/UnityHands/Ghost.mat");
             if(material==null) { material=new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(material,"Assets/Boxing/Art/UnityHands/Ghost.mat"); }
             material.SetColor("_BaseColor",new Color(.45f,.85f,1,.48f));
