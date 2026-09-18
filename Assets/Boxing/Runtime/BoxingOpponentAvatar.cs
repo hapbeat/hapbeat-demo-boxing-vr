@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Hapbeat.Boxing
 {
-    // Visual adapter only. The game's swept spheres remain collision authority.
+    // Rig pose provides arm-guard geometry; game-side sweeps remain collision authority.
     public sealed class BoxingOpponentAvatar : MonoBehaviour
     {
         public SkinnedMeshRenderer skin;
@@ -17,8 +17,10 @@ namespace Hapbeat.Boxing
         public Vector3 headCenter, leftCenter, rightCenter;
         public float neutralHeadHeight;
         public const float GloveWidth = .15f;
+        public const float OpponentGloveWidth = .18f;
         public const float GloveDepthRatio = .75f;
         public float leftGloveLocalWidth, rightGloveLocalWidth;
+        public float leftUpperRadius,leftForeRadius,rightUpperRadius,rightForeRadius;
         public float Reaction { get; private set; }
         public bool BodyReaction { get; private set; }
         public Vector3 HeadCenter => head.TransformPoint(headCenter);
@@ -41,6 +43,9 @@ namespace Hapbeat.Boxing
             rightThigh = Bone("thigh.L"); rightShin = Bone("shin.L"); rightFoot = Bone("foot.L");
             headCenter = WeightedBounds(head).center; leftCenter = WeightedBounds(leftHand).center; rightCenter = WeightedBounds(rightHand).center;
             leftGloveLocalWidth=WeightedBounds(leftHand).size.x; rightGloveLocalWidth=WeightedBounds(rightHand).size.x;
+            float Radius(Transform bone) { var size=WeightedBounds(bone).size; return Mathf.Max(size.x,size.z)*.5f; }
+            leftUpperRadius=Radius(leftUpper); leftForeRadius=Radius(leftFore);
+            rightUpperRadius=Radius(rightUpper); rightForeRadius=Radius(rightFore);
             neutralHeadHeight = HeadCenter.y - transform.position.y;
             skin.updateWhenOffscreen = true;
         }
@@ -65,6 +70,13 @@ namespace Hapbeat.Boxing
             BodyReaction = body; Reaction = Mathf.Max(Reaction, Mathf.Lerp(.3f, 1, gain));
         }
         public void ResetReaction() { Reaction = 0; BodyReaction = false; }
+        public void GetGuardArms(BoxingGuardArm[] arms)
+        {
+            BoxingGuardArm Segment(Transform a,Transform b,float radius) => new BoxingGuardArm(a.position,b.position,
+                radius*Mathf.Max(Mathf.Abs(a.lossyScale.x),Mathf.Abs(a.lossyScale.z)));
+            arms[0]=Segment(leftUpper,leftFore,leftUpperRadius); arms[1]=Segment(leftFore,leftHand,leftForeRadius);
+            arms[2]=Segment(rightUpper,rightFore,rightUpperRadius); arms[3]=Segment(rightFore,rightHand,rightForeRadius);
+        }
         public void Render(BoxingOpponent opponent, float dt)
         {
             for (int i = 0; i < bones.Length; i++)
@@ -75,9 +87,9 @@ namespace Hapbeat.Boxing
             // Height is fixed throughout a round. Bobbing lowers the hips over planted feet,
             // rather than scaling the entire character up and down.
             transform.localScale = Vector3.one * (opponent.StandingHeadHeight / neutralHeadHeight);
-            // Match the player's gloves in metres, independently of calibrated body height.
-            leftHand.localScale *= GloveWidth/(leftGloveLocalWidth*leftHand.lossyScale.x);
-            rightHand.localScale *= GloveWidth/(rightGloveLocalWidth*rightHand.lossyScale.x);
+            // NPC gloves have a larger silhouette; player gloves keep their existing size.
+            leftHand.localScale *= OpponentGloveWidth/(leftGloveLocalWidth*leftHand.lossyScale.x);
+            rightHand.localScale *= OpponentGloveWidth/(rightGloveLocalWidth*rightHand.lossyScale.x);
             leftHand.localScale=Vector3.Scale(leftHand.localScale,new Vector3(1,1,GloveDepthRatio));
             rightHand.localScale=Vector3.Scale(rightHand.localScale,new Vector3(1,1,GloveDepthRatio));
             var lf = leftFoot.position + new Vector3(-.035f,0,-.13f);

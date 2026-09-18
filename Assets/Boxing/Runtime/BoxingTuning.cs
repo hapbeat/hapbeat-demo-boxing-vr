@@ -25,20 +25,20 @@ namespace Hapbeat.Boxing
         [Min(0.5f)] public float playRadius = 1.0f;
         [Header("Collision (metres / seconds)")]
         [Min(0.01f)] public float gloveRadius = 0.07f;
+        [Min(0.01f)] public float enemyGloveRadius = 0.09f;
         [Min(0.01f)] public float headRadius = 0.14f;
         [Min(0.01f)] public float bodyRadius = 0.21f;
         [Min(0.01f)] public float enemyHeadRadius = 0.145f;
         [Min(0.01f)] public float enemyBodyRadius = 0.21f;
         [Min(0)] public float minimumImpactSpeed = 0.25f;
         [Min(0.01f)] public float hitCooldown = 0.22f;
-        [Header("Player punch displacement (head-relative metres)")]
-        [Min(0)] public float punchRestSpeed = 0.2f;
-        [Min(0.01f)] public float punchStartSpeed = 0.4f;
-        [Min(0.01f)] public float punchRestSeconds = 0.06f;
-        [Min(0.1f)] public float punchMaximumSeconds = 1.2f;
-        [Min(.1f)] public float punchReturnDistance = 0.55f;
-        [Min(0)] public float punchTapDistance = 0.10f;
-        [Min(0.01f)] public float punchFullDistance = 0.32f;
+        [Header("Player punch response (HMD-relative motion)")]
+        [Min(.1f)] public float punchReturnDistance = .70f;
+        [Min(.01f)] public float punchRetraction = .10f;
+        [Min(.1f)] public float punchRepeatSeconds = 1f;
+        [Min(.1f)] public float punchMinimumSpeed = .45f;
+        [Min(.2f)] public float punchFullSpeed = 2.5f;
+        [Range(0,1)] public float punchReadyStrength = .72f;
         [Range(0, 1)] public float punchHardStrength = 0.65f;
         [Min(0)] public float tapDamage = 0.5f;
         [Min(1)] public float fullPunchDamage = 20;
@@ -57,8 +57,8 @@ namespace Hapbeat.Boxing
             return Mathf.Lerp(minimumGain, maximumGain, Mathf.Pow(t, gainExponent));
         }
         public bool IsHard(float speed) => impactMode == ImpactMode.WeakHard && speed >= hardHitSpeed;
-        public float PunchStrength(float distance) => float.IsFinite(distance) ?
-            Mathf.SmoothStep(0, 1, Mathf.InverseLerp(punchTapDistance, Mathf.Max(punchTapDistance + 0.01f, punchFullDistance), distance)) : 0;
+        public float PunchStrengthForSpeed(float speed) => float.IsFinite(speed) && speed>=punchMinimumSpeed ?
+            Mathf.Lerp(punchReadyStrength,1,Mathf.InverseLerp(punchMinimumSpeed,Mathf.Max(punchMinimumSpeed+.01f,punchFullSpeed),speed)) : 0;
     }
 
     public struct BoxerPose

@@ -17,20 +17,28 @@ namespace Hapbeat.Boxing.Tests
             for (int i = 1; i <= frames; i++) punch.Sample(Vector3.Lerp(start, end, i / (float)frames), 0.01f, tuning);
             return punch.Consume(end, tuning);
         }
-        [Test] public void FastWristSnapIsWeakButLongStrokeIsStrong()
+        [Test] public void RepeatedFastWristTapsDoNotEachDealStrongDamage()
         {
-            Assert.That(Stroke(Vector3.forward * 0.2f, Vector3.forward * 0.25f, 1), Is.Zero);
-            punch.Reset(); Assert.That(Stroke(Vector3.forward * 0.2f, Vector3.forward * 0.7f), Is.EqualTo(1));
+            Assert.That(Stroke(Vector3.forward*.65f,Vector3.forward*.7f,1),Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
+            for(int i=0;i<4;i++) Assert.That(Stroke(Vector3.forward*.65f,Vector3.forward*.7f,1),Is.Zero);
+        }
+        [TestCase(false)] [TestCase(true)] public void ContinuousReturnAndPunchCanBeHardWithoutAStaticHold(bool pause)
+        {
+            punch.Sample(new Vector3(0,-.3f,.65f),.01f,tuning);
+            for(int i=1;i<=20;i++) punch.Sample(new Vector3(0,-.3f,Mathf.Lerp(.65f,.30f,i/20f)),.01f,tuning);
+            if(pause) for(int i=0;i<12;i++) punch.Sample(new Vector3(0,-.3f,.30f),.01f,tuning);
+            for(int i=1;i<=20;i++) punch.Sample(new Vector3(0,-.3f,Mathf.Lerp(.30f,.60f,i/20f)),.01f,tuning);
+            Assert.That(punch.Consume(new Vector3(0,-.3f,.60f),tuning),Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
         }
         [Test] public void FrontGuardQuarterMetrePunchIsHardWithoutRearWindup()
         {
             Assert.That(Stroke(Vector3.forward*.38f,Vector3.forward*.63f),Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
         }
-        [Test] public void DistanceNotSpeedControlsDamage()
+        [Test] public void FasterPreparedPunchDoesMoreDamageButBothAreHard()
         {
             float fast = Stroke(Vector3.forward * 0.1f, Vector3.forward * 0.4f, 5);
             punch.Reset(); float slow = Stroke(Vector3.forward * 0.1f, Vector3.forward * 0.4f, 40);
-            Assert.That(fast, Is.EqualTo(slow).Within(0.0001f)); Assert.That(fast, Is.GreaterThan(0));
+            Assert.That(fast,Is.GreaterThan(slow)); Assert.That(slow,Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
         }
         [Test] public void FullThreeDimensionalDisplacementSupportsHooks()
         {
@@ -38,29 +46,34 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void RepeatedContactConsumesStrokeUntilReturnToBody()
         {
-            Assert.That(Stroke(Vector3.forward * 0.2f, Vector3.forward * 0.7f), Is.EqualTo(1));
+            Assert.That(Stroke(Vector3.forward * 0.2f, Vector3.forward * 0.7f), Is.EqualTo(1).Within(.01f));
             Assert.That(Stroke(Vector3.forward * 0.65f, Vector3.forward * 0.7f), Is.Zero);
-            Assert.That(Stroke(Vector3.forward * 0.2f, Vector3.forward * 0.7f), Is.EqualTo(1));
+            Assert.That(Stroke(Vector3.forward * 0.2f, Vector3.forward * 0.7f), Is.EqualTo(1).Within(.01f));
         }
-        [Test] public void ZigzagPathCannotAccumulateDistance()
+        [Test] public void JitterCannotProduceRepeatedStrongContacts()
         {
             Vector3 start = Vector3.forward * 0.2f; Rest(start);
-            for (int i = 0; i < 80; i++) punch.Sample(start + Vector3.right * (i % 2 == 0 ? 0.04f : -0.04f), 0.01f, tuning);
-            Assert.That(punch.Consume(start + Vector3.right * 0.04f, tuning), Is.Zero);
+            int strong=0;
+            for(int i=0;i<80;i++)
+            {
+                var point=start+Vector3.right*(i%2==0 ? .04f : -.04f); punch.Sample(point,.01f,tuning);
+                if(i%10==9 && punch.Consume(point,tuning)>=tuning.punchHardStrength) strong++;
+            }
+            Assert.That(strong,Is.LessThanOrEqualTo(1));
         }
         [Test] public void ResetAndLongPauseCannotRetainStoredPunch()
         {
             Rest(Vector3.zero); punch.Sample(Vector3.forward * 0.3f, 0.01f, tuning);
             punch.Reset(); Assert.That(punch.Consume(Vector3.forward * 0.6f, tuning), Is.Zero);
         }
-        [Test] public void RearPreparationHasNoBonusAndExpiryIsBounded()
+        [Test] public void RearPreparationHasNoBonusAndOldSpeedExpires()
         {
             float front = Stroke(Vector3.forward * 0.1f, Vector3.forward * 0.4f);
             punch.Reset(); float rear = Stroke(Vector3.back * 0.2f, Vector3.forward * 0.1f);
             Assert.That(rear, Is.EqualTo(front).Within(0.0001f));
-            punch.Reset(); Rest(Vector3.zero);
-            for (int i = 1; i <= 130; i++) punch.Sample(Vector3.forward * (i * 0.006f), 0.01f, tuning);
-            Assert.That(punch.Consume(Vector3.forward * 0.78f, tuning), Is.Zero);
+            punch.Reset(); Rest(Vector3.zero); punch.Sample(Vector3.forward*.3f,.01f,tuning);
+            for(int i=0;i<100;i++) punch.Sample(Vector3.forward*.3f,.01f,tuning);
+            Assert.That(punch.Consume(Vector3.forward*.3f,tuning),Is.Zero);
         }
         [Test] public void TapsAndFullPunchesHaveIndependentDamageAndFeedback()
         {
@@ -99,10 +112,12 @@ namespace Hapbeat.Boxing.Tests
             try { Assert.That(Object.FindFirstObjectByType<BoxingInput>().mode, Is.EqualTo(BoxingInputMode.Hands)); }
             finally { EditorSceneManager.NewScene(NewSceneSetup.EmptyScene); }
         }
-        [Test] public void ReturnRequiresProximityToHeadNotJustShallowForwardDepth()
+        [Test] public void OneSecondRecoveryAllowsNextPunchWithoutDeepWithdrawal()
         {
-            Assert.That(Stroke(new Vector3(.8f,0,.1f),new Vector3(.45f,0,.1f)),Is.Zero);
-            punch.Reset(); Assert.That(Stroke(new Vector3(.35f,-.2f,.2f),new Vector3(0,-.2f,.5f)),Is.GreaterThan(.95f));
+            Assert.That(Stroke(Vector3.forward*.8f,Vector3.forward*.9f,5),Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
+            Assert.That(Stroke(Vector3.forward*.9f,Vector3.forward*.94f,2),Is.Zero);
+            for(int i=0;i<110;i++) punch.Sample(Vector3.forward*.94f,.01f,tuning);
+            Assert.That(Stroke(Vector3.forward*.94f,Vector3.forward*1.0f,3),Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
         }
         [TestCase(-.3f)] [TestCase(0f)] [TestCase(.3f)]
         public void IdenticalHeadRelativeStrokeHasSameStrengthWhilePlayerMoves(float movement)
@@ -116,7 +131,7 @@ namespace Hapbeat.Boxing.Tests
                 end=head+new Vector3(.1f,-.15f,.3f+i*.015f);
                 punch.Sample(end-head,.01f,tuning);
             }
-            Assert.That(punch.Consume(end-head,tuning),Is.EqualTo(tuning.PunchStrength(.3f)).Within(.001f));
+            Assert.That(punch.Consume(end-head,tuning),Is.EqualTo(tuning.PunchStrengthForSpeed(1.5f)).Within(.005f));
         }
     }
 }
