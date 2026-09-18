@@ -12,6 +12,9 @@ namespace Hapbeat.Boxing
         public HapbeatUnityEventTrigger[] impactTriggers = new HapbeatUnityEventTrigger[12];
         public AudioSource audioSource, bellSource, voiceSource;
         public AudioClip[] countdownVoice = new AudioClip[3];
+        public AudioClip winVoice, loseVoice, tieVoice;
+        public int ResultVoiceCues { get; private set; }
+        public BoxingOutcome LastSpokenOutcome { get; private set; }
         public int LastSpokenNumber { get; private set; }
         public int VoiceCues { get; private set; }
         public float ImpactTailSeconds { get; private set; }
@@ -74,6 +77,13 @@ namespace Hapbeat.Boxing
             LastSpokenNumber=number; VoiceCues++;
             if(!Application.isBatchMode && !forceSilent && soundEnabled && voiceSource!=null && countdownVoice[number-1]!=null)
             { voiceSource.Stop(); voiceSource.PlayOneShot(countdownVoice[number-1],.75f); }
+        }
+        public AudioClip ResultClip(BoxingOutcome outcome) => outcome==BoxingOutcome.Win ? winVoice : outcome==BoxingOutcome.Lose ? loseVoice : tieVoice;
+        public void SpeakResult(BoxingOutcome outcome)
+        {
+            LastSpokenOutcome=outcome; ResultVoiceCues++;
+            if(!Application.isBatchMode && !forceSilent && soundEnabled && voiceSource!=null)
+            { voiceSource.Stop(); voiceSource.PlayOneShot(ResultClip(outcome),.75f); }
         }
         private void PlaySound(AudioClip clip, float volume)
         {

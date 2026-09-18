@@ -44,6 +44,10 @@ namespace Hapbeat.Boxing.Editor
             }
             feedback.countdownVoice=new AudioClip[3];
             for(int i=0;i<3;i++) feedback.countdownVoice[i]=AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Boxing/Audio/Voice/{i+1}.ogg");
+            feedback.winVoice=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Boxing/Audio/Voice/you_win.ogg");
+            feedback.loseVoice=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Boxing/Audio/Voice/you_lose.ogg");
+            feedback.tieVoice=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Boxing/Audio/Voice/its_a_tie.ogg");
+            BoxingForearmSetup.Install(game.presentation);
             EditorUtility.SetDirty(feedback);
         }
     }

@@ -6,6 +6,7 @@ namespace Hapbeat.Boxing
     public sealed class BoxingPresentation : MonoBehaviour
     {
         public Transform leftGlove, rightGlove;
+        public Transform leftForearm, rightForearm;
         public BoxingOpponentAvatar enemyAvatar;
         public Text timerText, scoreText, cueText, statusText, impactText;
         public Transform hitBurst;
@@ -31,6 +32,8 @@ namespace Hapbeat.Boxing
             bool menuOpen = game.menu != null && game.menu.IsOpen;
             timerText.transform.parent.gameObject.SetActive(!menuOpen);
             leftGlove.gameObject.SetActive((pose.valid || pose.visualValid) && !menuOpen); rightGlove.gameObject.SetActive((pose.valid || pose.visualValid) && !menuOpen);
+            RenderForearm(leftForearm,pose.left,pose.leftRotation,(pose.valid || pose.visualValid) && !menuOpen);
+            RenderForearm(rightForearm,pose.right,pose.rightRotation,(pose.valid || pose.visualValid) && !menuOpen);
             enemyAvatar.gameObject.SetActive(!menuOpen);
             if (pose.valid || pose.visualValid)
             {
@@ -38,13 +41,15 @@ namespace Hapbeat.Boxing
                 rightGlove.SetPositionAndRotation(pose.right, pose.rightRotation);
             }
             enemyAvatar.Render(game.Opponent, !game.Paused && valid ? Time.unscaledDeltaTime : 0);
-            timerText.text = game.Round.Phase == BoxingPhase.Results ? (game.Round.PlayerHealth<=0 ? "KNOCKOUT - OPPONENT WINS" : game.Round.EnemyHealth<=0 ? "KNOCKOUT - YOU WIN" : "ROUND COMPLETE") :
+            string result = (game.Round.PlayerHealth<=0 || game.Round.EnemyHealth<=0 ? "KNOCKOUT" : "ROUND COMPLETE") + " - " +
+                (game.Round.Outcome==BoxingOutcome.Win ? "YOU WIN" : game.Round.Outcome==BoxingOutcome.Lose ? "YOU LOSE" : "DRAW");
+            timerText.text = game.Round.Phase == BoxingPhase.Results ? result :
                 game.Round.Phase == BoxingPhase.Countdown ? Mathf.CeilToInt(game.Round.Countdown).ToString() :
                 game.Round.Phase == BoxingPhase.Ready ? game.tuning.roundSeconds.ToString("0") + " SECOND ROUND" : Mathf.CeilToInt(game.Round.TimeLeft).ToString("00") + "s";
             scoreText.text = "SCORE " + game.Round.Score + "     HIT " + game.Round.Hits + "     BLOCK " + game.Round.Blocks + "     DODGE " + game.Round.Dodges;
             RenderHealth(game.Round);
             statusText.text = game.input.ActiveMode + "  |  " + (game.feedback.CanSend ? "HAPBEAT " + (Hapbeat.HapbeatManager.Instance != null ? Hapbeat.HapbeatManager.Instance.AliveDeviceCount : 0) + " DEVICE(S)" : "HAPTICS OFF") +
-                "  |  " + (game.Round.Phase == BoxingPhase.Results ? (game.Round.PlayerHealth <= 0 ? "KO - OPPONENT WINS" : game.Round.EnemyHealth <= 0 ? "KO - YOU WIN" : "ROUND COMPLETE") : game.Paused ? game.PauseReason : game.tuning.impactMode.ToString());
+                "  |  " + (game.Round.Phase == BoxingPhase.Results ? result : game.Paused ? game.PauseReason : game.tuning.impactMode.ToString());
             flashTime = Mathf.Max(0, flashTime - Time.unscaledDeltaTime);
             impactText.text = flashTime > 0 ? lastImpact : "";
             if (hitBurst != null)
@@ -68,6 +73,14 @@ namespace Hapbeat.Boxing
             EnemyHealthBar.rectTransform.anchorMax = new Vector2(round.EnemyHealth / round.MaximumHealth, 1);
             playerHealthText.text = "YOU  " + Mathf.CeilToInt(round.PlayerHealth) + " / " + Mathf.CeilToInt(round.MaximumHealth);
             enemyHealthText.text = "OPPONENT  " + Mathf.CeilToInt(round.EnemyHealth) + " / " + Mathf.CeilToInt(round.MaximumHealth);
+        }
+        private static void RenderForearm(Transform arm,Vector3 hand,Quaternion rotation,bool visible)
+        {
+            if(arm==null) return; // Scene generation renders before installing art.
+            arm.gameObject.SetActive(visible);
+            arm.SetPositionAndRotation(hand+rotation*Vector3.back*(BoxingForearm.WristOffset+BoxingForearm.Length*.5f),
+                rotation*Quaternion.FromToRotation(Vector3.up,Vector3.forward));
+            arm.localScale=Vector3.one;
         }
         private Image CreateHealthBar(string name, float x, Color color, out Text label)
         {

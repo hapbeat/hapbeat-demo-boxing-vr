@@ -269,6 +269,9 @@ namespace Hapbeat.Boxing.Editor
                 if (trigger == null || trigger.ResolveEntry() == null || trigger.ResolveEntry().streamClip == null) throw new InvalidOperationException("Unwired haptic trigger");
             if (game.feedback.impactTriggers.Length != 12 || game.feedback.contactSounds.Length != 4 || game.feedback.contactSounds.Any(c => c == null) || game.feedback.bell == null || game.feedback.bellSource == null)
                 throw new InvalidOperationException("Incomplete surface feedback assets");
+            if(game.feedback.voiceSource==null || game.feedback.winVoice==null || game.feedback.loseVoice==null || game.feedback.tieVoice==null ||
+                game.presentation.leftForearm==null || game.presentation.rightForearm==null)
+                throw new InvalidOperationException("Missing result voice or player forearms");
             Debug.Log("BOXING_SCENE_VALID: XR rig, menu, opponent, twelve surface haptic bindings, no missing scripts");
         }
         private static void ValidateLayerSettings(string path, string property)

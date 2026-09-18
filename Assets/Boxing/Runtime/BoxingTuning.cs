@@ -4,6 +4,7 @@ using UnityEngine;
 namespace Hapbeat.Boxing
 {
     public enum BoxingPhase { Ready, Countdown, Fighting, Results }
+    public enum BoxingOutcome { Win, Lose, Tie }
     public enum BoxingInputMode { Controllers, Hands }
     public enum ImpactMode { Continuous, WeakHard }
     public enum ImpactZone { LeftGlove, RightGlove, Head, Body }
@@ -122,6 +123,8 @@ namespace Hapbeat.Boxing
         public float MaximumHealth { get; private set; } = 100;
         public float PlayerHealth { get; private set; } = 100;
         public float EnemyHealth { get; private set; } = 100;
+        public BoxingOutcome Outcome => PlayerHealth > EnemyHealth ? BoxingOutcome.Win :
+            PlayerHealth < EnemyHealth ? BoxingOutcome.Lose : BoxingOutcome.Tie;
         public void Start(float duration, float maximumHealth = 100)
         {
             MaximumHealth = Mathf.Max(1, maximumHealth);

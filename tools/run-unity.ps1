@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Wmm','Avatar','AvatarPreview','Reach','Content','ContentPreview','Polish','Upgrade','Configure','Validate','Tests','InputTests','Smoke','Capture','Windows','Android','Simulator','AirLink','SimulatorSmoke')]
+    [ValidateSet('Forearms','Wmm','Avatar','AvatarPreview','Reach','Content','ContentPreview','Polish','Upgrade','Configure','Validate','Tests','InputTests','Smoke','Capture','Windows','Android','Simulator','AirLink','SimulatorSmoke')]
     [string]$Task = 'Validate',
     [string]$UnityExe = 'M:/GameEngine/Unity/Editor/6000.3.12f1/Editor/Unity.exe',
     [string]$TestFilter = ''
@@ -16,6 +16,7 @@ if ($Task -eq 'Tests') { $arguments += @('-runTests', '-testPlatform', 'EditMode
 elseif ($Task -eq 'InputTests') { $arguments += @('-runTests', '-testPlatform', 'PlayMode', '-assemblyNames', 'Hapbeat.Boxing.InputTests', '-testResults', ('"' + (Join-Path $logs 'input-tests.xml') + '"')) }
 else {
     $method = switch ($Task) {
+        'Forearms' { 'Hapbeat.Boxing.Editor.BoxingForearmSetup.Apply' }
         'Wmm' { 'Hapbeat.Boxing.Editor.BoxingWideMotionBuild.Configure' }
         'Avatar' { 'Hapbeat.Boxing.Editor.BoxingAvatarSetup.Install' }
         'AvatarPreview' { 'Hapbeat.Boxing.Editor.BoxingAvatarSetup.Preview' }

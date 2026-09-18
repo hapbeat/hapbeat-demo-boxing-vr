@@ -103,7 +103,7 @@ namespace Hapbeat.Boxing.Editor
                 string summary = $"hits={game.Round.Hits} blocks={game.Round.Blocks} enemyBlocks={game.Round.EnemyBlocks} headHits={game.Round.Taken} dodges={game.Round.Dodges} soft={softImpacts} hard={hardImpacts} zones={zones} surfaces={surfaces} rings={game.feedback.Rings} gain={minGain:0.00}..{maxGain:0.00} sends={game.feedback.Sends} errors={errors}";
                 Finish(game.Round.Hits >= 3 && game.Round.Blocks >= 2 && game.Round.Taken >= 2 && game.Round.Dodges >= 1 &&
                     softImpacts > 0 && hardImpacts > 0 && (zones & 7) == 7 && surfaces == 15 && game.feedback.Rings == 2 && maxGain > minGain + 0.2f && game.feedback.Sends == 0 && errors == 0 &&
-                    capturedAvatarStrike && capturedAvatarHead && capturedAvatarBody && game.ResultPresentationTime>=2.5f, summary + $" avatarStrike={capturedAvatarStrike} avatarHead={capturedAvatarHead} avatarBody={capturedAvatarBody} resultHold={game.ResultPresentationTime:0.00}");
+                    capturedAvatarStrike && capturedAvatarHead && capturedAvatarBody && game.feedback.ResultVoiceCues==1 && game.ResultPresentationTime>=game.ResultDuration, summary + $" avatarStrike={capturedAvatarStrike} avatarHead={capturedAvatarHead} avatarBody={capturedAvatarBody} resultHold={game.ResultPresentationTime:0.00} resultVoice={game.feedback.ResultVoiceCues}");
             }
         }
         private static void CaptureAvatar(string state)

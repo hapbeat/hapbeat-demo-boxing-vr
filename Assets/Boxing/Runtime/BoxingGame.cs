@@ -36,6 +36,9 @@ namespace Hapbeat.Boxing
         public float ResultPresentationTime { get; private set; }
         private float resultBellDelay;
         private bool resultBellPlayed;
+        private bool resultVoicePlayed;
+        private float resultVoiceDelay;
+        public float ResultDuration { get; private set; } = 2.5f;
         private int spokenCountdown;
 
         public void Initialize() { if (Opponent == null) Opponent = new BoxingOpponent(tuning); previousPhase = Round.Phase; }
@@ -85,7 +88,7 @@ namespace Hapbeat.Boxing
             Round.Start(tuning.roundSeconds, tuning.maximumHealth); Opponent.Reset(input.ReferenceEyeHeight);
             ResultPresentationTime=0;
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); menu.Close();
-            spokenCountdown=0; resultBellPlayed=false;
+            spokenCountdown=0; resultBellPlayed=resultVoicePlayed=false;
         }
         private void Update()
         {
@@ -103,8 +106,9 @@ namespace Hapbeat.Boxing
                 // End the action before hiding it behind the menu. No combat runs here.
                 ResultPresentationTime += dt>0 && dt<=.1f ? dt : 0;
                 if(!resultBellPlayed && ResultPresentationTime>=resultBellDelay) { feedback.Ring(); resultBellPlayed=true; }
+                if(!resultVoicePlayed && ResultPresentationTime>=resultVoiceDelay) { feedback.SpeakResult(Round.Outcome); resultVoicePlayed=true; }
                 presentation.Render(this,pose,false);
-                if(ResultPresentationTime>=2.5f) menu.Open();
+                if(ResultPresentationTime>=ResultDuration) menu.Open();
                 return;
             }
             bool tracking = pose.valid && dt > 0 && dt <= 0.1f;
@@ -175,8 +179,10 @@ namespace Hapbeat.Boxing
             {
                 if (Round.Phase == BoxingPhase.Results)
                 {
-                    ResultPresentationTime=0; resultBellPlayed=false;
+                    ResultPresentationTime=0; resultBellPlayed=resultVoicePlayed=false;
                     resultBellDelay=Mathf.Max(.25f,feedback.ImpactTailSeconds+.08f);
+                    resultVoiceDelay=resultBellDelay+(feedback.bell!=null ? feedback.bell.length : 0)+.15f;
+                    ResultDuration=Mathf.Max(2.5f,resultVoiceDelay+feedback.ResultClip(Round.Outcome).length+.35f);
                 }
                 if (Round.Phase == BoxingPhase.Fighting) feedback.Ring();
                 previousPhase = Round.Phase;
@@ -199,6 +205,13 @@ namespace Hapbeat.Boxing
             }
             Candidate(ImpactZone.LeftGlove, previous.left, p.left, tuning.gloveRadius);
             Candidate(ImpactZone.RightGlove, previous.right, p.right, tuning.gloveRadius);
+            void Forearm(ImpactZone side, Vector3 a, Quaternion ar, Vector3 b, Quaternion br)
+            {
+                if(BoxingForearm.Sweep(from,to,tuning.gloveRadius,a,ar,b,br,out float t,out var af,out var bf) && t<earliest)
+                { earliest=t; zone=side; targetFrom=af; targetTo=bf; }
+            }
+            Forearm(ImpactZone.LeftGlove,previous.left,previous.leftRotation,p.left,p.leftRotation);
+            Forearm(ImpactZone.RightGlove,previous.right,previous.rightRotation,p.right,p.rightRotation);
             Candidate(ImpactZone.Head, previous.head, p.head, tuning.headRadius);
             Candidate(ImpactZone.Body, BoxingOpponent.PlayerBody(previous.head), BoxingOpponent.PlayerBody(p.head), tuning.bodyRadius);
             if (float.IsPositiveInfinity(earliest)) return;

@@ -45,8 +45,10 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.presentation.timerText.text,Does.Contain("ROUND COMPLETE"));
             for(int i=0;i<240;i++) game.Simulate(.01f,pose);
             Assert.That(game.menu.IsOpen,Is.False);
-            for(int i=0;i<20;i++) game.Simulate(.01f,pose);
+            Assert.That(game.feedback.ResultVoiceCues,Is.LessThanOrEqualTo(1));
+            for(int i=0;i<Mathf.CeilToInt(game.ResultDuration*100);i++) game.Simulate(.01f,pose);
             Assert.That(game.menu.IsOpen,Is.True); Assert.That(game.feedback.Rings,Is.EqualTo(2));
+            Assert.That(game.feedback.ResultVoiceCues,Is.EqualTo(1));
         }
         [Test] public void GlovesShareWidthRegardlessOfOpponentHeight()
         {
