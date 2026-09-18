@@ -169,6 +169,25 @@ namespace Hapbeat.Boxing.Tests
             Set(testAim.aimFlags,(int)(MetaAimFlags.Computed|MetaAimFlags.Valid|MetaAimFlags.SystemGesture));
             yield return Pump(.2f,game); Assert.That(game.input.RightPointer.Valid,Is.False);
         }
+        [UnityTest] public IEnumerator UnavailableMetaAimMustFallBackToMeasuredFingertipRayAndPinch()
+        {
+            yield return SceneManager.LoadSceneAsync("Boxing"); var game=Object.FindAnyObjectByType<BoxingGame>();
+            game.feedback.forceSilent=true; game.feedback.sdkRoot.SetActive(false);
+            StartHands(); BoxingTestHandProvider.rightTracked=true;
+            BoxingTestHandProvider.pointMenu=true;
+            BoxingTestHandProvider.menuTarget=game.input.headCamera.transform.parent.InverseTransformPoint(game.menu.rows[0].transform.position);
+            InputSystem.RegisterLayout<MetaAimHand>(); testAim=InputSystem.AddDevice<MetaAimHand>(); MetaAimHand.right=testAim;
+            Set(testAim.isTracked,1); Set(testAim.trackingState,3); Set(testAim.aimFlags,(int)MetaAimFlags.Computed);
+            Set(testAim.deviceRotation,Quaternion.identity); Set(testAim.pinchStrengthIndex,0);
+            yield return Pump(.4f,game);
+            Assert.That(game.input.RightPointer.Valid,Is.True,
+                "A present but unavailable Meta Aim source must not hide the measured fingertip ray.");
+            BoxingTestHandProvider.pinch=true;
+            yield return Pump(.2f,game);
+            Assert.That(game.menu.IsOpen,Is.False,
+                "The measured fingertip pinch must still select when Meta Aim is unavailable.");
+            Assert.That(game.feedback.Sends,Is.Zero);
+        }
         [UnityTest] public IEnumerator PickingUpControllersAfterHandlessStartupDoesNotRequireRestart()
         {
             yield return SceneManager.LoadSceneAsync("Boxing"); var game = Object.FindAnyObjectByType<BoxingGame>();

@@ -225,9 +225,16 @@ namespace Hapbeat.Boxing
             if(aim!=null && aim.added)
             {
                 var flags=(MetaAimFlags)aim.aimFlags.ReadValue();
-                if(!aim.isTracked.isPressed || (flags&MetaAimFlags.Valid)==0 || (flags&MetaAimFlags.SystemGesture)!=0) { pointer.Reset(); return; }
-                rotation=aim.deviceRotation.ReadValue();
-                pinched=aim.indexPressed.isPressed; released=aim.pinchStrengthIndex.ReadValue()<.5f;
+                bool aimValid=aim.isTracked.isPressed && (flags&MetaAimFlags.Valid)!=0;
+                // Quest can expose the Meta Aim device before it has produced a valid aim
+                // pose. The joint poses are still measured, so keep the menu usable with its
+                // fingertip ray until Meta Aim becomes valid.
+                if((flags&MetaAimFlags.SystemGesture)!=0) { pointer.Reset(); return; }
+                if(aimValid)
+                {
+                    rotation=aim.deviceRotation.ReadValue();
+                    pinched=aim.indexPressed.isPressed; released=aim.pinchStrengthIndex.ReadValue()<.5f;
+                }
             }
             // XRI PinchPointFollow uses the midpoint; Meta Aim supplies a stable UI direction.
             pointer.Sample(true, space.TransformPoint((tip.position+thumb.position)*.5f),
