@@ -297,6 +297,7 @@ namespace Hapbeat.Boxing.Tests
             foreach (ImpactZone zone in System.Enum.GetValues(typeof(ImpactZone)))
             foreach (float speed in new[] { 1f, 5f })
             {
+                if(zone==ImpactZone.Head || zone==ImpactZone.Body) continue; // These zones receive body hits, never guards.
                 var glove = new BoxingImpact(zone, speed, attack, Vector3.zero, game.tuning, ImpactSurface.Glove);
                 var body = new BoxingImpact(zone, speed, attack, Vector3.zero, game.tuning, ImpactSurface.Body);
                 Assert.That(game.feedback.contactSounds[BoxingFeedback.SoundIndex(glove)], Is.Not.SameAs(game.feedback.contactSounds[BoxingFeedback.SoundIndex(body)]));
@@ -358,9 +359,9 @@ namespace Hapbeat.Boxing.Tests
             var restored = Pose(); restored.left = game.Opponent.Head; restored.right = game.Opponent.Head;
             Advance(0.3f, restored); Assert.That(game.Round.Hits, Is.Zero);
         }
-        [Test] public void AllZonesHaveFourSurfaceAndStrengthPcmHapticBindings()
+        [Test] public void OnlyReachableSurfaceAndStrengthHapticBindingsAreInstalled()
         {
-            Assert.That(game.feedback.impactTriggers.Length, Is.EqualTo(12));
+            Assert.That(game.feedback.impactTriggers.Length, Is.EqualTo(10));
             foreach (var trigger in game.feedback.impactTriggers)
             {
                 var entry = trigger.ResolveEntry(); Assert.That(entry, Is.Not.Null); Assert.That(entry.streamClip, Is.Not.Null);
@@ -413,7 +414,7 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(settings.TryResolveTarget("gloveball", out var target), Is.True);
             Assert.That(target.PackageName, Is.EqualTo("jp.hapbeat.gloveballdemo"));
             string[] targets = { "*/pos_l_wrist", "*/pos_r_wrist", "*/pos_neck" };
-            for (int i = 0; i < 12; i++) Assert.That(game.feedback.impactTriggers[i].ResolveEntry().target, Is.EqualTo(targets[i / 4]));
+            for (int i = 0; i < 10; i++) Assert.That(game.feedback.impactTriggers[i].ResolveEntry().target, Is.EqualTo(targets[i / 4]));
             Assert.That(settings.TryResolveTarget("handdemo", out target), Is.True);
             Assert.That(target.PackageName, Is.EqualTo("com.Hapbeat.HapticHandDemo_G2"));
         }

@@ -43,7 +43,7 @@ namespace Hapbeat.Boxing.Tests
                 var impact = new BoxingImpact(ImpactZone.Body,4,false,Vector3.zero,tuning,ImpactSurface.Body);
                 round.Report(impact);
                 Assert.That(round.PlayerHealth,Is.LessThan(tuning.maximumHealth));
-                Assert.That(BoxingFeedback.TriggerIndex(impact),Is.InRange(8,11));
+                Assert.That(BoxingFeedback.TriggerIndex(impact),Is.EqualTo(9));
             }
             finally { Object.DestroyImmediate(tuning); }
         }

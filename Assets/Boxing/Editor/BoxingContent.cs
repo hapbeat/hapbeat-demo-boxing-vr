@@ -13,6 +13,26 @@ namespace Hapbeat.Boxing.Editor
     public static class BoxingContent
     {
         private const string Root = "Assets/Boxing/";
+        [MenuItem("Hapbeat Boxing/Simplify Haptic Events")]
+        public static void SimplifyHapticEvents()
+        {
+            var scene=EditorSceneManager.OpenScene(BoxingProject.ScenePath);
+            var feedback=UnityEngine.Object.FindFirstObjectByType<BoxingGame>().feedback;
+            var map=AssetDatabase.LoadAssetAtPath<HapbeatEventMap>(Root+"Haptics/BoxingEventMap.asset");
+            bool Unused(string name)=>name=="head_glove_soft" || name=="head_glove_hard";
+            var retained=new List<HapbeatUnityEventTrigger>();
+            foreach(var trigger in feedback.impactTriggers)
+            {
+                var entry=trigger.ResolveEntry();
+                if(Unused(entry.eventName)) UnityEngine.Object.DestroyImmediate(trigger.gameObject);
+                else retained.Add(trigger);
+            }
+            map.entries.RemoveAll(e=>Unused(e.eventName));
+            feedback.impactTriggers=retained.ToArray();
+            EditorUtility.SetDirty(map); EditorUtility.SetDirty(feedback);
+            EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); AssetDatabase.SaveAssets();
+            BoxingProject.Validate();
+        }
         [MenuItem("Hapbeat Boxing/Apply Reach And Punch Update")]
         public static void ApplyReachUpdate()
         {
@@ -134,13 +154,14 @@ namespace Hapbeat.Boxing.Editor
             foreach (var trigger in f.impactTriggers) if (trigger != null) UnityEngine.Object.DestroyImmediate(trigger.gameObject);
             var map = AssetDatabase.LoadAssetAtPath<HapbeatEventMap>(Root + "Haptics/BoxingEventMap.asset");
             if (map == null) { map = ScriptableObject.CreateInstance<HapbeatEventMap>(); AssetDatabase.CreateAsset(map, Root + "Haptics/BoxingEventMap.asset"); }
-            map.entries.Clear(); f.impactTriggers = new HapbeatUnityEventTrigger[12];
-            for (int i = 0; i < 12; i++)
+            map.entries.Clear(); f.impactTriggers = new HapbeatUnityEventTrigger[10];
+            for (int i = 0; i < 10; i++)
             {
+                int surfaceIndex=i<8 ? i%4 : i-6;
                 string zone = i / 4 == 0 ? "left_glove" : i / 4 == 1 ? "right_glove" : "head";
-                string name = zone + (i % 4 < 2 ? "_glove_" : "_body_") + (i % 2 == 0 ? "soft" : "hard");
+                string name = zone + (surfaceIndex < 2 ? "_glove_" : "_body_") + (i % 2 == 0 ? "soft" : "hard");
                 var entry = new HapbeatEventEntry { displayName = name, category = "boxing", eventName = name, mode = HapticMode.StreamClip,
-                    streamClip = waves[i % 4], gain = 0.8f, target = i / 4 == 0 ? "*/pos_l_wrist" : i / 4 == 1 ? "*/pos_r_wrist" : "*/pos_neck" };
+                    streamClip = waves[surfaceIndex], gain = 0.8f, target = i / 4 == 0 ? "*/pos_l_wrist" : i / 4 == 1 ? "*/pos_r_wrist" : "*/pos_neck" };
                 map.entries.Add(entry);
                 var go = new GameObject("Haptic " + name); go.transform.SetParent(f.transform, false);
                 f.impactTriggers[i] = go.AddComponent<HapbeatUnityEventTrigger>(); f.impactTriggers[i].EditorSetupEntry(map, entry.id);

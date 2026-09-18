@@ -8,8 +8,8 @@ namespace Hapbeat.Boxing
     public sealed class BoxingFeedback : MonoBehaviour
     {
         public GameObject sdkRoot;
-        // Per receiver: glove soft/hard, body soft/hard. Surface is independent of attack direction.
-        public HapbeatUnityEventTrigger[] impactTriggers = new HapbeatUnityEventTrigger[12];
+        // Wrists: glove/body x soft/hard. Neck: received body soft/hard only.
+        public HapbeatUnityEventTrigger[] impactTriggers = new HapbeatUnityEventTrigger[10];
         public AudioSource audioSource, bellSource, voiceSource;
         public AudioClip[] countdownVoice = new AudioClip[3];
         public AudioClip winVoice, loseVoice, tieVoice;
@@ -63,7 +63,15 @@ namespace Hapbeat.Boxing
         public static int SoundIndex(BoxingImpact impact) => (int)impact.surface * 2 + (impact.hard ? 1 : 0);
         // This demo has wrist L/R and neck receivers, not a fourth torso device.
         // Both received body/head hits use the existing neck feedback bank.
-        public static int TriggerIndex(BoxingImpact impact) => (impact.zone == ImpactZone.Body ? 2 : (int)impact.zone) * 4 + SoundIndex(impact);
+        public static int TriggerIndex(BoxingImpact impact)
+        {
+            if(impact.zone == ImpactZone.Head || impact.zone == ImpactZone.Body)
+            {
+                if(impact.surface != ImpactSurface.Body) throw new ArgumentException("Received head/body hits cannot be glove guards.");
+                return 8 + (impact.hard ? 1 : 0);
+            }
+            return (int)impact.zone * 4 + SoundIndex(impact);
+        }
         public void Ring()
         {
             Rings++;

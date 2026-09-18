@@ -125,34 +125,6 @@ MonoBehaviour:
     notes: 
     manifestOverride: {fileID: 0}
     _cachedManifestIntensity: -1
-  - _id: 62bd235b803843c9bd76e24c28d04493
-    mode: 1
-    displayName: head_glove_soft
-    category: boxing
-    eventName: head_glove_soft
-    streamClip: {fileID: 8300000, guid: d394c1b5d36d84a4b993309015ac45dd, type: 3}
-    loop: 0
-    bindings: []
-    gain: 0.8
-    target: '*/pos_neck'
-    delayOffsetSeconds: 0
-    notes: 
-    manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: -1
-  - _id: edae6900db7447fcb479c170251ffb71
-    mode: 1
-    displayName: head_glove_hard
-    category: boxing
-    eventName: head_glove_hard
-    streamClip: {fileID: 8300000, guid: 71d0229aa5516b0459819a63d6b3d590, type: 3}
-    loop: 0
-    bindings: []
-    gain: 0.8
-    target: '*/pos_neck'
-    delayOffsetSeconds: 0
-    notes: 
-    manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: -1
   - _id: 8095d40919d14488ab8ab16eb4824593
     mode: 1
     displayName: head_body_soft
