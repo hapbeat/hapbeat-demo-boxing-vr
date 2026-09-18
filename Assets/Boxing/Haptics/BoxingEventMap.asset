@@ -172,7 +172,7 @@ MonoBehaviour:
     displayName: head_body_hard
     category: boxing
     eventName: head_body_hard
-    streamClip: {fileID: 8300000, guid: 7f48dd53507603240b6c07eff9b29942, type: 3}
+    streamClip: {fileID: 8300000, guid: 22817718ae7a9c14b9cc8d8545e5a7bf, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
