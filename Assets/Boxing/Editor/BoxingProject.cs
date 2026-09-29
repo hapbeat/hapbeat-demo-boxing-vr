@@ -264,7 +264,12 @@ namespace Hapbeat.Boxing.Editor
                 throw new InvalidOperationException("Rigged boxing opponent missing");
             foreach (var root in scene.GetRootGameObjects())
             foreach (var transform in root.GetComponentsInChildren<Transform>(true))
+            {
                 if (GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(transform.gameObject) != 0) throw new InvalidOperationException("Missing script: " + transform.name);
+                if (PrefabUtility.IsPrefabAssetMissing(transform.gameObject)) throw new InvalidOperationException("Missing prefab: " + transform.name);
+            }
+            var hands = UnityEngine.Object.FindObjectsByType<BoxingHandModelResolver>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            if (hands.Length != 2 || hands.Any(h => h.fallbackPrefab == null || h.menuHand == null)) throw new InvalidOperationException("Menu hand resolvers incomplete");
             foreach (var trigger in game.feedback.impactTriggers)
                 if (trigger == null || trigger.ResolveEntry() == null || trigger.ResolveEntry().streamClip == null) throw new InvalidOperationException("Unwired haptic trigger");
             if (game.feedback.impactTriggers.Length != 10 || game.feedback.contactSounds.Length != 4 || game.feedback.contactSounds.Any(c => c == null) || game.feedback.bell == null || game.feedback.bellSource == null)
@@ -272,7 +277,7 @@ namespace Hapbeat.Boxing.Editor
             if(game.feedback.voiceSource==null || game.feedback.winVoice==null || game.feedback.loseVoice==null || game.feedback.tieVoice==null ||
                 game.presentation.leftForearm==null || game.presentation.rightForearm==null)
                 throw new InvalidOperationException("Missing result voice or player forearms");
-            Debug.Log("BOXING_SCENE_VALID: XR rig, menu, opponent, ten surface haptic bindings, no missing scripts");
+            Debug.Log("BOXING_SCENE_VALID: XR rig, menu, opponent, menu hand resolvers, ten surface haptic bindings, no missing scripts or prefabs");
         }
         private static void ValidateLayerSettings(string path, string property)
         {

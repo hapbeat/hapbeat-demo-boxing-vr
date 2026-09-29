@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Feedback','Forearms','Wmm','Avatar','AvatarPreview','Reach','Content','ContentPreview','Polish','Upgrade','Configure','Validate','Tests','InputTests','Smoke','Capture','Windows','Android','Simulator','AirLink','SimulatorSmoke')]
+    [ValidateSet('Feedback','Forearms','Wmm','Avatar','AvatarPreview','Reach','Content','ContentPreview','Polish','Hands','Upgrade','Configure','Validate','Tests','InputTests','Smoke','Capture','Windows','Android','Simulator','AirLink','SimulatorSmoke')]
     [string]$Task = 'Validate',
     [string]$UnityExe = 'M:/GameEngine/Unity/Editor/6000.3.12f1/Editor/Unity.exe',
     [string]$TestFilter = ''
@@ -25,6 +25,7 @@ else {
         'Content' { 'Hapbeat.Boxing.Editor.BoxingContent.Upgrade' }
         'ContentPreview' { 'Hapbeat.Boxing.Editor.BoxingContent.Preview' }
         'Polish' { 'Hapbeat.Boxing.Editor.BoxingProject.Polish' }
+        'Hands' { 'Hapbeat.Boxing.Editor.BoxingHandPolish.ApplyMenuHands' }
         'Upgrade' { 'Hapbeat.Boxing.Editor.BoxingProject.Upgrade' }
         'Configure' { 'Hapbeat.Boxing.Editor.BoxingProject.Configure' }
         'Validate' { 'Hapbeat.Boxing.Editor.BoxingProject.Validate' }

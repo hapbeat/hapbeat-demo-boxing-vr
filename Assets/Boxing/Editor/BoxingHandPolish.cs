@@ -1,6 +1,5 @@
-using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.XR.Hands;
@@ -9,35 +8,49 @@ namespace Hapbeat.Boxing.Editor
 {
     public static class BoxingHandPolish
     {
-        public static void Install(BoxingGame game)
+        public const string GhostMaterialPath = "Assets/Boxing/Art/UnityHands/Ghost.mat";
+        public const string PrivateHandResource = "HapbeatPrivate/UnityHands/";
+
+        [MenuItem("Hapbeat Boxing/Install Menu Hand Resolvers")]
+        public static void ApplyMenuHands()
         {
-            game.presentation.arena=GameObject.Find("Arena - original procedural assets").transform;
-            EditorUtility.SetDirty(game.presentation);
-            var material=AssetDatabase.LoadAssetAtPath<Material>("Assets/Boxing/Art/UnityHands/Ghost.mat");
-            if(material==null) { material=new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(material,"Assets/Boxing/Art/UnityHands/Ghost.mat"); }
+            BoxingPlaceholderHands.Generate();
+            var scene=EditorSceneManager.OpenScene(BoxingProject.ScenePath);
+            InstallMenuHands(Object.FindAnyObjectByType<BoxingGame>());
+            EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); AssetDatabase.SaveAssets();
+        }
+
+        // Scene holds only tracking events and the resolver; the skeleton driver and hand model are created at runtime (private mesh or public placeholder).
+        public static void InstallMenuHands(BoxingGame game)
+        {
+            var material=AssetDatabase.LoadAssetAtPath<Material>(GhostMaterialPath);
+            if(material==null) { material=new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(material,GhostMaterialPath); }
             material.SetColor("_BaseColor",new Color(.45f,.85f,1,.48f));
             material.SetFloat("_Surface",1); material.SetFloat("_ZWrite",0);
             material.SetFloat("_SrcBlend",(float)BlendMode.SrcAlpha); material.SetFloat("_DstBlend",(float)BlendMode.OneMinusSrcAlpha);
             material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); material.renderQueue=(int)RenderQueue.Transparent;
             EditorUtility.SetDirty(material);
+            if(AssetDatabase.LoadAssetAtPath<GameObject>(BoxingPlaceholderHands.PrefabPath(Handedness.Right))==null) BoxingPlaceholderHands.Generate();
             foreach(var old in Object.FindObjectsByType<BoxingMenuHand>(FindObjectsInactive.Include,FindObjectsSortMode.None)) Object.DestroyImmediate(old.gameObject);
             foreach(var side in new[]{Handedness.Left,Handedness.Right})
             {
                 var root=new GameObject(side+" menu ghost hand"); root.transform.SetParent(game.input.headCamera.transform.parent,false);
-                var model=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Boxing/Art/UnityHands/"+side+"Hand.fbx"));
-                model.transform.SetParent(root.transform,false);
-                foreach(var animator in model.GetComponentsInChildren<Animator>()) Object.DestroyImmediate(animator);
                 var tracking=root.AddComponent<XRHandTrackingEvents>(); tracking.handedness=side;
                 tracking.updateType=XRHandTrackingEvents.UpdateTypes.Dynamic|XRHandTrackingEvents.UpdateTypes.BeforeRender;
-                var driver=root.AddComponent<XRHandSkeletonDriver>(); driver.handTrackingEvents=tracking;
-                driver.jointTransformReferences=new List<JointToTransformReference>();
-                driver.rootTransform=model.GetComponentsInChildren<Transform>().Single(t=>t.name.EndsWith("Wrist"));
-                var missing=new List<string>(); driver.FindJointsFromRoot(missing); driver.InitializeFromSerializedReferences();
-                if(missing.Count!=0) throw new System.InvalidOperationException("Missing ghost hand joints: "+string.Join(",",missing));
-                var mesh=model.GetComponentInChildren<SkinnedMeshRenderer>(); mesh.sharedMaterial=material;
-                mesh.enabled=false; mesh.updateWhenOffscreen=true; mesh.shadowCastingMode=ShadowCastingMode.Off;
-                var visual=root.AddComponent<BoxingMenuHand>(); visual.menu=game.menu; visual.tracking=tracking; visual.mesh=mesh;
+                var visual=root.AddComponent<BoxingMenuHand>(); visual.menu=game.menu; visual.tracking=tracking;
+                var resolver=root.AddComponent<BoxingHandModelResolver>();
+                resolver.privateResourcePath=PrivateHandResource+side+"Hand";
+                resolver.fallbackPrefab=AssetDatabase.LoadAssetAtPath<GameObject>(BoxingPlaceholderHands.PrefabPath(side));
+                if(resolver.fallbackPrefab==null) throw new System.InvalidOperationException("Placeholder hand prefab missing: "+BoxingPlaceholderHands.PrefabPath(side));
+                resolver.material=material; resolver.menuHand=visual;
             }
+        }
+
+        public static void Install(BoxingGame game)
+        {
+            game.presentation.arena=GameObject.Find("Arena - original procedural assets").transform;
+            EditorUtility.SetDirty(game.presentation);
+            InstallMenuHands(game);
             var feedback=game.feedback;
             if(feedback.voiceSource==null)
             {

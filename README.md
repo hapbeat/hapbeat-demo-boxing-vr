@@ -4,6 +4,14 @@ Unity **6000.3.12f1** の90秒VRスパーリングデモ。左右のグローブ
 
 スコアボードには自分と相手のHPバーを表示します。初期HPは各100、プレイヤーの攻撃は準備状態とHMD相対速度に応じて0.5〜20、敵の通常ヒットは10・強ヒットは20ダメージ、グローブ・腕でのガードはダメージなしです。HPが0になるとKOで終了し、再スタート時に全回復します。ガード成立時は相手のパンチを接触点で止め、そこから引き戻します。攻撃のターン制限はありません。
 
+## 入手と起動
+
+- Unity **6000.3.12f1**（Android Build Support付き）で開きます。
+- `git clone https://github.com/hapbeat/hapbeat-demo-boxing-vr.git` したフォルダーをそのままUnity Hubで開けば動作します。Hapbeat SDK（[hapbeat-unity-sdk](https://github.com/hapbeat/hapbeat-unity-sdk)）とDemo Switch packageは `Packages/manifest.json` に固定したGit URLからUnity Package Managerが取得します。
+- ビルド済みAPKは [GitHub Releases](https://github.com/hapbeat/hapbeat-demo-boxing-vr/releases) で公開します。Questへは `adb install -r HapbeatBoxing.apk` 等でインストールしてください。
+- メニューで表示する半透明の手は、このリポジトリでは自作の簡易モデル（球・カプセルの組合せ、`Assets/Boxing/Art/PlaceholderHands/`）です。Unity XR Handsサンプルの手メッシュはUnity Package Distribution Licenseによりソース資産として再配布できないため含めていません。関節名はXR Handsと同じなので、追跡・ピンチ・メニュー操作は同じように動作します。簡易モデルは `./tools/run-unity.ps1 -Task Hands` で再生成し、Sceneへ手の設定を再適用できます。
+- Hapbeatの開発ワークスペースでは `./tools/link-workspace.ps1` を一度実行すると、非公開の手メッシュ（`Assets/HapbeatPrivate/`）と、SDK・Demo Switchのローカルソース（`Packages/` 内の埋め込みpackage。manifestのGit URLより優先）をジャンクションで接続します。実行時に `BoxingHandModelResolver` が非公開メッシュを見つければそれを使い、無ければ簡易モデルに切り替えます（Consoleの `[Boxing Hands]` に使用したモデルを表示）。
+
 ## Editor + XR Interaction Simulator（HMD不要）
 
 1. `Hapbeat Boxing > Editor Input > Simulator` を選び、Playを押します。Gameビューをクリックしてキーボード入力を渡してください。
@@ -22,7 +30,7 @@ Unity XRI 3.3.1の標準シミュレーターPrefab・入力設定を使用し�
 
 手追跡（Hands）が既定です。メニューでは半透明の手を表示し、親指と人差し指の中点から伸びるレイで項目を指し、つまんで決定します。Meta Aimの照準方向・ピンチ入力を使用し、対応デバイスが存在しない環境では実測の手首方向と指先間隔を使います。Meta Aimが存在するが無効／システムジェスチャー中の場合は選択を止めます。視線だけでは選択されません。コントローラーは不要です。起動時のHMD位置・向きをリング上の開始位置に合わせます。必要ならメニューから `RECENTER` を選択します。
 
-レイの起点はXRI Hands Interaction DemoのPinchPointFollowと同じ中点方式です。メニュー項目の当たり判定はデモ独自実装を維持しています。手の表示はUnity XR Handsの標準モデル・XRHandSkeletonDriverを利用し、試合中はグローブへ戻ります。標準手モデルはCC0ではなく、同梱の `Assets/Boxing/Art/UnityHands/LICENSE.md` が適用されます。
+レイの起点はXRI Hands Interaction DemoのPinchPointFollowと同じ中点方式です。メニュー項目の当たり判定はデモ独自実装を維持しています。手の表示はXRHandSkeletonDriverで関節を動かし、試合中はグローブへ戻ります。公開リポジトリでは簡易モデルを使います（[入手と起動](#入手と起動)）。Unity XR Handsの標準手モデルを接続したビルドでは、そのモデルに `Assets/Boxing/Art/UnityHands/LICENSE.md`（Unity Package Distribution License）が適用されます。
 
 手が取れない場合は、追跡された左右Touchを持ってA/X・Menu/B/Yまたはスティックを操作すると一時的にコントローラー入力を使います。A/Xで決定、左右どちらのスティックでも上下で選択、Menu/B/Yでメニューを開閉します。両手の手追跡が復帰するとHandsへ戻ります。INPUT欄は現在のソースを表示し、選択するとHands優先へ戻します。視線だけでDesktopやControllers固定へ切り替わることはありません。
 
@@ -61,7 +69,7 @@ NPCは左右の上腕・前腕にも、描画リグに追従する連続スイ�
 
 ### 外部操作への接続点とHands
 
-`BoxingGame.RecenterPlayer()`、`UseHandTracking()`、`UseControllers()`、`StartRound()`が外部操作用のローカル呼び出し口です。Unityのメインスレッドで呼びます。M5スイッチャーの現行契約はデモ切替のみなので、リセンター等のネットワーク命令は**未接続**です。次の通信拡張はcontracts-firstで追加し、この呼び出し口へ接続します。
+`BoxingGame.RecenterPlayer()`、`UseHandTracking()`、`UseControllers()`、`StartRound()`が外部操作用のローカル呼び出し口です。Unityのメインスレッドで呼びます。現行のDemo Switchプロトコルはデモ切替のみなので、リセンター等のネットワーク命令は**未接続**です。
 
 Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です。起動後に手のサブシステムが使えるようになった場合も再取得します。`WAITING FOR HAND SUBSYSTEM`は動作中の手サブシステムがない状態、`WRIST TRACKING: LEFT ... / RIGHT ...`は各手首の取得状態です。Consoleの`[Boxing Input]`と`[Boxing State]`はソース・追跡・停止理由の変化を記録します。実機Handsの動作は自動入力テストでは保証しません。
 
@@ -146,4 +154,4 @@ InputTestsはUnity公式InputTestFixtureを使うPlay Modeの入力テストで�
 
 ## ソースとライセンス
 
-XR設定は既存Hapbeat VR Templateを基にしています。SDKはworkspace内の `repos-sdk/hapbeat-unity-sdk` を参照します。別環境では同じworkspace構造を用意するか `Packages/manifest.json` のSDK参照を変更してください。モデルと触覚は自作、打撃音とゴングはCC0素材です。[素材情報](THIRD_PARTY_NOTICES.md)を参照してください。
+XR設定は既存Hapbeat VR Templateを基にしています。SDKとDemo Switchは `Packages/manifest.json` のGit URL（タグ／コミット固定）から取得します。モデルと触覚は自作、打撃音とゴングはCC0素材です。[素材情報](THIRD_PARTY_NOTICES.md)を参照してください。

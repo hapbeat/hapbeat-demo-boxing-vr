@@ -46,8 +46,13 @@ dev-notes/
 
 # Unity XR Hands sample meshes: Unity Package Distribution License allows
 # distribution only as binaries in a built app, not as raw source assets.
-# Kept locally (and in the private hapbeat-demo-assets repo), never committed.
-Assets/Boxing/Art/UnityHands/LeftHand.fbx
-Assets/Boxing/Art/UnityHands/LeftHand.fbx.meta
-Assets/Boxing/Art/UnityHands/RightHand.fbx
-Assets/Boxing/Art/UnityHands/RightHand.fbx.meta
+# Workspace developers link them from the private assets repo (tools/link-workspace.ps1);
+# a standalone clone uses the public placeholder hands instead.
+/Assets/HapbeatPrivate/
+/Assets/HapbeatPrivate.meta
+
+# Workspace-only embedded package junctions (tools/link-workspace.ps1) override the
+# git URLs pinned in Packages/manifest.json. The lock file is regenerated per checkout.
+/Packages/com.hapbeat.sdk/
+/Packages/com.hapbeat.demo-switch/
+/Packages/packages-lock.json

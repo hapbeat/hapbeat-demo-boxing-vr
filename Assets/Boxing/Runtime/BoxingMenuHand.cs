@@ -4,15 +4,20 @@ using UnityEngine.XR.Hands;
 namespace Hapbeat.Boxing
 {
     // Skeleton and joints are driven by Unity's XRHandSkeletonDriver, independently per hand.
+    // Renderers are supplied by BoxingHandModelResolver once the hand model has been instantiated.
     public sealed class BoxingMenuHand : MonoBehaviour
     {
         public BoxingMenu menu;
         public XRHandTrackingEvents tracking;
-        public SkinnedMeshRenderer mesh;
-        private void LateUpdate()
+        public Renderer[] renderers;
+        public bool Visible { get; private set; }
+        private void LateUpdate() => SetVisible(menu.IsOpen && menu.UsesHandPointer && tracking.bindableHandIsTracked.Value);
+        private void OnDisable() => SetVisible(false);
+        private void SetVisible(bool visible)
         {
-            mesh.enabled = menu.IsOpen && menu.UsesHandPointer && tracking.bindableHandIsTracked.Value;
+            Visible = visible;
+            if(renderers==null) return;
+            foreach(var renderer in renderers) if(renderer!=null) renderer.enabled=visible;
         }
-        private void OnDisable() { if(mesh!=null) mesh.enabled=false; }
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using Unity.Collections;
 using UnityEngine;
@@ -106,14 +107,14 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.menu.IsOpen, Is.True, "Looking alone must never select.");
             var ghosts=Object.FindObjectsByType<BoxingMenuHand>(FindObjectsSortMode.None);
             Assert.That(ghosts.Length,Is.EqualTo(2));
-            foreach(var ghost in ghosts) Assert.That(ghost.mesh.enabled,Is.True,"Tracked menu hands must be visible.");
+            foreach(var ghost in ghosts) Assert.That(ghost.renderers.Length>0 && ghost.renderers.All(r=>r.enabled),Is.True,"Tracked menu hands must be visible.");
             BoxingTestHandProvider.menuTarget = game.input.headCamera.transform.parent.InverseTransformPoint(game.menu.rows[0].transform.position);
             BoxingTestHandProvider.pointMenu = true;
             yield return Pump(.2f, game);
             BoxingTestHandProvider.pinch = true;
             yield return Pump(.2f, game);
             Assert.That(game.menu.IsOpen, Is.False, "Measured fingertip ray and pinch must start without controllers.");
-            foreach(var ghost in ghosts) Assert.That(ghost.mesh.enabled,Is.False,"Ghost hands are menu-only.");
+            foreach(var ghost in ghosts) Assert.That(ghost.renderers.Any(r=>r.enabled),Is.False,"Ghost hands are menu-only.");
             BoxingTestHandProvider.pointMenu = false;
             yield return Pump(0.4f, game);
             Assert.That(game.Round.Countdown, Is.LessThan(3));
