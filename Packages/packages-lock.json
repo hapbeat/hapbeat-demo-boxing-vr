@@ -10,7 +10,7 @@
       }
     },
     "com.hapbeat.sdk": {
-      "version": "file:../../../../../repos-sdk/hapbeat-unity-sdk",
+      "version": "file:../../../../repos-sdk/hapbeat-unity-sdk",
       "depth": 0,
       "source": "local",
       "dependencies": {
