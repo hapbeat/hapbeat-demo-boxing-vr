@@ -8,6 +8,7 @@ Unity **6000.3.12f1** の90秒VRスパーリングデモ。左右のグローブ
 
 - Unity **6000.3.12f1**（Android Build Support付き）で開きます。
 - `git clone https://github.com/hapbeat/hapbeat-demo-boxing-vr.git` したフォルダーをそのままUnity Hubで開けば動作します。Hapbeat SDK（[hapbeat-unity-sdk](https://github.com/hapbeat/hapbeat-unity-sdk)）とDemo Switch packageは `Packages/manifest.json` に固定したGit URLからUnity Package Managerが取得します。
+- Windowsでは短いパス（例: `C:\dev\hapbeat-demo-boxing-vr`）にcloneしてください。深い階層に置くと、Unityのパッケージ読込がWindowsのパス長上限（260文字）を超えてインポートに失敗することがあります。
 - ビルド済みAPKは [GitHub Releases](https://github.com/hapbeat/hapbeat-demo-boxing-vr/releases) で公開します。Questへは `adb install -r HapbeatBoxing.apk` 等でインストールしてください。
 - メニューで表示する半透明の手は、このリポジトリでは自作の簡易モデル（球・カプセルの組合せ、`Assets/Boxing/Art/PlaceholderHands/`）です。Unity XR Handsサンプルの手メッシュはUnity Package Distribution Licenseによりソース資産として再配布できないため含めていません。関節名はXR Handsと同じなので、追跡・ピンチ・メニュー操作は同じように動作します。簡易モデルは `./tools/run-unity.ps1 -Task Hands` で再生成し、Sceneへ手の設定を再適用できます。
 - Hapbeatの開発ワークスペースでは `./tools/link-workspace.ps1` を一度実行すると、非公開の手メッシュ（`Assets/HapbeatPrivate/`）と、SDK・Demo Switchのローカルソース（`Packages/` 内の埋め込みpackage。manifestのGit URLより優先）をジャンクションで接続します。実行時に `BoxingHandModelResolver` が非公開メッシュを見つければそれを使い、無ければ簡易モデルに切り替えます（Consoleの `[Boxing Hands]` に使用したモデルを表示）。

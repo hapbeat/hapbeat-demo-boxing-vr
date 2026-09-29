@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.hapbeat.sdk": "https://github.com/hapbeat/hapbeat-unity-sdk.git#v0.5.0",
+    "com.hapbeat.sdk": "https://github.com/hapbeat/hapbeat-unity-sdk.git#v0.5.1",
     "com.hapbeat.demo-switch": "https://github.com/hapbeat/hapbeat-demos.git?path=unity/packages/com.hapbeat.demo-switch#75eb51687e35bd88af61cc181fa6bd5dcd0b4753",
     "com.unity.inputsystem": "1.19.0",
     "com.unity.render-pipelines.universal": "17.3.0",
