@@ -1,0 +1,53 @@
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+.utmp/
+ExportedObj/
+*.csproj
+*.unityproj
+*.sln
+*.tmp
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.apk
+*.apk.idsig
+*.aab
+*.unitypackage
+*.app
+sysinfo.txt
+crashlog.txt
+*_BurstDebugInformation_DoNotShip/
+*_BackUpThisFolder_ButDontShipItWithYourGame/
+tools/logs/
+Assets/Resources/PerformanceTestRunInfo.json
+Assets/Resources/PerformanceTestRunSettings.json
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.blend1
+*.blend2
+__pycache__/
+
+# Internal dev notes / agent metadata stay in the private workspace
+dev-notes/
+
+# Unity XR Hands sample meshes: Unity Package Distribution License allows
+# distribution only as binaries in a built app, not as raw source assets.
+# Kept locally (and in the private hapbeat-demo-assets repo), never committed.
+Assets/Boxing/Art/UnityHands/LeftHand.fbx
+Assets/Boxing/Art/UnityHands/LeftHand.fbx.meta
+Assets/Boxing/Art/UnityHands/RightHand.fbx
+Assets/Boxing/Art/UnityHands/RightHand.fbx.meta
