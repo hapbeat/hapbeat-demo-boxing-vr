@@ -38,6 +38,11 @@ namespace Hapbeat.Boxing
         private bool calibrationPending;
         public float ResultDuration { get; private set; } = 2.5f;
         private int spokenCountdown;
+        // Demo Session: results end in the shared completion panel instead of the round menu.
+        public bool HoldResultsForSession { get; set; }
+        public bool InputSuspended { get; set; }
+        public event Action ResultsCompleted;
+        private bool resultsReported;
 
         public void Initialize() { if (Opponent == null) Opponent = new BoxingOpponent(tuning); previousPhase = Round.Phase; }
         private void Awake() => Initialize();
@@ -90,7 +95,7 @@ namespace Hapbeat.Boxing
             Round.Start(tuning.roundSeconds, tuning.maximumHealth);
             ResultPresentationTime=0;
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); menu.Close();
-            spokenCountdown=0;
+            spokenCountdown=0; resultsReported=false;
         }
         private void Update()
         {
@@ -110,7 +115,11 @@ namespace Hapbeat.Boxing
                 // End the action before hiding it behind the menu. No combat runs here.
                 ResultPresentationTime += dt>0 && dt<=.1f ? dt : 0;
                 presentation.Render(this,pose,false);
-                if(ResultPresentationTime>=ResultDuration) menu.Open();
+                if(ResultPresentationTime>=ResultDuration)
+                {
+                    if(!HoldResultsForSession) menu.Open();
+                    else if(!resultsReported) { resultsReported=true; ResultsCompleted?.Invoke(); }
+                }
                 return;
             }
             bool tracking = pose.valid && dt > 0 && dt <= 0.1f;

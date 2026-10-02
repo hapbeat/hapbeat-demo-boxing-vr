@@ -107,6 +107,14 @@ namespace Hapbeat.Boxing
             if (!Application.isBatchMode && !forceSilent && HapbeatManager.Instance != null && HapbeatManager.Instance.IsConnected) HapbeatManager.Instance.StopAll();
             if (audioSource != null) audioSource.Stop();
         }
+        /// <summary>Hapbeat output only (Demo Session haptics switch); sounds keep playing.</summary>
+        public void SetHapticsEnabled(bool enabled) { hapticsEnabled = enabled; if (!enabled) StopHaptics(); }
+        public void StopHaptics()
+        {
+            foreach (var trigger in impactTriggers)
+                if (trigger != null) { trigger.FlushPendingDelayCoroutines(); if (!Application.isBatchMode && !forceSilent) trigger.Stop(); }
+            if (!Application.isBatchMode && !forceSilent && HapbeatManager.Instance != null && HapbeatManager.Instance.IsConnected) HapbeatManager.Instance.StopAll();
+        }
         public void StopFeedback() { StopImpacts(); if (bellSource != null) bellSource.Stop(); if(voiceSource!=null) voiceSource.Stop(); }
         private void OnDisable() => StopFeedback();
     }

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "demo_id": "boxing",
+  "title": {
+    "ja": "ボクシング",
+    "en": "Boxing"
+  },
+  "minutes": 2,
+  "supports": {
+    "haptics_toggle": true
+  },
+  "options": [
+    {
+      "id": "round",
+      "label": {
+        "ja": "ラウンド",
+        "en": "Round"
+      },
+      "default": "90",
+      "values": [
+        {
+          "value": "60",
+          "label": {
+            "ja": "60秒",
+            "en": "60 s"
+          }
+        },
+        {
+          "value": "90",
+          "label": {
+            "ja": "90秒",
+            "en": "90 s"
+          }
+        }
+      ]
+    }
+  ]
+}

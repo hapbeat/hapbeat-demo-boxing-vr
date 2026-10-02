@@ -38,6 +38,7 @@ namespace Hapbeat.Boxing
         public void Close() { IsOpen = false; panel.gameObject.SetActive(false); HideRays(); game.ResetHistory(); }
         private void Update()
         {
+            if (game.InputSuspended) { HideRays(); return; }
             if (input.MenuPressed) { if (IsOpen && game.Round.Phase != BoxingPhase.Ready && game.Round.Phase != BoxingPhase.Results) Close(); else Open(); }
             if (!IsOpen) return;
             if (Mathf.Abs(input.Navigate) < 0.25f) navigationReady = true;
@@ -101,7 +102,11 @@ namespace Hapbeat.Boxing
                 case 2: game.UseHandTracking(); break;
                 case 3: game.tuning.impactMode = game.tuning.impactMode == ImpactMode.Continuous ? ImpactMode.WeakHard : ImpactMode.Continuous; break;
                 case 4: game.RecenterPlayer(); Open(); break;
-                case 5: game.feedback.hapticsEnabled = !game.feedback.hapticsEnabled; if (!game.feedback.hapticsEnabled) game.feedback.StopFeedback(); break;
+                case 5:
+                    // Shared state with the Demo Session haptics button; haptics only, sound unchanged.
+                    bool haptics = !game.feedback.hapticsEnabled;
+                    game.feedback.SetHapticsEnabled(haptics); Hapbeat.DemoSwitch.DemoSession.SetHapticsEnabled(haptics);
+                    break;
                 case 6: game.feedback.soundEnabled = !game.feedback.soundEnabled; if (!game.feedback.soundEnabled) { game.feedback.audioSource.Stop(); game.feedback.bellSource.Stop(); if(game.feedback.voiceSource!=null) game.feedback.voiceSource.Stop(); } break;
             }
         }
