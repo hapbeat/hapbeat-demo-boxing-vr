@@ -8,8 +8,9 @@ namespace Hapbeat.Boxing
     /// <summary>
     /// Demo Session adapter. `round` sets the round length; in session mode the result ends in the
     /// shared completion panel instead of the round menu, and retry is RESTART ROUND.
+    /// 視線をリセット (button and CONTROL `recenter`) is the menu's recenter (<see cref="BoxingGame.RecenterPlayer"/>).
     /// </summary>
-    public sealed class BoxingSessionHost : MonoBehaviour, IDemoSessionHost
+    public sealed class BoxingSessionHost : MonoBehaviour, IDemoSessionHost, IDemoSessionRecenter
     {
         private BoxingGame game;
         private bool completionWired;
@@ -61,5 +62,11 @@ namespace Hapbeat.Boxing
         }
 
         public void SetGameplayPaused(bool paused) => game.InputSuspended = paused;
+
+        public void RecenterToStart()
+        {
+            if (game == null) game = GetComponent<BoxingGame>();
+            game.RecenterPlayer();
+        }
     }
 }
