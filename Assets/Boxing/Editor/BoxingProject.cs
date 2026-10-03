@@ -130,7 +130,7 @@ namespace Hapbeat.Boxing.Editor
 
         public static void Configure()
         {
-            PlayerSettings.companyName = "Hapbeat"; PlayerSettings.productName = "Hapbeat Boxing"; PlayerSettings.bundleVersion = "0.1.0-d1";
+            PlayerSettings.companyName = "Hapbeat"; PlayerSettings.productName = "Boxing"; PlayerSettings.bundleVersion = "0.1.0-d1";
             PlayerSettings.runInBackground = true;
             PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Android, "com.hapbeat.boxing");
             PlayerSettings.Android.forceInternetPermission = true;
