@@ -241,6 +241,8 @@ namespace Hapbeat.Boxing.Editor
             var settings = ScriptableObject.CreateInstance<DemoSwitchSettings>();
             var so = new SerializedObject(settings); so.FindProperty("_receiverEnabled").boolValue = true;
             so.FindProperty("_currentDemoId").stringValue = "boxing"; so.FindProperty("_allowUnsignedOnIsolatedLan").boolValue = true;
+            // Shared pause on the left-hand menu (≡ / Quest's left-hand menu gesture), like the other demos.
+            so.FindProperty("_pauseMenu").boolValue = true;
             var targets = so.FindProperty("_targets"); targets.arraySize = 2;
             for (int i = 0; i < 2; i++)
             {

@@ -70,7 +70,7 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.Round.Blocks,Is.Zero); Assert.That(game.feedback.Reports,Is.Zero);
         }
         [TestCase(BoxingOutcome.Win)] [TestCase(BoxingOutcome.Lose)] [TestCase(BoxingOutcome.Tie)]
-        public void OutcomeVoiceStartsWithGongOnceAndMenuWaits(BoxingOutcome outcome)
+        public void OutcomeVoiceStartsWithGongOnceAndNextRoundWaits(BoxingOutcome outcome)
         {
             var pose=BoxingSceneTests.Pose();
             for(int i=0;i<350;i++) game.Simulate(.01f,pose);
@@ -87,7 +87,8 @@ namespace Hapbeat.Boxing.Tests
                 Assert.That(game.menu.IsOpen,Is.False);
             }
             for(int i=0;i<30;i++) game.Simulate(.01f,pose);
-            Assert.That(game.menu.IsOpen,Is.True); Assert.That(game.feedback.ResultVoiceCues,Is.EqualTo(1));
+            Assert.That(game.menu.IsOpen,Is.False,"No round menu after the result; the next round starts by itself.");
+            Assert.That(game.Round.Phase,Is.EqualTo(BoxingPhase.Results)); Assert.That(game.feedback.ResultVoiceCues,Is.EqualTo(1));
             Assert.That(game.feedback.LastSpokenOutcome,Is.EqualTo(outcome));
         }
     }

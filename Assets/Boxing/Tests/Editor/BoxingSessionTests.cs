@@ -35,6 +35,7 @@ namespace Hapbeat.Boxing.Tests
 
         [TearDown] public void Cleanup()
         {
+            DemoPause.Resume(); // restores AudioListener.pause
             DemoSession.ResetForTests();
             Object.DestroyImmediate(game.tuning); game.tuning = original;
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
@@ -91,12 +92,81 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(DemoSession.HapticsEnabled, Is.True, "Menu row and session button share one state.");
         }
 
-        [Test] public void NormalLaunchKeepsTheRoundMenu()
+        [Test] public void NormalLaunchRestartsTheRoundItself()
         {
             var host = game.gameObject.AddComponent<BoxingSessionHost>();
             DemoSession.RegisterHost(host);
             Assert.That(game.HoldResultsForSession, Is.False);
             Assert.That(game.tuning.roundSeconds, Is.EqualTo(original.roundSeconds));
         }
+
+        [Test] public void StartupBeginsTheCountdownWithoutAMenuAfterAShortReadyTime()
+        {
+            var pose = BoxingSceneTests.Pose();
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Ready));
+            Assert.That(game.menu.IsOpen, Is.False);
+            game.InputSuspended = true;
+            for (int i = 0; i < Mathf.CeilToInt(game.tuning.autoStartSeconds * 100) + 50; i++) game.Simulate(.01f, pose);
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Ready), "A pause holds the start.");
+            game.InputSuspended = false;
+            for (int i = 0; i < Mathf.CeilToInt(game.tuning.autoStartSeconds * 100) - 30; i++) game.Simulate(.01f, pose);
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Ready), "The player gets a moment before the countdown.");
+            for (int i = 0; i < 60; i++) game.Simulate(.01f, pose);
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Countdown));
+            Assert.That(game.menu.IsOpen, Is.False);
+            for (int i = 0; i < 350; i++) game.Simulate(.01f, pose);
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Fighting));
+            Assert.That(game.feedback.Rings, Is.EqualTo(1), "The gong starts the round.");
+        }
+
+        [Test] public void SharedPauseFreezesTheRoundButTheGlovesFollowAndRemoteControlsUseIt()
+        {
+            DemoPause.Configure(null);
+            var host = game.gameObject.AddComponent<BoxingSessionHost>();
+            DemoSession.RegisterHost(host);
+            var pose = BoxingSceneTests.Pose();
+            game.StartRound();
+            for (int i = 0; i < 500; i++) game.Simulate(.01f, pose);
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Fighting));
+
+            var open = DemoSwitchRuntime.ResolveControls("menu_open", "", null);
+            Assert.That(open.CanExecuteControl("menu_open", ""), Is.True, "Boxing has no IDemoAppControls: the shared pause answers.");
+            Run(open.ExecuteControl("menu_open", ""));
+            Assert.That(DemoPause.IsPaused && game.InputSuspended, Is.True);
+            Assert.That(game.feedback.hapticsEnabled, Is.False);
+            float time = game.Round.TimeLeft; Vector3 enemy = game.Opponent.Left;
+            for (int i = 0; i < 200; i++) game.Simulate(.01f, pose);
+            Assert.That(game.Paused, Is.True);
+            Assert.That(game.Round.TimeLeft, Is.EqualTo(time)); Assert.That(game.Opponent.Left, Is.EqualTo(enemy));
+            pose.left += Vector3.up * .2f; game.Simulate(.01f, pose);
+            Assert.That(Vector3.Distance(game.presentation.leftGlove.position, pose.left), Is.LessThan(.0001f), "Hands keep moving while paused.");
+
+            Run(DemoSwitchRuntime.ResolveControls("menu_close", "", null).ExecuteControl("menu_close", ""));
+            Assert.That(DemoPause.IsPaused || game.InputSuspended, Is.False);
+            Assert.That(game.feedback.hapticsEnabled, Is.True);
+            for (int i = 0; i < 100; i++) game.Simulate(.01f, pose);
+            Assert.That(game.Round.TimeLeft, Is.LessThan(time));
+
+            DemoPause.Pause();
+            Run(DemoSwitchRuntime.ResolveControls("restart", "", null).ExecuteControl("restart", ""));
+            Assert.That(DemoPause.IsPaused || game.InputSuspended, Is.False);
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Countdown));
+            Assert.That(game.Round.TimeLeft, Is.EqualTo(game.tuning.roundSeconds));
+        }
+
+        [Test] public void FocusLossOpensTheSharedPauseInsteadOfTheRoundMenu()
+        {
+            DemoPause.Configure(null);
+            var host = game.gameObject.AddComponent<BoxingSessionHost>();
+            DemoSession.RegisterHost(host);
+            game.StartRound();
+            game.PauseForExternalTransition();
+            Assert.That(DemoPause.IsPaused, Is.True);
+            Assert.That(game.menu.IsOpen, Is.False);
+            game.menu.Open(); DemoPause.Resume(); DemoPause.Pause();
+            Assert.That(game.menu.IsOpen, Is.False, "The developer menu never stays open under the shared pause.");
+        }
+
+        private static void Run(System.Collections.IEnumerator routine) { while (routine.MoveNext()) { } }
     }
 }

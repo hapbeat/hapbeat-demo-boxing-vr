@@ -98,7 +98,8 @@ namespace Hapbeat.Boxing.Editor
             if (elapsed > 125) { Finish(false, $"timeout phase={game.Round.Phase} paused={game.Paused} reason={game.PauseReason} time={game.Round.TimeLeft} valid={game.input.Current.valid}"); return; }
             int bucket = (int)(elapsed / 15);
             if (bucket != progressBucket) { progressBucket = bucket; Debug.Log($"BOXING_SMOKE_PROGRESS t={elapsed:0} phase={game.Round.Phase} left={game.Round.TimeLeft:0.0} paused={game.Paused} reason={game.PauseReason}"); }
-            if (game.Round.Phase == BoxingPhase.Results && game.menu.IsOpen)
+            // The result has been presented; outside a session the next round starts by itself after it.
+            if (game.Round.Phase == BoxingPhase.Results && game.ResultPresentationTime >= game.ResultDuration)
             {
                 string summary = $"hits={game.Round.Hits} blocks={game.Round.Blocks} enemyBlocks={game.Round.EnemyBlocks} headHits={game.Round.Taken} dodges={game.Round.Dodges} soft={softImpacts} hard={hardImpacts} zones={zones} surfaces={surfaces} rings={game.feedback.Rings} gain={minGain:0.00}..{maxGain:0.00} sends={game.feedback.Sends} errors={errors}";
                 Finish(game.Round.Hits >= 3 && game.Round.Blocks >= 2 && game.Round.Taken >= 2 && game.Round.Dodges >= 1 &&

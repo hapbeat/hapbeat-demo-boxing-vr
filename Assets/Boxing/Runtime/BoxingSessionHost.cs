@@ -7,7 +7,9 @@ namespace Hapbeat.Boxing
 {
     /// <summary>
     /// Demo Session adapter. `round` sets the round length; in session mode the result ends in the
-    /// shared completion panel instead of the round menu, and retry is RESTART ROUND.
+    /// shared completion panel instead of the next round starting by itself, and retry is RESTART ROUND.
+    /// The shared pause (settings Pause Menu) and its CONTROL fallbacks `menu_open` / `menu_close` / `restart`
+    /// reach the game through <see cref="SetGameplayPaused"/> and <see cref="Restart"/>; Boxing has no IDemoAppControls.
     /// 視線をリセット (button and CONTROL `recenter`) is the menu's recenter (<see cref="BoxingGame.RecenterPlayer"/>).
     /// </summary>
     public sealed class BoxingSessionHost : MonoBehaviour, IDemoSessionHost, IDemoSessionRecenter
@@ -61,7 +63,13 @@ namespace Hapbeat.Boxing
             game.feedback.SetHapticsEnabled(enabled);
         }
 
-        public void SetGameplayPaused(bool paused) => game.InputSuspended = paused;
+        // Round, opponent and impacts stop (BoxingGame.Simulate); the developer menu never stays open under a shared panel.
+        public void SetGameplayPaused(bool paused)
+        {
+            if (game == null) game = GetComponent<BoxingGame>();
+            game.InputSuspended = paused;
+            if (paused && game.menu.IsOpen) game.menu.Close();
+        }
 
         public void RecenterToStart()
         {

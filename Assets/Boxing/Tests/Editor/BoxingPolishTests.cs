@@ -35,7 +35,7 @@ namespace Hapbeat.Boxing.Tests
             }
             Assert.That(head && body,Is.True);
         }
-        [Test] public void ResultRemainsVisibleBeforeMenuAppears()
+        [Test] public void ResultRemainsVisibleBeforeTheNextRoundStarts()
         {
             var pose=BoxingSceneTests.Pose(); game.input.SetTestPose(pose); game.StartRound();
             game.Round.Tick(3,false);
@@ -47,8 +47,16 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.menu.IsOpen,Is.False);
             Assert.That(game.feedback.ResultVoiceCues,Is.LessThanOrEqualTo(1));
             for(int i=0;i<Mathf.CeilToInt(game.ResultDuration*100);i++) game.Simulate(.01f,pose);
-            Assert.That(game.menu.IsOpen,Is.True); Assert.That(game.feedback.Rings,Is.EqualTo(2));
+            Assert.That(game.Round.Phase,Is.EqualTo(BoxingPhase.Results)); Assert.That(game.feedback.Rings,Is.EqualTo(2));
             Assert.That(game.feedback.ResultVoiceCues,Is.EqualTo(1));
+            // A pause holds the result; outside a session the next round then starts by itself (no menu).
+            game.InputSuspended=true;
+            for(int i=0;i<Mathf.CeilToInt(game.tuning.restartAfterResultsSeconds*100)+50;i++) game.Simulate(.01f,pose);
+            Assert.That(game.Round.Phase,Is.EqualTo(BoxingPhase.Results));
+            game.InputSuspended=false;
+            for(int i=0;i<Mathf.CeilToInt(game.tuning.restartAfterResultsSeconds*100)+5;i++) game.Simulate(.01f,pose);
+            Assert.That(game.menu.IsOpen,Is.False);
+            Assert.That(game.Round.Phase,Is.EqualTo(BoxingPhase.Countdown)); Assert.That(game.Round.TimeLeft,Is.EqualTo(game.tuning.roundSeconds));
         }
         [Test] public void GloveWidthsRemainFixedRegardlessOfOpponentHeight()
         {

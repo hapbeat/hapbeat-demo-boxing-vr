@@ -24,3 +24,5 @@ MonoBehaviour:
   - _demoId: handdemo
     _packageName: com.Hapbeat.HapticHandDemo_G2
     _activityName: com.unity3d.player.UnityPlayerGameActivity
+  _pauseMenu: 1
+  _pauseGesture: 0

@@ -21,7 +21,9 @@ namespace Hapbeat.Boxing
         private void OnEnable() { if (input != null) input.Recentered += RepositionAfterRecenter; }
         private void OnDisable() { if (input != null) input.Recentered -= RepositionAfterRecenter; HideRays(); }
         private void RepositionAfterRecenter() { if (IsOpen) Open(); }
-        private void Start() { input.Recentered -= RepositionAfterRecenter; input.Recentered += RepositionAfterRecenter; Open(); }
+        // Developer menu (INPUT / IMPACT / HAPTICS / SOUND): controller B / Y only. The round starts by itself and
+        // the left-hand menu (≡ / Quest's left-hand menu gesture) opens the shared Demo Switch pause.
+        private void Start() { input.Recentered -= RepositionAfterRecenter; input.Recentered += RepositionAfterRecenter; }
         public void Open()
         {
             IsOpen = true; Selection = 0;
@@ -39,7 +41,7 @@ namespace Hapbeat.Boxing
         private void Update()
         {
             if (game.InputSuspended) { HideRays(); return; }
-            if (input.MenuPressed) { if (IsOpen && game.Round.Phase != BoxingPhase.Ready && game.Round.Phase != BoxingPhase.Results) Close(); else Open(); }
+            if (input.MenuPressed) { if (IsOpen) Close(); else Open(); }
             if (!IsOpen) return;
             if (Mathf.Abs(input.Navigate) < 0.25f) navigationReady = true;
             if (navigationReady && Mathf.Abs(input.Navigate) > 0.6f)
@@ -121,8 +123,8 @@ namespace Hapbeat.Boxing
                 rows[i].text = (i == Selection ? ">  " : "   ") + labels[i];
                 rows[i].color = i == Selection ? new Color(0.25f, 0.95f, 1) : new Color(0.8f, 0.85f, 0.92f);
             }
-            hint.text = (UsesHandPointer ? "AIM YOUR HAND - PINCH THUMB AND INDEX TO SELECT\nLEFT OPEN PALM TOWARD YOUR FACE: HOLD 0.8s FOR MENU" :
-                "EITHER STICK: SELECT   A / X: CONFIRM\nMENU / B / Y: PAUSE") + "\nCLEAR YOUR PLAY AREA - DO NOT HIT REAL OBJECTS";
+            hint.text = (UsesHandPointer ? "AIM YOUR HAND - PINCH THUMB AND INDEX TO SELECT" :
+                "EITHER STICK: SELECT   A / X: CONFIRM\nB / Y: CLOSE") + "\nCLEAR YOUR PLAY AREA - DO NOT HIT REAL OBJECTS";
         }
     }
 }

@@ -27,8 +27,8 @@ namespace Hapbeat.Boxing
             head = new TrackedPose(map, "Head", "<XRHMD>", "centerEye");
             left = new TrackedPose(map, "Left", "<XRController>{LeftHand}", "device");
             right = new TrackedPose(map, "Right", "<XRController>{RightHand}", "device");
+            // Developer menu: B / Y. The left menu button (≡) belongs to the shared Demo Switch pause.
             menu = map.AddAction("Menu", InputActionType.Button);
-            menu.AddBinding("<XRController>{LeftHand}/menuButton");
             menu.AddBinding("<XRController>{LeftHand}/secondaryButton");
             menu.AddBinding("<XRController>{RightHand}/secondaryButton");
             confirm = map.AddAction("Confirm", InputActionType.Button);

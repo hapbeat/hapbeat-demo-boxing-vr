@@ -40,32 +40,37 @@ namespace Hapbeat.Boxing
         private int spokenCountdown;
         // Demo Session: results end in the shared completion panel instead of the round menu.
         public bool HoldResultsForSession { get; set; }
+        // Shared pause / completion panel (IDemoSessionHost.SetGameplayPaused): the round, opponent and impacts stop; the gloves still follow the hands.
         public bool InputSuspended { get; set; }
         public event Action ResultsCompleted;
         private bool resultsReported;
+        private float readyTime;
 
         public void Initialize() { if (Opponent == null) Opponent = new BoxingOpponent(tuning); previousPhase = Round.Phase; }
         private void Awake() => Initialize();
         private void OnEnable()
         {
             Hapbeat.DemoSwitch.DemoSwitch.BeforeSwitch += BeforeSwitch;
-            Hapbeat.DemoSwitch.DemoSwitch.LaunchContextDetected += LaunchContext;
             Application.focusChanged += FocusChanged;
             if (input != null) input.Recentered += OnRecentered;
         }
         private void OnDisable()
         {
             Hapbeat.DemoSwitch.DemoSwitch.BeforeSwitch -= BeforeSwitch;
-            Hapbeat.DemoSwitch.DemoSwitch.LaunchContextDetected -= LaunchContext;
             Application.focusChanged -= FocusChanged;
             if (input != null) input.Recentered -= OnRecentered;
             if (display != null) display.displayFocusChanged -= DisplayFocus;
             if (feedback != null) feedback.StopFeedback();
         }
-        // A failed external launch leaves a resumable menu, not a permanent switch-pending latch.
-        public void PauseForExternalTransition() { if (!menu.IsOpen) menu.Open(); ResetHistory(); feedback.StopFeedback(); }
+        // A failed external launch leaves a resumable pause, not a permanent switch-pending latch.
+        // The shared pause (再開 / 最初からやり直す) when this runtime hosts it, otherwise the round menu.
+        public void PauseForExternalTransition()
+        {
+            if (Hapbeat.DemoSwitch.DemoPause.IsEnabled) Hapbeat.DemoSwitch.DemoPause.Pause();
+            else if (!menu.IsOpen) menu.Open();
+            ResetHistory(); feedback.StopFeedback();
+        }
         private void BeforeSwitch(string _) => PauseForExternalTransition();
-        private void LaunchContext() => PauseForExternalTransition();
         private void FocusChanged(bool value) { focus = value; if (!value && !displayFocusKnown) PauseForExternalTransition(); }
         private void DisplayFocus(bool value)
         {
@@ -95,7 +100,7 @@ namespace Hapbeat.Boxing
             Round.Start(tuning.roundSeconds, tuning.maximumHealth);
             ResultPresentationTime=0;
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); menu.Close();
-            spokenCountdown=0; resultsReported=false;
+            spokenCountdown=0; resultsReported=false; readyTime=0;
         }
         private void Update()
         {
@@ -112,13 +117,14 @@ namespace Hapbeat.Boxing
             { input.Recenter(); OnRecentered(); calibrationPending=false; return; }
             if(Round.Phase==BoxingPhase.Results && previousPhase==BoxingPhase.Results && !menu.IsOpen)
             {
-                // End the action before hiding it behind the menu. No combat runs here.
-                ResultPresentationTime += dt>0 && dt<=.1f ? dt : 0;
+                // End the action before the next step. No combat runs here; a pause holds the result.
+                if(!InputSuspended) ResultPresentationTime += dt>0 && dt<=.1f ? dt : 0;
                 presentation.Render(this,pose,false);
                 if(ResultPresentationTime>=ResultDuration)
                 {
-                    if(!HoldResultsForSession) menu.Open();
-                    else if(!resultsReported) { resultsReported=true; ResultsCompleted?.Invoke(); }
+                    if(HoldResultsForSession) { if(!resultsReported) { resultsReported=true; ResultsCompleted?.Invoke(); } }
+                    // Outside a session the next round starts by itself, like the completion panel's もう一度.
+                    else if(ResultPresentationTime>=ResultDuration+tuning.restartAfterResultsSeconds) StartRound();
                 }
                 return;
             }
@@ -140,11 +146,11 @@ namespace Hapbeat.Boxing
             // Poll OpenXR as well as receiving events: startup focus may precede subscription.
             if (display != null) DisplayFocus(OpenXRUtility.IsSessionFocused);
             bool unavailable = !input.HasOverride && (appPaused || (displayFocusKnown ? !displayFocused : !focus));
-            if (!tracking || outside || unavailable || (menu != null && menu.IsOpen))
+            if (!tracking || outside || unavailable || InputSuspended || (menu != null && menu.IsOpen))
             {
                 if (!Paused) feedback.StopImpacts();
                 Paused = true;
-                PauseReason = unavailable ? (appPaused ? "APPLICATION PAUSED" : displayFocusKnown ? "HEADSET PAUSED - OPENXR NOT FOCUSED" : "GAME WINDOW NOT FOCUSED") : outside ? "RETURN TO YOUR START POSITION" : !tracking ? input.TrackingStatus : "PAUSED";
+                PauseReason = unavailable ? (appPaused ? "APPLICATION PAUSED" : displayFocusKnown ? "HEADSET PAUSED - OPENXR NOT FOCUSED" : "GAME WINDOW NOT FOCUSED") : InputSuspended ? "PAUSED" : outside ? "RETURN TO YOUR START POSITION" : !tracking ? input.TrackingStatus : "PAUSED";
                 ResetHistory();
                 if (presentation != null) presentation.Render(this, pose, false);
                 return;
@@ -159,6 +165,12 @@ namespace Hapbeat.Boxing
             }
             if (haveHistory && (Vector3.Distance(pose.left, previous.left) > 0.6f || Vector3.Distance(pose.right, previous.right) > 0.6f || Vector3.Distance(pose.head, previous.head) > 0.35f))
             { ResetHistory(); feedback.StopFeedback(); return; }
+            if(Round.Phase==BoxingPhase.Ready)
+            {
+                // Startup: both gloves tracked at the start position for a moment, then the countdown and gong.
+                readyTime+=dt;
+                if(readyTime>=tuning.autoStartSeconds) { StartRound(); return; }
+            }
             if(Round.Phase==BoxingPhase.Countdown)
             {
                 int number=Mathf.CeilToInt(Round.Countdown);

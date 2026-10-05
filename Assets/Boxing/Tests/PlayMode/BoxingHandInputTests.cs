@@ -97,6 +97,7 @@ namespace Hapbeat.Boxing.Tests
         {
             yield return SceneManager.LoadSceneAsync("Boxing"); var game = Object.FindAnyObjectByType<BoxingGame>();
             game.SendMessage("FocusChanged", true); game.SendMessage("OnApplicationPause", false);
+            game.menu.Open(); // The round starts by itself; the developer menu is opened here to exercise its hand pointer.
             Assert.That(game.input.mode, Is.EqualTo(BoxingInputMode.Hands));
             yield return Pump(0.4f, game); Assert.That(game.input.HasTracking, Is.False);
             StartHands(); BoxingTestHandProvider.leftTracked = BoxingTestHandProvider.rightTracked = true;
@@ -128,13 +129,13 @@ namespace Hapbeat.Boxing.Tests
             yield return Pump(0.5f, game); Assert.That(game.Paused, Is.False, game.PauseReason);
             BoxingTestHandProvider.rightTracked = false; BoxingTestHandProvider.palmMenu = true;
             yield return Pump(1.0f, game);
-            Assert.That(game.menu.IsOpen, Is.True, "Left palm opens the menu even if the other hand is occluded.");
+            Assert.That(game.menu.IsOpen, Is.False, "The left-hand menu gesture belongs to the shared pause, not the developer menu.");
             Assert.That(game.feedback.Sends, Is.Zero);
         }
         [UnityTest] public IEnumerator LeftPointerWorksAloneAndHeldPinchCannotRepeatOrClickAfterLoss()
         {
             yield return SceneManager.LoadSceneAsync("Boxing"); var game=Object.FindAnyObjectByType<BoxingGame>();
-            game.feedback.forceSilent=true; game.feedback.sdkRoot.SetActive(false);
+            game.feedback.forceSilent=true; game.feedback.sdkRoot.SetActive(false); game.menu.Open();
             StartHands(); BoxingTestHandProvider.leftTracked=true;
             yield return Pump(.4f,game);
             BoxingTestHandProvider.pointerSide=Handedness.Left;
@@ -173,7 +174,7 @@ namespace Hapbeat.Boxing.Tests
         [UnityTest] public IEnumerator UnavailableMetaAimMustFallBackToMeasuredFingertipRayAndPinch()
         {
             yield return SceneManager.LoadSceneAsync("Boxing"); var game=Object.FindAnyObjectByType<BoxingGame>();
-            game.feedback.forceSilent=true; game.feedback.sdkRoot.SetActive(false);
+            game.feedback.forceSilent=true; game.feedback.sdkRoot.SetActive(false); game.menu.Open();
             StartHands(); BoxingTestHandProvider.rightTracked=true;
             BoxingTestHandProvider.pointMenu=true;
             BoxingTestHandProvider.menuTarget=game.input.headCamera.transform.parent.InverseTransformPoint(game.menu.rows[0].transform.position);
@@ -193,6 +194,7 @@ namespace Hapbeat.Boxing.Tests
         {
             yield return SceneManager.LoadSceneAsync("Boxing"); var game = Object.FindAnyObjectByType<BoxingGame>();
             game.SendMessage("FocusChanged", true); game.SendMessage("OnApplicationPause", false);
+            game.menu.Open(); // A on the developer menu starts the round at once.
             yield return Pump(0.3f, game);
             Assert.That(game.input.HasTracking, Is.False);
             InputSystem.RegisterLayout<UnityEngine.XR.OpenXR.Input.HapticControl>();
