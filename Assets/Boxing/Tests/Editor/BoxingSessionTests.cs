@@ -66,12 +66,19 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.Round.TimeLeft, Is.LessThanOrEqualTo(60));
             game.Round.Tick(90, false); game.Simulate(.01f, pose);
             Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Results));
-            for (int i = 0; i < Mathf.CeilToInt(game.ResultDuration * 100) + 30; i++) game.Simulate(.01f, pose);
+            // The panel follows the final bell after about a second, without waiting for the bell and voice to end.
+            for (int i = 0; i < 110; i++) game.Simulate(.01f, pose);
             Assert.That(game.menu.IsOpen, Is.False, "The session replaces the automatic round menu.");
             Assert.That(DemoSession.IsCompletionShown, Is.True);
             Assert.That(game.InputSuspended, Is.True);
+            // The completion panel is pressed with the Demo Hub hands, not the gloves.
+            game.input.SelectMode(BoxingInputMode.Hands); game.Simulate(.01f, pose);
+            var panelHands = Object.FindFirstObjectByType<DemoHands>(FindObjectsInactive.Include);
+            Assert.That(panelHands != null && panelHands.gameObject.activeSelf, Is.True);
+            Assert.That(game.presentation.leftGlove.gameObject.activeSelf || game.presentation.rightGlove.gameObject.activeSelf, Is.False);
 
             DemoSession.RetryFromCompletion();
+            Assert.That(panelHands.gameObject.activeSelf, Is.False);
             Assert.That(DemoSession.IsCompletionShown, Is.False);
             Assert.That(game.InputSuspended, Is.False);
             Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Countdown));

@@ -36,7 +36,11 @@ namespace Hapbeat.Boxing
         private string lastPauseReport;
         public float ResultPresentationTime { get; private set; }
         private bool calibrationPending;
-        public float ResultDuration { get; private set; } = 2.5f;
+        // Result hold before the completion panel. The panel does not stop the bell or the result voice.
+        public float ResultDuration => tuning.resultPanelDelaySeconds;
+        // Outside a session the next round restarts (StartRound stops all sound), so wait for the bell and voice first.
+        public float RestartTime => Mathf.Max(ResultDuration, resultAudioSeconds) + tuning.restartAfterResultsSeconds;
+        private float resultAudioSeconds;
         private int spokenCountdown;
         // Demo Session: results end in the shared completion panel instead of the round menu.
         public bool HoldResultsForSession { get; set; }
@@ -124,7 +128,7 @@ namespace Hapbeat.Boxing
                 {
                     if(HoldResultsForSession) { if(!resultsReported) { resultsReported=true; ResultsCompleted?.Invoke(); } }
                     // Outside a session the next round starts by itself, like the completion panel's もう一度.
-                    else if(ResultPresentationTime>=ResultDuration+tuning.restartAfterResultsSeconds) StartRound();
+                    else if(ResultPresentationTime>=RestartTime) StartRound();
                 }
                 return;
             }
@@ -206,7 +210,7 @@ namespace Hapbeat.Boxing
                     ResultPresentationTime=0;
                     // Independent sources overlap the final hit without cancelling its tail.
                     feedback.Ring(); feedback.SpeakResult(Round.Outcome);
-                    ResultDuration=Mathf.Max(2.5f,Mathf.Max(feedback.bell.length,feedback.ResultClip(Round.Outcome).length)+.35f);
+                    resultAudioSeconds=Mathf.Max(feedback.bell.length,feedback.ResultClip(Round.Outcome).length)+.35f;
                 }
                 if (Round.Phase == BoxingPhase.Fighting) feedback.Ring();
                 previousPhase = Round.Phase;

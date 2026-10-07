@@ -37,10 +37,13 @@ namespace Hapbeat.Boxing
         public void Render(BoxingGame game, BoxerPose pose, bool valid, float deltaTime=0)
         {
             bool menuOpen = game.menu != null && game.menu.IsOpen;
+            // Under a shared panel the tracked hands draw the Demo Hub hands (BoxingSessionHost) instead of the gloves.
+            bool panelHands = game.InputSuspended && game.input.ActiveMode == BoxingInputMode.Hands;
+            bool gloves = (pose.valid || pose.visualValid) && !menuOpen && !panelHands;
             timerText.transform.parent.gameObject.SetActive(!menuOpen);
-            leftGlove.gameObject.SetActive((pose.valid || pose.visualValid) && !menuOpen); rightGlove.gameObject.SetActive((pose.valid || pose.visualValid) && !menuOpen);
-            RenderForearm(leftForearm,pose.left,pose.leftRotation,(pose.valid || pose.visualValid) && !menuOpen);
-            RenderForearm(rightForearm,pose.right,pose.rightRotation,(pose.valid || pose.visualValid) && !menuOpen);
+            leftGlove.gameObject.SetActive(gloves); rightGlove.gameObject.SetActive(gloves);
+            RenderForearm(leftForearm,pose.left,pose.leftRotation,gloves);
+            RenderForearm(rightForearm,pose.right,pose.rightRotation,gloves);
             enemyAvatar.gameObject.SetActive(!menuOpen);
             if (pose.valid || pose.visualValid)
             {

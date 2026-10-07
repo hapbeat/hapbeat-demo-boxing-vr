@@ -20,6 +20,8 @@ namespace Hapbeat.Boxing
         [Min(0)] public float autoStartSeconds = 2;
         // Outside a Demo Session: the result stays this long after its presentation, then the next round starts.
         [Min(0)] public float restartAfterResultsSeconds = 4;
+        // Demo Session: the completion panel appears this long after the final bell (the bell and voice keep playing).
+        [Min(0)] public float resultPanelDelaySeconds = 1;
         [Min(0.1f)] public float enemyInterval = 1.6f;
         [Min(0.1f)] public float telegraphSeconds = 0.42f;
         [Min(0.08f)] public float strikeSeconds = 0.22f;
