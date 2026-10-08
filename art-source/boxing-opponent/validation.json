@@ -1,9 +1,14 @@
 {
-  "vertices": 3144,
-  "triangles": 6136,
+  "vertices": 7835,
+  "triangles": 14806,
+  "glove_triangles": {
+    "L": 2308,
+    "R": 2308
+  },
+  "player_forearm_triangles": 1174,
   "bones": 20,
-  "materials": 6,
-  "height_m": 1.783,
+  "materials": 9,
+  "height_m": 1.8142,
   "actions": [
     "Guard_Pose",
     "Hit_Recoil"

@@ -1,11 +1,141 @@
 {
+  "triangles": 14806,
+  "weight_gt_0_9_vertices": {
+    "pelvis": 409,
+    "spine": 64,
+    "chest": 224,
+    "neck": 54,
+    "head": 1510,
+    "clavicle.L": 0,
+    "upper_arm.L": 108,
+    "forearm.L": 255,
+    "hand.L": 1186,
+    "thigh.L": 284,
+    "shin.L": 312,
+    "foot.L": 334,
+    "clavicle.R": 0,
+    "upper_arm.R": 108,
+    "forearm.R": 255,
+    "hand.R": 1186,
+    "thigh.R": 288,
+    "shin.R": 312,
+    "foot.R": 332
+  },
+  "gloves": {
+    "L": {
+      "triangles": 2308,
+      "bounds_size_m": [
+        0.1731,
+        0.3522,
+        0.2075
+      ],
+      "bounds_centre_m": [
+        -0.012,
+        0.1149,
+        -0.0028
+      ],
+      "width_to_length": 0.492,
+      "tags_vs_centre_m": {
+        "thumb": [
+          -0.0569,
+          0.0283,
+          -0.0503
+        ],
+        "fingers": [
+          0.013,
+          0.0797,
+          -0.0824
+        ],
+        "cuff": [
+          0.012,
+          -0.1247,
+          0.0028
+        ]
+      }
+    },
+    "R": {
+      "triangles": 2308,
+      "bounds_size_m": [
+        0.1731,
+        0.3526,
+        0.2074
+      ],
+      "bounds_centre_m": [
+        0.012,
+        0.1151,
+        -0.0028
+      ],
+      "width_to_length": 0.491,
+      "tags_vs_centre_m": {
+        "thumb": [
+          0.0569,
+          0.0245,
+          -0.0505
+        ],
+        "fingers": [
+          -0.0107,
+          0.0779,
+          -0.0831
+        ],
+        "cuff": [
+          -0.012,
+          -0.1249,
+          0.0028
+        ]
+      }
+    }
+  },
+  "head_centre_m": [
+    0.0,
+    0.1193,
+    0.0008
+  ],
+  "head_centre_shift_m": 0.013,
+  "limb_radius_m": {
+    "upper_arm.L": {
+      "radius": 0.0812,
+      "vs_previous": 1.035
+    },
+    "forearm.L": {
+      "radius": 0.06,
+      "vs_previous": 1.041
+    },
+    "upper_arm.R": {
+      "radius": 0.0812,
+      "vs_previous": 1.035
+    },
+    "forearm.R": {
+      "radius": 0.06,
+      "vs_previous": 1.041
+    }
+  },
   "blend_skin_weights": "PASS",
   "recoil_head_displacement_m": 0.3119,
   "fbx_round_trip": "PASS",
   "fbx_meshes": 1,
   "fbx_bones": 20,
+  "fbx_materials": 9,
   "fbx_actions": [
     "Boxer_Rig|Boxer_Rig|Guard_Pose",
     "Boxer_Rig|Boxer_Rig|Hit_Recoil"
-  ]
+  ],
+  "player_forearm_fbx": {
+    "length_m": 0.28,
+    "y_range_m": [
+      -0.14,
+      0.14
+    ],
+    "max_radius_m": 0.0449,
+    "wrist_end_radius_m": 0.036,
+    "elbow_side_radius_m": 0.0449,
+    "triangles": 1174,
+    "object_rotation_identity": true,
+    "object_unit_scale": 0.01,
+    "materials": [
+      "01 Warm clay skin",
+      "08 Cotton hand wrap"
+    ],
+    "orientation": "PASS: +Y = hand (narrow, open end), -Y = elbow, origin at length midpoint"
+  },
+  "verdict": "PASS"
 }
