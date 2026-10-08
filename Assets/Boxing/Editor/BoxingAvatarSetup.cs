@@ -40,19 +40,27 @@ namespace Hapbeat.Boxing.Editor
             // Runtime inverse kinematics owns the bones; imported sample clips are not played over it.
             foreach (var animator in instance.GetComponentsInChildren<Animator>()) animator.enabled = false;
             var skin = instance.GetComponentInChildren<SkinnedMeshRenderer>();
-            var colors = new[] { new Color(.72f,.56f,.43f), new Color(.10f,.21f,.30f), new Color(.88f,.86f,.77f), new Color(.85f,.15f,.10f), new Color(.20f,.26f,.30f), new Color(.08f,.10f,.12f) };
+            // Per slot (art-source/boxing-opponent/build_boxer.py MATERIAL_ORDER): skin, shorts, chalk trim, glove leather,
+            // boot panels, charcoal, headgear, hand wrap, strap leather.
+            var colors = new[] { new Color(.72f,.56f,.43f), new Color(.10f,.21f,.30f), new Color(.88f,.86f,.77f), new Color(.85f,.15f,.10f), new Color(.20f,.26f,.30f), new Color(.08f,.10f,.12f),
+                new Color(.29f,.30f,.33f), new Color(.91f,.92f,.92f), new Color(.63f,.18f,.15f) };
+            // Unity's submesh order differs from the Blender slot order; the imported material name carries the slot.
             var materials = new Material[skin.sharedMaterials.Length];
             for (int i = 0; i < materials.Length; i++)
             {
-                string path = $"Assets/Boxing/Art/BoxerMaterial{i}.mat";
+                int slot = Slot(skin.sharedMaterials[i]);
+                string path = MaterialPath(slot);
                 var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
                 if (mat == null) { mat = new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(mat, path); }
-                mat.SetColor("_BaseColor", colors[i]); mat.SetFloat("_Smoothness", i == 3 ? .4f : .15f); materials[i] = mat; EditorUtility.SetDirty(mat);
+                mat.SetColor("_BaseColor", colors[slot]); mat.SetFloat("_Smoothness", slot == 3 ? .4f : slot == 6 ? .3f : .15f); materials[i] = mat; EditorUtility.SetDirty(mat);
             }
             skin.sharedMaterials = materials;
             var avatar = root.AddComponent<BoxingOpponentAvatar>(); avatar.CaptureRest(); view.enemyAvatar = avatar;
             EditorUtility.SetDirty(view); EditorUtility.SetDirty(avatar);
         }
+        // Blender material names start with their 1-based slot number ("04 Vermilion leather").
+        public static int Slot(Material imported) => int.Parse(imported.name.Substring(0, 2)) - 1;
+        public static string MaterialPath(int slot) => $"Assets/Boxing/Art/BoxerMaterial{slot}.mat";
         public static void Preview()
         {
             BoxingProject.Validate();

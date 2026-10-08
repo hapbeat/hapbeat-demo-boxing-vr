@@ -4,6 +4,7 @@ import json
 import math
 import bpy
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 root = Path(__file__).resolve().parent
 BONES = ['pelvis', 'spine', 'chest', 'neck', 'head', 'root'] + [b+'.'+s for s in 'LR' for b in
@@ -12,6 +13,8 @@ GLOVE_MATERIALS = {'03 Chalk trim', '04 Vermilion leather', '09 Matte strap leat
 # Bone-frame measurements of the previous model (fb14ffc), read by BoxingOpponentAvatar.CaptureRest.
 BASE_HEAD_CENTRE = Vector((0, .1165, .0135))
 BASE_RADIUS = {'upper_arm': .0784, 'forearm': .0576}
+# Unity: BoxingOpponentAvatar.GloveWidth / GloveDepthRatio, BoxingForearm.WristOffset + Length/2.
+UNITY_GLOVE_WIDTH, UNITY_DEPTH, FOREARM_CENTRE_BEHIND = .15, .75, .24
 result = {}
 
 def dominant(mesh, names):
@@ -56,6 +59,8 @@ for poly in mesh.data.polygons:
     for i in poly.vertices: vertex_materials.setdefault(i, set()).add(mesh.data.materials[poly.material_index].name)
 anatomy = mesh.data.color_attributes['Anatomy'].data
 result['gloves'] = {}
+player_lengths = {}
+player_gloves = {}  # side -> BVH of the player glove in its Unity frame (X lateral, Y forward, Z dorsal)
 for side, sign in (('L', 1), ('R', -1)):
     pts = bone_points(rig, mesh, dom, 'hand.'+side)
     assert all(vertex_materials[i] <= GLOVE_MATERIALS for i in pts), 'non-glove vertex weighted to hand'
@@ -71,8 +76,20 @@ for side, sign in (('L', 1), ('R', -1)):
     assert tags['fingers'].z < -.015, ('fingers on palm', side, tags['fingers'])
     assert tags['cuff'].y < -.04, ('cuff behind knuckles', side, tags['cuff'])
     assert 1500 <= tris <= 2500, tris
+    # Player glove as BoxingPlayerGloves builds it: centred on the bounds, width 0.15, depth squashed.
+    s = UNITY_GLOVE_WIDTH/size.x
+    game_length = size.y*s
+    assert .25 <= game_length <= .27, ('player glove length', side, game_length)
+    # The cuff is centred on the glove bounds; keep that near the hand bone axis, where the opponent's arm enters it.
+    assert abs(centre.x)*s < .003 and abs(centre.z)*s*UNITY_DEPTH < .003, ('cuff axis off glove centre', side, centre)
     result['gloves'][side] = {'triangles': tris, 'bounds_size_m': r4(size), 'bounds_centre_m': r4(centre),
-                              'width_to_length': round(size.x/size.y, 3), 'tags_vs_centre_m': {k: r4(v) for k, v in tags.items()}}
+                              'width_to_length': round(size.x/size.y, 3), 'player_glove_size_m': r4((UNITY_GLOVE_WIDTH, game_length, size.z*s*UNITY_DEPTH)),
+                              'tags_vs_centre_m': {k: r4(v) for k, v in tags.items()}}
+    game = {i: Vector(((p.x-centre.x)*s, (p.y-centre.y)*s, (p.z-centre.z)*s*UNITY_DEPTH)) for i, p in pts.items()}
+    keys = list(game); index = {k: n for n, k in enumerate(keys)}
+    faces = [tuple(index[i] for i in poly.vertices) for poly in mesh.data.polygons if all(i in game for i in poly.vertices)]
+    player_lengths[side] = game_length
+    player_gloves[side] = BVHTree.FromPolygons([game[k] for k in keys], faces)
 
 # Head centre and limb radii feed the Unity hit volumes.
 head_centre, head_size = bounds(bone_points(rig, mesh, dom, 'head').values())
@@ -140,6 +157,33 @@ assert fa['max_radius_m'] <= .0451, fa
 assert wrist_r < elbow_r and .030 <= wrist_r <= .038, fa
 assert fa['object_rotation_identity'], fa
 fa['orientation'] = 'PASS: +Y = hand (narrow, open end), -Y = elbow, origin at length midpoint'
+# Cuff fit as in BoxingPresentation.RenderForearm: forearm centre 0.24 m behind the glove centre.
+# Rays go outward from the forearm surface inside the cuff; the first hit must be the cuff's inner wall
+# (front face, so the forearm is not through it) within a few millimetres (no visible gap).
+# Skin covered by the hand wrap is skipped: only the outermost forearm surface can show a gap.
+forearm_tree = BVHTree.FromPolygons(world, [tuple(p.vertices) for p in arm.data.polygons])
+fit = {}
+for side, tree in player_gloves.items():
+    gaps, through = [], []
+    for p in world:
+        # Unity: mesh x = -FBX x, glove X = mesh x = -bone x; glove Y = -mesh z, glove Y = bone z (dorsal).
+        q = Vector((p.x, p.y-FOREARM_CENTRE_BEHIND, -p.z)); ray = Vector((q.x, 0, q.z))
+        if ray.length < .02: continue
+        if forearm_tree.ray_cast(p+Vector((p.x, 0, p.z)).normalized()*.0003, Vector((p.x, 0, p.z)).normalized(), .05)[0]: continue
+        hit, normal, _, dist = tree.ray_cast(q, ray.normalized(), .05)
+        if hit is None: continue
+        if normal.dot(ray) >= 0: through.append(r4(q)); continue
+        gaps.append((q.y, dist))
+    assert gaps, ('forearm does not reach into the cuff', side)
+    # Mouth: 5-12 mm inside the glove's rear end, past the piped rim (piping radius + rolled lip).
+    rear = -player_lengths[side]/2
+    mouth = [d for y, d in gaps if rear+.005 < y < rear+.012]
+    fit[side] = {'insertion_m': round(max(g[0] for g in gaps)-min(g[0] for g in gaps), 4),
+                 'max_gap_m': round(max(d for _, d in gaps), 4), 'mouth_max_gap_m': round(max(mouth), 4),
+                 'vertices_through_wall': len(through)}
+    assert not through, ('forearm passes through the cuff wall', side, through[:4])
+    assert fit[side]['mouth_max_gap_m'] < .004, fit
+fa['cuff_fit'] = fit
 result['player_forearm_fbx'] = fa
 result['verdict'] = 'PASS'
 (root/'round-trip-validation.json').write_text(json.dumps(result, indent=2)+'\n', encoding='utf-8')

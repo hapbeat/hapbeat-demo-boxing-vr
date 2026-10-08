@@ -18,6 +18,20 @@ BEFORE_COMMIT = 'fb14ffc'
 # Gloves are authored at their in-game shape and pre-stretched by the inverse here.
 UNITY_GLOVE_DEPTH_RATIO = .75
 DC = 1/UNITY_GLOVE_DEPTH_RATIO
+# Player glove as Unity builds it (BoxingPlayerGloves): normalised to 0.15 m wide; its length is set here.
+UNITY_GLOVE_WIDTH = .15
+PLAYER_GLOVE_LENGTH = .26
+# Padded body proportion along the hand (the cuff then fills the rest of PLAYER_GLOVE_LENGTH).
+GLOVE_LENGTH_SCALE = .84
+# The thumb widens the glove on one side. The padded body is shifted away from it so the glove's
+# bounds centre (where Unity places the glove and, behind it, the forearm) stays near the hand bone axis.
+GLOVE_BODY_SHIFT = .0089
+# Player forearm in the glove frame (BoxingPresentation.RenderForearm, in-game metres): the cuff is centred
+# on the glove bounds plus the wrapped forearm's cross-section centre (lateral, dorsal), and its inner wall
+# follows the wrap (radii below) with ~2 mm clearance, so no gap shows in first person.
+FOREARM_AXIS_OFFSET = (.0008, .0010)
+CUFF_INNER = [(.0381, .0330), (.0379, .0330), (.0378, .0328), (.0407, .0360)]
+CUFF_PIPING = (.0437, .0393)
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
 bpy.context.preferences.filepaths.save_version = 0
@@ -224,8 +238,10 @@ def join(objs, name):
     obj = bpy.context.object; obj.name = name
     return obj
 
-def remesh(obj, voxel, target_tris, smooth_factor=.5, smooth_iter=3):
+def remesh(obj, voxel, target_tris, smooth_factor=.5, smooth_iter=3, quads=False):
     # Union of overlapping primitives into one seamless surface, then a triangle budget.
+    # quads: even quad layout (QuadriFlow) fitted back onto the union, instead of decimation,
+    # whose long uneven triangles show as dents under glossy highlights.
     bpy.ops.object.select_all(action='DESELECT'); obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
     obj.data.remesh_voxel_size = voxel
@@ -233,8 +249,26 @@ def remesh(obj, voxel, target_tris, smooth_factor=.5, smooth_iter=3):
     if smooth_iter:
         m = obj.modifiers.new('Union smoothing', 'SMOOTH'); m.factor = smooth_factor; m.iterations = smooth_iter
         bpy.ops.object.modifier_apply(modifier=m.name)
+    if quads:
+        ref = bpy.data.objects.new(obj.name+' union', obj.data.copy()); bpy.context.collection.objects.link(ref)
+        # QuadriFlow only approximates the face count; try seeds until it lands within the budget.
+        for seed in range(1, 9):
+            obj.data = ref.data.copy()
+            bpy.ops.object.quadriflow_remesh(target_faces=target_tris//2, use_mesh_symmetry=False, use_preserve_sharp=False,
+                                             use_preserve_boundary=False, smooth_normals=False, seed=seed)
+            if .85*target_tris <= 2*len(obj.data.polygons) <= 1.03*target_tris: break
+        else:
+            raise RuntimeError('QuadriFlow missed the triangle budget')
+        m = obj.modifiers.new('Even spacing', 'CORRECTIVE_SMOOTH'); m.factor = .5; m.iterations = 4; m.smooth_type = 'LENGTH_WEIGHTED'
+        m.use_only_smooth = True
+        bpy.ops.object.modifier_apply(modifier=m.name)
+        m = obj.modifiers.new('Fit to union', 'SHRINKWRAP'); m.target = ref; m.wrap_method = 'NEAREST_SURFACEPOINT'
+        bpy.ops.object.modifier_apply(modifier=m.name)
+        m = obj.modifiers.new('Soften', 'LAPLACIANSMOOTH'); m.lambda_factor = .35; m.iterations = 3; m.use_volume_preserve = True
+        bpy.ops.object.modifier_apply(modifier=m.name)
+        bpy.data.meshes.remove(ref.data)
     obj.data.calc_loop_triangles()
-    if len(obj.data.loop_triangles) > target_tris:
+    if not quads and len(obj.data.loop_triangles) > target_tris:
         m = obj.modifiers.new('Triangle budget', 'DECIMATE'); m.ratio = target_tris/len(obj.data.loop_triangles)
         bpy.ops.object.modifier_apply(modifier=m.name)
     for polygon in obj.data.polygons: polygon.use_smooth = True
@@ -419,23 +453,34 @@ for sign, side in [(1, 'L'), (-1, 'R')]:
     t = -sign  # thumb side, as in the reviewed anatomy (Unity test PlayerGloveAnatomyMatchesTrackedWristFrame)
     def gp(f, x=0.0, z=0.0, wrist=wrist, direction=direction, across=across, back=back):
         # Glove frame in in-game proportions: forward, lateral, dorsal (stretched for Unity's depth squash).
-        return wrist + direction*f + across*x + back*(z*DC)
+        return wrist + direction*(f*GLOVE_LENGTH_SCALE) + across*x + back*(z*DC)
+    body_x = -t*GLOVE_BODY_SHIFT
     W = {hand: 1}
-    fist = loft('Glove fist.'+side, [(gp(f, 0, z), w, d*DC, W) for f, z, w, d in [
+    fist = loft('Glove fist.'+side, [(gp(f, body_x, z), w, d*DC, W) for f, z, w, d in [
         (.030, .000, .051, .046), (.060, .005, .058, .052), (.095, .011, .066, .057), (.135, .013, .072, .062),
         (.175, .010, .075, .066), (.215, .003, .075, .067), (.248, -.004, .069, .059), (.272, -.008, .055, .044),
         (.285, -.009, .034, .026), (.291, -.009, .008, .006)]], red, 28, direction, across, power=2.5)
     def lateral(name, f, z, rf, rz, half, mat=red):
         prof = [(-1.0, .2), (-.94, .62), (-.8, .88), (-.5, .98), (0, 1), (.5, .98), (.8, .88), (.94, .62), (1.0, .2)]
-        return loft(name, [(gp(f, x*half, z), rf*p, rz*p*DC, W) for x, p in prof], mat, 18, across, direction)
+        return loft(name, [(gp(f, body_x+x*half, z), rf*p*GLOVE_LENGTH_SCALE, rz*p*DC, W) for x, p in prof], mat, 18, across, direction)
     knuckles = lateral('Knuckle roll.'+side, .238, .034, .044, .040, .064)
     fingers = lateral('Folded fingers.'+side, .198, -.050, .040, .030, .058)
-    thumb = loft('Thumb.'+side, [(gp(f, t*x, z), w, d*DC, W) for f, x, z, w, d in [
+    thumb = loft('Thumb.'+side, [(gp(f, body_x+t*x, z), w, d*DC, W) for f, x, z, w, d in [
         (.070, .044, -.020, .015, .015), (.098, .060, -.029, .025, .026), (.135, .071, -.033, .028, .030),
         (.170, .071, -.035, .026, .028), (.196, .063, -.040, .021, .023), (.213, .051, -.044, .014, .015),
         (.219, .042, -.045, .004, .004)]], red, 18, direction, across)
     primitives = {'thumb': bvh(thumb), 'fingers': bvh(fingers), 'fist': bvh(fist), 'knuckles': bvh(knuckles)}
-    glove = remesh(join([fist, knuckles, fingers, thumb], 'Glove.'+side), .0022, 1100, .6, 4)
+    if side == 'L':
+        glove = remesh(join([fist, knuckles, fingers, thumb], 'Glove.'+side), .0022, 1150, .6, 8, quads=True)
+        left_glove = glove
+    else:
+        # QuadriFlow is not deterministic; mirror the left glove so both sides have identical bounds
+        # (Unity normalises each by its own width, which sets the cuff size around the forearm).
+        for obj in (fist, knuckles, fingers, thumb):
+            parts.remove(obj); bpy.data.meshes.remove(obj.data)
+        data = left_glove.data.copy(); data.transform(Matrix.Scale(-1, 4, (1, 0, 0)))
+        bm = bmesh.new(); bm.from_mesh(data); bmesh.ops.reverse_faces(bm, faces=bm.faces); bm.to_mesh(data); bm.free()
+        glove = bpy.data.objects.new('Glove.'+side, data); bpy.context.collection.objects.link(glove)
     def glove_tag(co, primitives=primitives):
         nearest = min(primitives, key=lambda k: primitives[k].find_nearest(co)[3])
         return THUMB if nearest == 'thumb' else FINGERS if nearest == 'fingers' else NONE
@@ -443,22 +488,34 @@ for sign, side in [(1, 'L'), (-1, 'R')]:
     assign(glove, lambda co, W=W: W)
     parts.append(glove)
     glove_items = [glove]
-    # Cuff: sleeve with a rolled lip at the opening, closed inside the fist.
-    glove_items.append(loft('Glove cuff.'+side, [(gp(f), w, d*DC, W) for f, w, d in [
-        (-.015, .043, .041), (-.042, .047, .045), (-.053, .050, .048), (-.058, .054, .052), (-.056, .058, .056),
-        (-.048, .0595, .057), (-.020, .060, .0575), (.020, .060, .0575), (.046, .059, .0565), (.056, .053, .050),
+    # Cuff: sleeve with a rolled lip at the opening, closed inside the fist. Placed from the padded body's
+    # measured bounds so the player glove is PLAYER_GLOVE_LENGTH long at UNITY_GLOVE_WIDTH and centred on the
+    # forearm, whatever the remesh did to the body. Inner radii are in-game metres (divided by the glove scale).
+    rel = [v.co-wrist for v in glove.data.vertices]
+    xs = [r.dot(across) for r in rel]; zs = [r.dot(back)/DC for r in rel]
+    scale = UNITY_GLOVE_WIDTH/(max(xs)-min(xs))
+    rim = max(r.dot(direction) for r in rel) - PLAYER_GLOVE_LENGTH/scale + .0032  # piping radius behind the rim
+    axis_x = (max(xs)+min(xs))/2 + FOREARM_AXIS_OFFSET[0]/scale
+    axis_z = (max(zs)+min(zs))/2 + FOREARM_AXIS_OFFSET[1]/scale
+    def cp(f, x=0.0, z=0.0, rim=rim, axis_x=axis_x, axis_z=axis_z):
+        # Cuff profile authored with the rim at f=-.0598.
+        return wrist + direction*(rim+(f+.0598)*GLOVE_LENGTH_SCALE) + across*(axis_x+x) + back*((axis_z+z)*DC)
+    inner = [(w/scale, d/scale) for w, d in CUFF_INNER]
+    glove_items.append(loft('Glove cuff.'+side, [(cp(f), w, d*DC, W) for f, w, d in [
+        (-.015, *inner[0]), (-.045, *inner[1]), (-.0575, *inner[2]), (-.0598, *inner[3]), (-.0585, .0530, .0480),
+        (-.050, .0590, .0565), (-.020, .060, .0575), (.020, .060, .0575), (.046, .059, .0565), (.056, .053, .050),
         (.062, .036, .034)]], red, 24, direction, across))
-    glove_items.append(loft('Wrist strap.'+side, [(gp(f), w, d*DC, W) for f, w, d in [
+    glove_items.append(loft('Wrist strap.'+side, [(cp(f), w, d*DC, W) for f, w, d in [
         (-.042, .0592, .0567), (-.040, .0640, .0612), (-.006, .0640, .0612), (-.004, .0592, .0567)]],
         strap_mat, 24, direction, across, caps=(False, False)))
-    def ellipse_ring(f, w, d, count=22):
-        return [gp(f, math.cos(a)*w, math.sin(a)*d) for a in (2*math.pi*k/count for k in range(count))]
-    for f, w, d, r in [(-.058, .0542, .0522, .0032), (.046, .0593, .0568, .0030)]:
+    def ellipse_ring(f, w, d, count=20):
+        return [cp(f, math.cos(a)*w, math.sin(a)*d) for a in (2*math.pi*k/count for k in range(count))]
+    for f, w, d, r in [(-.0597, CUFF_PIPING[0]/scale, CUFF_PIPING[1]/scale, .0032), (.046, .0593, .0568, .0030)]:
         glove_items.append(tube('Glove piping.'+side, ellipse_ring(f, w, d), r, ivory, W, closed=True, n=4, ref=direction))
     # Strap end tab on the back of the wrist, with its stitched edge.
     def tab_point(i, j, off):
         f = -.036 + .027*i/3; a = math.radians(58 + 72*j/6)
-        return gp(f, math.cos(a)*(.0640+off), math.sin(a)*(.0612+off))
+        return cp(f, math.cos(a)*(.0640+off), math.sin(a)*(.0612+off))
     glove_items.append(slab('Strap tab.'+side, lambda i, j, layer: tab_point(i, j, .0002+layer), 4, 7, .0042, strap_mat, W))
     glove_items.append(tube('Strap tab edge.'+side, [tab_point(i/2, 6, .0022) for i in range(7)], .0018, ivory, W, n=6))
     for obj in glove_items:
@@ -488,7 +545,8 @@ for sign, side in [(1, 'L'), (-1, 'R')]:
 
     # ------------------------------------------------------------ boxing boots (floor at z=.025 before the final shift)
     bx = sign*.145
-    foot_body = loft('Boot foot.'+side, [((bx, y, zc), w, d, {}) for y, zc, w, d in [
+    # The boot's rounded underside reaches into the sole (bottom 9 mm lower, top unchanged): no groove above the sole.
+    foot_body = loft('Boot foot.'+side, [((bx, y, zc-.0045), w, d+.0045, {}) for y, zc, w, d in [
         (.080, .087, .035, .042), (.066, .095, .050, .050), (.030, .105, .056, .060), (-.020, .099, .060, .054),
         (-.070, .085, .064, .040), (-.120, .073, .066, .028), (-.165, .068, .058, .023), (-.195, .063, .042, .018),
         (-.208, .059, .020, .012), (-.212, .057, .004, .004)]], sole, 20, (0, -1, 0), (1, 0, 0))
@@ -508,9 +566,10 @@ for sign, side in [(1, 'L'), (-1, 'R')]:
             hits.append(hit[0] + hit[1]*.0018)
         tube('Boot lace.'+side, hits, .0026, ivory, [boot_weight(h) for h in hits], n=4)
     vertical('Boot collar.'+side, [(bx, -.005, .326, .0685, .0775), (bx, -.0055, .338, .0705, .0795), (bx, -.006, .350, .0700, .0790)], ivory, sh, 24, caps=(False, False))
-    loft('Boot sole.'+side, [((bx, y, .037), w, .0118, {'foot.'+side: 1}) for y, w in [
-        (.086, .012), (.080, .034), (.066, .052), (.030, .059), (-.020, .062), (-.070, .067), (-.120, .070),
-        (-.165, .062), (-.195, .046), (-.212, .025), (-.218, .008)]], dark, 16, (0, -1, 0), (1, 0, 0))
+    # Thin sole that follows the boot outline and ends under the rounded heel (a wider, longer plate read as a skate blade).
+    loft('Boot sole.'+side, [((bx, y, .035), w, .0100, {'foot.'+side: 1}) for y, w in [
+        (.068, .012), (.064, .030), (.052, .046), (.030, .053), (-.020, .057), (-.070, .061), (-.120, .063),
+        (-.165, .056), (-.195, .041), (-.212, .022), (-.218, .007)]], dark, 16, (0, -1, 0), (1, 0, 0))
 
 # Waistband over the union of the shorts.
 vertical('Wide waistband', [(0, 0, .984, .199, .135), (0, 0, .990, .206, .142), (0, 0, 1.030, .186, .128), (0, 0, 1.037, .176, .120)], ivory, 'pelvis', 40, caps=(False, False))

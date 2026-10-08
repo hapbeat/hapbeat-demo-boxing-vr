@@ -231,7 +231,7 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void CompactGlovesMatchTheSmallerCollisionEnvelope()
         {
             var size = BoxingContent.GloveSize(game.presentation.leftGlove);
-            Assert.That(size.x, Is.EqualTo(.15f).Within(.001f)); Assert.That(size.z, Is.InRange(0.19f, 0.25f));
+            Assert.That(size.x, Is.EqualTo(.15f).Within(.001f)); Assert.That(size.z, Is.InRange(0.25f, 0.27f));
             Assert.That(game.tuning.gloveRadius, Is.EqualTo(0.07f));
         }
         [TestCase(false)] [TestCase(true)] public void GuardInterceptionAndBodyHitSelectDifferentOutcomes(bool bodyGuard)

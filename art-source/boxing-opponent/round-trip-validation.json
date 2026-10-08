@@ -1,5 +1,5 @@
 {
-  "triangles": 14806,
+  "triangles": 14770,
   "weight_gt_0_9_vertices": {
     "pelvis": 409,
     "spine": 64,
@@ -9,78 +9,88 @@
     "clavicle.L": 0,
     "upper_arm.L": 108,
     "forearm.L": 255,
-    "hand.L": 1186,
+    "hand.L": 1177,
     "thigh.L": 284,
     "shin.L": 312,
-    "foot.L": 334,
+    "foot.L": 335,
     "clavicle.R": 0,
     "upper_arm.R": 108,
     "forearm.R": 255,
-    "hand.R": 1186,
+    "hand.R": 1177,
     "thigh.R": 288,
-    "shin.R": 312,
-    "foot.R": 332
+    "shin.R": 310,
+    "foot.R": 336
   },
   "gloves": {
     "L": {
-      "triangles": 2308,
+      "triangles": 2290,
       "bounds_size_m": [
-        0.1731,
-        0.3522,
-        0.2075
+        0.1729,
+        0.2995,
+        0.2048
       ],
       "bounds_centre_m": [
-        -0.012,
-        0.1149,
-        -0.0028
+        -0.0023,
+        0.0945,
+        -0.0017
       ],
-      "width_to_length": 0.492,
+      "width_to_length": 0.577,
+      "player_glove_size_m": [
+        0.15,
+        0.2599,
+        0.1333
+      ],
       "tags_vs_centre_m": {
         "thumb": [
-          -0.0569,
-          0.0283,
-          -0.0503
+          -0.0652,
+          0.02,
+          -0.0456
         ],
         "fingers": [
-          0.013,
-          0.0797,
-          -0.0824
+          0.0125,
+          0.0692,
+          -0.0856
         ],
         "cuff": [
-          0.012,
-          -0.1247,
-          0.0028
+          0.0009,
+          -0.1057,
+          0.0015
         ]
       }
     },
     "R": {
-      "triangles": 2308,
+      "triangles": 2290,
       "bounds_size_m": [
-        0.1731,
-        0.3526,
-        0.2074
+        0.1729,
+        0.2995,
+        0.2048
       ],
       "bounds_centre_m": [
-        0.012,
-        0.1151,
-        -0.0028
+        0.0023,
+        0.0945,
+        -0.0017
       ],
-      "width_to_length": 0.491,
+      "width_to_length": 0.577,
+      "player_glove_size_m": [
+        0.15,
+        0.2599,
+        0.1333
+      ],
       "tags_vs_centre_m": {
         "thumb": [
-          0.0569,
-          0.0245,
-          -0.0505
+          0.0652,
+          0.02,
+          -0.0456
         ],
         "fingers": [
-          -0.0107,
-          0.0779,
-          -0.0831
+          -0.0125,
+          0.0692,
+          -0.0856
         ],
         "cuff": [
-          -0.012,
-          -0.1249,
-          0.0028
+          0.0009,
+          -0.1057,
+          0.0015
         ]
       }
     }
@@ -135,7 +145,21 @@
       "01 Warm clay skin",
       "08 Cotton hand wrap"
     ],
-    "orientation": "PASS: +Y = hand (narrow, open end), -Y = elbow, origin at length midpoint"
+    "orientation": "PASS: +Y = hand (narrow, open end), -Y = elbow, origin at length midpoint",
+    "cuff_fit": {
+      "L": {
+        "insertion_m": 0.0298,
+        "max_gap_m": 0.0103,
+        "mouth_max_gap_m": 0.0039,
+        "vertices_through_wall": 0
+      },
+      "R": {
+        "insertion_m": 0.0298,
+        "max_gap_m": 0.0103,
+        "mouth_max_gap_m": 0.0039,
+        "vertices_through_wall": 0
+      }
+    }
   },
   "verdict": "PASS"
 }

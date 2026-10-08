@@ -29,32 +29,23 @@ namespace Hapbeat.Boxing.Editor
             System.IO.Directory.CreateDirectory("Logs");
             BoxingVerification.Render(game.input.headCamera,"Logs/boxing-forearms.png");
         }
+        public const string ModelPath="Assets/Boxing/Art/PlayerForearm.fbx";
         public static void Install(BoxingPresentation view)
         {
+            // Mesh +Y is the hand side and the origin the length midpoint, as RenderForearm places it.
+            var source=AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath).GetComponentInChildren<MeshFilter>();
+            var imported=source.GetComponent<MeshRenderer>().sharedMaterials;
+            var materials=new Material[imported.Length];
+            for(int i=0;i<materials.Length;i++)
+                materials[i]=AssetDatabase.LoadAssetAtPath<Material>(BoxingAvatarSetup.MaterialPath(BoxingAvatarSetup.Slot(imported[i])));
             Transform Build(Transform old,string name)
             {
                 if(old!=null) Object.DestroyImmediate(old.gameObject);
-                var arm=GameObject.CreatePrimitive(PrimitiveType.Capsule); arm.name=name;
+                // Gameplay uses swept spheres, like all other boxing contacts; no collider.
+                var arm=new GameObject(name,typeof(MeshFilter),typeof(MeshRenderer));
                 arm.transform.SetParent(view.transform,false);
-                // Gameplay uses swept spheres, like all other boxing contacts; no physics callbacks.
-                Object.DestroyImmediate(arm.GetComponent<Collider>());
-                const string path="Assets/Boxing/Art/PlayerForearm.asset";
-                var mesh=AssetDatabase.LoadAssetAtPath<Mesh>(path);
-                if(mesh==null)
-                {
-                    mesh=Object.Instantiate(arm.GetComponent<MeshFilter>().sharedMesh); mesh.name="PlayerForearm";
-                    var vertices=mesh.vertices;
-                    for(int i=0;i<vertices.Length;i++)
-                    {
-                        var p=vertices[i]; float y=Mathf.Abs(p.y);
-                        p.x*=BoxingForearm.Radius*2; p.z*=BoxingForearm.Radius*2;
-                        p.y=Mathf.Sign(p.y)*(y>.5f ? BoxingForearm.Length*.5f-BoxingForearm.Radius+(y-.5f)*BoxingForearm.Radius*2 : y*(BoxingForearm.Length-2*BoxingForearm.Radius));
-                        vertices[i]=p;
-                    }
-                    mesh.vertices=vertices; mesh.RecalculateBounds(); AssetDatabase.CreateAsset(mesh,path);
-                }
-                arm.GetComponent<MeshFilter>().sharedMesh=mesh;
-                arm.GetComponent<Renderer>().sharedMaterial=AssetDatabase.LoadAssetAtPath<Material>("Assets/Boxing/Art/BoxerMaterial0.mat");
+                arm.GetComponent<MeshFilter>().sharedMesh=source.sharedMesh;
+                arm.GetComponent<MeshRenderer>().sharedMaterials=materials;
                 arm.SetActive(false);
                 return arm.transform;
             }

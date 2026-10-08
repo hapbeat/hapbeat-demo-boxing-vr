@@ -5,8 +5,8 @@ A boxer in sparring headgear (simple eyes, brows, nose and mouth; no realistic f
 ## Deliverables
 
 - `boxer-codex.blend`: editable mesh, rig, two pose/animation examples, the player forearm (hidden, own collection) and a studio presentation setup. Opens at the guard pose.
-- `boxer-codex.fbx`: only the skinned character and skeleton, with the two actions. No studio floor, camera or lights. The Unity game uses a copy at `unity/boxing-vr/Assets/Boxing/Art/Boxer.fbx` (the copy is updated separately, after review).
-- `player-forearm.fbx`: static skin-and-wrap forearm, 0.28 m long, radius 0.036 m at the wrist (wrap) to 0.045 m near the elbow. Axes are baked: mesh +Y is the hand side (open end, hidden inside the glove cuff), -Y the elbow side, origin at the midpoint. Fits `BoxingForearm` (length 0.28, radius 0.045) and `BoxingPresentation.RenderForearm`. Symmetric left/right, so one mesh serves both arms.
+- `boxer-codex.fbx`: only the skinned character and skeleton, with the two actions. No studio floor, camera or lights. The Unity game uses a copy at `unity/boxing-vr/Assets/Boxing/Art/Boxer.fbx` (copied by hand after review).
+- `player-forearm.fbx`: static skin-and-wrap forearm, 0.28 m long, radius 0.036 m at the wrist (wrap) to 0.045 m near the elbow. Axes are baked: mesh +Y is the hand side (open end, hidden inside the glove cuff), -Y the elbow side, origin at the midpoint. Fits `BoxingForearm` (length 0.28, radius 0.045) and `BoxingPresentation.RenderForearm`. Symmetric left/right, so one mesh serves both arms. Unity copy: `Assets/Boxing/Art/PlayerForearm.fbx`.
 - `preview-hero.png`, `preview-front.png`, `preview-side.png`: guard pose. `preview-hit.png`: frame 7 of the recoil example.
 - `preview-glove.png`: glove close-up, three-quarter knuckle view (left) and palm view (right).
 - `preview-forearm.png`: first-person layout as in Unity (glove width 0.15 m, forearm centre 0.24 m behind the glove centre).
@@ -17,16 +17,17 @@ All previews apply the runtime glove depth squash (see below), so they show the 
 
 ## Unity import contracts (checked by `verify_boxer.py`)
 
-- 20 bones with the previous names, hierarchy and orientation; one skinned mesh; 9 materials. Slots 0-5 keep the previous order (skin, shorts, chalk, glove leather, boot panels, charcoal); slots 6-8 are new (headgear, hand wrap, strap leather), so `BoxingAvatarSetup`'s per-slot colour list needs three more entries when the FBX is imported.
+- 20 bones with the previous names, hierarchy and orientation; one skinned mesh; 9 materials. Slots 0-5 keep the previous order (skin, shorts, chalk, glove leather, boot panels, charcoal); slots 6-8 are headgear, hand wrap and strap leather (`BoxingAvatarSetup` colours all nine).
 - Glove vertices (and only glove vertices) are weighted 1.0 to `hand.L/R`, which is how `BoxingPlayerGloves` extracts the shared player glove. Anatomy tags (vertex colour `Anatomy`: thumb R, folded fingers G, cuff B) keep the reviewed handedness.
 - The gloves are authored at their in-game proportions and stretched along the hand bone's dorsal axis by 1/0.75, because Unity squashes that axis by `GloveDepthRatio` (0.75). In the raw Blender file the gloves therefore look deeper than in game.
+- Player glove (normalised to 0.15 m wide in Unity) is 0.26 m long (`PLAYER_GLOVE_LENGTH`). The cuff is placed from the padded body's measured bounds, so the length and the cuff's centring hold whatever the remesh does. Its inner wall follows the player forearm's hand wrap with about 2 mm clearance; `verify_boxer.py` casts rays from the forearm (placed as `RenderForearm` does, 0.24 m behind the glove centre) and fails if it passes through the cuff or leaves more than 4 mm at the mouth.
 - Head, upper-arm and forearm weighted bounds stay within the previous head centre (< 2 cm shift) and limb radii (within 20%) used for hit volumes.
 
 ## Rig and limitations
 
 20-bone FK skeleton (forward kinematics): root, pelvis, spine, chest, neck, head, two clavicles and upper-arm/forearm/hand chains, two thigh/shin/foot chains. Blender Z up, character faces -Y, metres. The body stands about 1.78m tall (1.81m to the top of the headgear). FBX exports Y up / -Z forward.
 
-All vertices have normalized bone weights (at most two influences). The torso and each arm/leg are smooth lofts with blended elbow/knee rings and mild muscle relief. Each glove body, the shorts and each boot are voxel-remeshed unions decimated to a triangle budget; headgear, cuffs, straps, piping, wraps and laces are separate shells. Everything is joined into one skinned object, not one watertight anatomical surface. The asset is intended for rendering, not 3D printing.
+All vertices have normalized bone weights (at most two influences). The torso and each arm/leg are smooth lofts with blended elbow/knee rings and mild muscle relief. Each glove body is a voxel-remeshed union re-laid as even quads (QuadriFlow, fitted back onto the union and lightly smoothed; the right glove mirrors the left so both have identical bounds). The shorts and each boot are voxel-remeshed unions decimated to a triangle budget; headgear, cuffs, straps, piping, wraps and laces are separate shells. Everything is joined into one skinned object, not one watertight anatomical surface. The asset is intended for rendering, not 3D printing.
 
 `Guard_Pose` is a static 30-frame guard sample. `Hit_Recoil` is a short 30fps example: upper body and head recoil around frame 7, then return by frame 24. Neither is a complete combat animation set. No inverse-kinematics controls, finger bones, face rig, walking, root motion or Humanoid Avatar mapping are supplied. Large limb rotations may require weight/garment refinement; the provided guard and recoil are the reviewed poses.
 

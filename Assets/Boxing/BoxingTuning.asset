@@ -14,13 +14,35 @@ MonoBehaviour:
   m_EditorClassIdentifier: Hapbeat.Boxing::Hapbeat.Boxing.BoxingTuning
   roundSeconds: 90
   maximumHealth: 100
+  autoStartSeconds: 2
+  restartAfterResultsSeconds: 4
+  resultPanelDelaySeconds: 1
   enemyInterval: 1.6
   telegraphSeconds: 0.42
   strikeSeconds: 0.22
   recoverSeconds: 0.55
-  guardInterval: 2.5
   guardSeconds: 1.2
   playRadius: 1
+  opponentSkill: 0.6
+  opponentReactionSlow: 0.3
+  opponentReactionFast: 0.15
+  opponentReadChanceLow: 0.35
+  opponentReadChanceHigh: 0.85
+  opponentThreatSpeed: 1.2
+  opponentPredictSeconds: 0.15
+  opponentHeatHalfLife: 6
+  opponentFlurryPunches: 3
+  opponentFlurrySeconds: 1.5
+  opponentFlurryHits: 3
+  opponentFlurryHitSeconds: 2.5
+  opponentGuardSmoothSeconds: 0.12
+  opponentDefendSmoothSeconds: 0.1
+  opponentFistReturnSeconds: 0.2
+  opponentHeadSmoothSeconds: 0.12
+  opponentRootSmoothSeconds: 0.25
+  opponentHandMaxAcceleration: 45
+  opponentHeadMaxAcceleration: 25
+  opponentRootMaxAcceleration: 6
   gloveRadius: 0.07
   enemyGloveRadius: 0.09
   headRadius: 0.14
