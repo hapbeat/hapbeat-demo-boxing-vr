@@ -10,7 +10,7 @@ namespace Hapbeat.Boxing.Tests
         [TearDown] public void Cleanup()=>Object.DestroyImmediate(tuning);
         [Test] public void AllFourGuardsInterceptTheirIntendedDirectionBeforeTheBody()
         {
-            var enemy=new BoxingOpponent(tuning); int seen=0;
+            var enemy=new BoxingOpponent(tuning, 11); int seen=0;
             for(int i=0;i<30000 && seen!=15;i++)
             {
                 enemy.Tick(.01f,Vector3.up*1.65f,true);
@@ -32,7 +32,7 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void NpcRaisesGuardAfterRetractingAPunch()
         {
-            var enemy=new BoxingOpponent(tuning);
+            var enemy=new BoxingOpponent(tuning, 11);
             // Wait for the whole first attack (a combo has several strikes) to finish retracting.
             for(int i=0;i<1000 && (enemy.CompletedAttacks==0 || enemy.State!=BoxingOpponentState.Neutral);i++) enemy.Tick(.01f,Vector3.up*1.65f,true);
             Assert.That(enemy.CompletedAttacks,Is.GreaterThanOrEqualTo(1)); Assert.That(enemy.State,Is.EqualTo(BoxingOpponentState.Neutral));
@@ -41,7 +41,7 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void LowWidePreparationBiasesBodyHookGuardButLeavesOtherChoices()
         {
-            var enemy=new BoxingOpponent(tuning); int matches=0,total=0,seen=0; bool was=false;
+            var enemy=new BoxingOpponent(tuning, 11); int matches=0,total=0,seen=0; bool was=false;
             for(int i=0;i<40000;i++)
             {
                 var head=Vector3.up*1.65f;

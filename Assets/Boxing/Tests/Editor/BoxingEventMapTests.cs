@@ -33,6 +33,10 @@ namespace Hapbeat.Boxing.Tests
                     Assert.That(entry.target,Is.EqualTo("*/pos_neck"));
                     if(speed>=2.5f) Assert.That(AssetDatabase.GetAssetPath(entry.streamClip),Is.EqualTo("Assets/Boxing/Haptics/damage.wav"));
                 }
+                // Wrists (guards, arm contacts and the player's own landed punches) use the same strong damage clip.
+                foreach(var entry in map.entries.Where(e=>e.target=="*/pos_l_wrist" || e.target=="*/pos_r_wrist"))
+                    Assert.That(AssetDatabase.GetAssetPath(entry.streamClip),Is.EqualTo("Assets/Boxing/Haptics/damage.wav"),entry.eventName);
+                Assert.That(map.entries.Count(e=>e.target.EndsWith("_wrist")),Is.EqualTo(8));
             }
             finally { UnityEngine.Object.DestroyImmediate(tuning); }
         }

@@ -73,7 +73,7 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void EnemyUsesBothHandsAndMovesWithinOneSmallStep()
         {
-            var opponent = new BoxingOpponent(tuning); int left = 0, right = 0, id = 0;
+            var opponent = new BoxingOpponent(tuning, 12); int left = 0, right = 0, id = 0;
             for (int i = 0; i < 9000; i++)
             {
                 opponent.Tick(0.01f, Vector3.up * 1.65f, true);
@@ -109,7 +109,7 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void OpponentSometimesRaisesAndLowersGuardWithoutReadingPlayerPunches()
         {
-            var enemy = new BoxingOpponent(tuning); int guarded = 0, transitions = 0; bool old = false;
+            var enemy = new BoxingOpponent(tuning, 13); int guarded = 0, transitions = 0; bool old = false;
             for (int i = 0; i < 6000; i++)
             {
                 enemy.Tick(0.01f, Vector3.up * 1.65f, true);
@@ -136,8 +136,11 @@ namespace Hapbeat.Boxing.Tests
             game = Object.FindAnyObjectByType<BoxingGame>();
             originalTuning = game.tuning; game.tuning = Object.Instantiate(originalTuning);
             game.feedback.forceSilent = true; game.feedback.sdkRoot.SetActive(false);
-            game.Initialize(); game.Round.Start(90, 10000); // Long collision tests must not stop early at KO.
+            game.Initialize(); SeedOpponent(game, 21); game.Round.Start(90, 10000); // Long collision tests must not stop early at KO.
         }
+        // The opponent draws a fresh seed per round; tests pin one so the action sequence is reproducible.
+        public static void SeedOpponent(BoxingGame target, int seed) =>
+            typeof(BoxingGame).GetProperty("Opponent").GetSetMethod(true).Invoke(target, new object[] { new BoxingOpponent(target.tuning, seed) });
         [TearDown] public void Cleanup()
         {
             var temp = game.tuning; game.tuning = originalTuning; Object.DestroyImmediate(temp);
@@ -237,7 +240,8 @@ namespace Hapbeat.Boxing.Tests
         [TestCase(false)] [TestCase(true)] public void GuardInterceptionAndBodyHitSelectDifferentOutcomes(bool bodyGuard)
         {
             game.Round.Tick(3, false);
-            for (int i = 0; i < 6000 && (game.Opponent.GuardWeight < 0.99f || game.Opponent.BodyGuard!=bodyGuard); i++) game.Opponent.Tick(0.01f, Pose().head, true);
+            // The head case uses the earmuff guard: a high guard's forearms legitimately cover the chest.
+            for (int i = 0; i < 12000 && (game.Opponent.GuardWeight < 0.99f || game.Opponent.BodyGuard!=bodyGuard || (!bodyGuard && !game.Opponent.HookGuard)); i++) game.Opponent.Tick(0.01f, Pose().head, true);
             Assert.That(game.Opponent.Guarding, Is.True);
             typeof(BoxingGame).GetMethod("SaveHistory", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(game, new object[] { Pose() });
             var resolve = typeof(BoxingGame).GetMethod("ResolvePlayer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
@@ -295,7 +299,7 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.feedback.LastImpact.damage, Is.LessThanOrEqualTo(1));
         }
         [TestCase(true)] [TestCase(false)]
-        public void SurfaceSelectsDistinctAudioAndTactileClipsForBothDirections(bool attack)
+        public void SurfaceSelectsDistinctAudioAndTheSameWristRouteForBothDirections(bool attack)
         {
             foreach (ImpactZone zone in System.Enum.GetValues(typeof(ImpactZone)))
             foreach (float speed in new[] { 1f, 5f })
@@ -306,8 +310,7 @@ namespace Hapbeat.Boxing.Tests
                 Assert.That(game.feedback.contactSounds[BoxingFeedback.SoundIndex(glove)], Is.Not.SameAs(game.feedback.contactSounds[BoxingFeedback.SoundIndex(body)]));
                 var g = game.feedback.impactTriggers[BoxingFeedback.TriggerIndex(glove)].ResolveEntry();
                 var b = game.feedback.impactTriggers[BoxingFeedback.TriggerIndex(body)].ResolveEntry();
-                Assert.That(g.streamClip, Is.Not.SameAs(b.streamClip)); Assert.That(g.target, Is.EqualTo(b.target));
-                Assert.That(g.streamClip.length, Is.LessThan(b.streamClip.length));
+                Assert.That(g.target, Is.EqualTo(b.target)); Assert.That(g.eventName, Is.Not.EqualTo(b.eventName));
             }
             Assert.That(game.feedback.Sends, Is.Zero);
         }

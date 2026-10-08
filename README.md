@@ -81,7 +81,7 @@ Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です�
 - メニュー表示、Questのシステムメニュー・フォーカス喪失、追跡喪失、開始点から1m以上離れた時は対戦時間・敵・触覚を停止します。システムメニューから戻った時は `RESUME` で明示的に再開します。
 - `Assets/Boxing/BoxingTuning.asset` でラウンド時間、攻撃間隔、予備動作、判定サイズ、強打の再準備・速度、敵の速度→ゲインのカーブ・閾値を変更できます。
 - `IMPACT: WeakHard` はプレイヤーの距離強度0.65、敵は接触速度2.5m/sを境に波形を変更します。`Continuous` は同じ波形のゲインだけを連続変更します。接触速度0.25m/s未満は無視しますが、それ以上のプレイヤーの強度は速度ではなく距離で決まります。敵は6m/sで最大ゲインです。
-- `Assets/Boxing/Haptics/BoxingEventMap.asset` は使用する10エントリーのみです。左右手首は各4種（グローブ・腕接触／身体接触 × 弱／強）、頭・胴体への被弾は共通の2種（`head_body_soft/hard`）。未使用の`head_glove_*`はありません。`head_body_hard`は0始まりの9番で、ユーザー調整の`damage.wav`を使います。波形、絶対ゲイン、送信先を編集できます。
+- `Assets/Boxing/Haptics/BoxingEventMap.asset` は使用する10エントリーのみです。左右手首は各4種（グローブ・腕接触／身体接触 × 弱／強）、頭・胴体への被弾は共通の2種（`head_body_soft/hard`）。未使用の`head_glove_*`はありません。ユーザー調整の`damage.wav`を左右手首の8種（ガード・腕接触と自分のパンチの命中）と`head_body_hard`（0始まりの9番）で使い、`head_body_soft`だけが`BodySoft.wav`です。波形、絶対ゲイン、送信先を編集できます。
 
 ## 相手のリグ付きモデル
 
@@ -105,7 +105,7 @@ Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です�
 
 相手は攻撃を引き戻した後・被弾の後・待機の選択でガードを上げます。種類はプレイヤーの構え（手の平均高さと横への開き）から推定した候補を重く、被弾の多い部位をさらに重く見て確率的に選び、ガード開始時に固定します。覆っていない高さ・方向には隙が残ります。
 
-決着したフレームで終了ゴングと勝敗音声を同時に開始します。専用音源を使い、最後の打撃音・触覚は中断しません。終了表示は最低2.5秒、ゴングと音声が終わるまで維持してからメニューへ進みます。その間に新しい攻撃やダメージは発生しません。時間切れも残りHPで判定し、同じHPなら引き分けです。開始カウント「3・2・1」と勝敗「You win / You lose / It's a tie」はKenney Voiceover Packの男性音声です（CC0、`Assets/Boxing/Audio/Voice/License.txt`）。SOUND OFFは全音声に適用されます。
+決着したフレームで終了ゴングと勝敗音声を同時に開始します。専用音源を使い、最後の打撃音・触覚は中断しません。Demo Sessionでは終了から1秒（`BoxingTuning.resultPanelDelaySeconds`）で完了パネルを出し、ゴングと音声はそのまま最後まで鳴ります。完了・ポーズのパネル表示中はグローブの代わりにDemo Hubと同じ手（`DemoHands`）を表示し、指先で押します。Demo Session外ではゴングと音声が終わってから次のラウンドを始めます。その間に新しい攻撃やダメージは発生しません。時間切れも残りHPで判定し、同じHPなら引き分けです。開始カウント「3・2・1」と勝敗「You win / You lose / It's a tie」はKenney Voiceover Packの男性音声です（CC0、`Assets/Boxing/Audio/Voice/License.txt`）。SOUND OFFは全音声に適用されます。
 
 頭への命中は上体と頭を反らし、胴への命中は少し前屈して肘を寄せます。ガードはこの被弾リアクションを起こしません。メニュー／停止中はリアクションの時間も止まり、ラウンド再開時にリセットします。FBXに同梱した見本クリップは実行せず、ゲームの攻撃・ガードに同期した逆運動学（IK）で動かします。従来の攻撃距離が骨格の腕長を超える場合は腕を伸長して拳を判定位置に合わせます。実機での伸び方・遮蔽の見え方は調整対象です。
 
@@ -115,7 +115,7 @@ Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です�
 
 既定の送信先はGloveBallと同じ `*/pos_l_wrist`、`*/pos_r_wrist`、`*/pos_neck` です。デバイスのposition設定を合わせ、PC（Air Link時）またはQuest（APK時）と同じ到達可能なLANに接続してください。1台で試す場合はEventMapのtargetをそのデバイスのpositionに合わせます。
 
-Unity SDKのStreamClipを使うため、事前のKit転送は不要です。グローブ同士は短い155Hzの触覚、身体への命中は長めの75Hzの触覚です。`GainMultiplier` にプレイヤーは距離応答、敵は接触速度応答を渡し、EventMap側のゲインと掛け合わせます。自動検証はSDK GameObjectをAwake前に無効化し、PC音声も実機送信も行いません。通常のEditor Playは音声・触覚ONです。
+Unity SDKのStreamClipを使うため、事前のKit転送は不要です。手首（ガード・腕への接触と自分のパンチの命中）と頭・胴体への強打は同じ`damage.wav`、頭・胴体への弱打は長めの75Hzの`BodySoft.wav`です。弱打・強打の差は`GainMultiplier`で付きます。`GainMultiplier` にプレイヤーは距離応答、敵は接触速度応答を渡し、EventMap側のゲインと掛け合わせます。自動検証はSDK GameObjectをAwake前に無効化し、PC音声も実機送信も行いません。通常のEditor Playは音声・触覚ONです。
 
 ガードの保持時間の基準は `BoxingTuning.guardSeconds` です。手前のグローブに当たった攻撃はガードされ、身体にはダメージが入りません。身体へ届いた攻撃のみHPを減らします。接触表示はワールド空間の小さなリングで、カメラ前の半透明パネルはありません。開始・終了にはCC0実録ベルを編集した4連打のゴングを専用音源で鳴らします。
 

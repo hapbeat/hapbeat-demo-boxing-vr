@@ -18,7 +18,7 @@ MonoBehaviour:
     displayName: left_glove_glove_soft
     category: boxing
     eventName: left_glove_glove_soft
-    streamClip: {fileID: 8300000, guid: d394c1b5d36d84a4b993309015ac45dd, type: 3}
+    streamClip: {fileID: 8300000, guid: 22817718ae7a9c14b9cc8d8545e5a7bf, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -32,7 +32,7 @@ MonoBehaviour:
     displayName: left_glove_glove_hard
     category: boxing
     eventName: left_glove_glove_hard
-    streamClip: {fileID: 8300000, guid: 71d0229aa5516b0459819a63d6b3d590, type: 3}
+    streamClip: {fileID: 8300000, guid: 22817718ae7a9c14b9cc8d8545e5a7bf, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -46,7 +46,7 @@ MonoBehaviour:
     displayName: left_glove_body_soft
     category: boxing
     eventName: left_glove_body_soft
-    streamClip: {fileID: 8300000, guid: 8abcba4087e60924a8b4f03191057bcb, type: 3}
+    streamClip: {fileID: 8300000, guid: 22817718ae7a9c14b9cc8d8545e5a7bf, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -60,7 +60,7 @@ MonoBehaviour:
     displayName: left_glove_body_hard
     category: boxing
     eventName: left_glove_body_hard
-    streamClip: {fileID: 8300000, guid: 7f48dd53507603240b6c07eff9b29942, type: 3}
+    streamClip: {fileID: 8300000, guid: 22817718ae7a9c14b9cc8d8545e5a7bf, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -74,7 +74,7 @@ MonoBehaviour:
     displayName: right_glove_glove_soft
     category: boxing
     eventName: right_glove_glove_soft
-    streamClip: {fileID: 8300000, guid: d394c1b5d36d84a4b993309015ac45dd, type: 3}
+    streamClip: {fileID: 8300000, guid: 22817718ae7a9c14b9cc8d8545e5a7bf, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -88,7 +88,7 @@ MonoBehaviour:
     displayName: right_glove_glove_hard
     category: boxing
     eventName: right_glove_glove_hard
-    streamClip: {fileID: 8300000, guid: 71d0229aa5516b0459819a63d6b3d590, type: 3}
+    streamClip: {fileID: 8300000, guid: 22817718ae7a9c14b9cc8d8545e5a7bf, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -102,7 +102,7 @@ MonoBehaviour:
     displayName: right_glove_body_soft
     category: boxing
     eventName: right_glove_body_soft
-    streamClip: {fileID: 8300000, guid: 8abcba4087e60924a8b4f03191057bcb, type: 3}
+    streamClip: {fileID: 8300000, guid: 22817718ae7a9c14b9cc8d8545e5a7bf, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -116,7 +116,7 @@ MonoBehaviour:
     displayName: right_glove_body_hard
     category: boxing
     eventName: right_glove_body_hard
-    streamClip: {fileID: 8300000, guid: 7f48dd53507603240b6c07eff9b29942, type: 3}
+    streamClip: {fileID: 8300000, guid: 22817718ae7a9c14b9cc8d8545e5a7bf, type: 3}
     loop: 0
     bindings: []
     gain: 0.8

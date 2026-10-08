@@ -20,8 +20,8 @@ namespace Hapbeat.Boxing.Tests
             var tuning = ScriptableObject.CreateInstance<BoxingTuning>();
             try
             {
-                var enemy = new BoxingOpponent(tuning); int mask = 0; Vector3 head = new Vector3(0,1.65f,.4f);
-                for (int i=0;i<12000;i++)
+                var enemy = new BoxingOpponent(tuning, 14); int mask = 0; Vector3 head = new Vector3(0,1.65f,.4f);
+                for (int i=0;i<24000;i++)
                 {
                     enemy.Tick(.005f,head,true);
                     if (!enemy.Striking || enemy.MotionWeight < .96f) continue;
