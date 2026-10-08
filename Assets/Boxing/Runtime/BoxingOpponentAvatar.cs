@@ -26,6 +26,10 @@ namespace Hapbeat.Boxing
         public Vector3 HeadCenter => head.TransformPoint(headCenter);
         public Vector3 LeftCenter => leftHand.TransformPoint(leftCenter);
         public Vector3 RightCenter => rightHand.TransformPoint(rightCenter);
+        // Elbow poles and torso yaw ease towards the opponent state instead of switching in one frame.
+        private Vector3 leftPole, rightPole;
+        private float smoothedYaw;
+        private bool smoothingStarted;
 
         public void CaptureRest()
         {
@@ -69,7 +73,7 @@ namespace Hapbeat.Boxing
         {
             BodyReaction = body; Reaction = Mathf.Max(Reaction, Mathf.Lerp(.3f, 1, gain));
         }
-        public void ResetReaction() { Reaction = 0; BodyReaction = false; }
+        public void ResetReaction() { Reaction = 0; BodyReaction = false; smoothingStarted = false; }
         public void GetGuardArms(BoxingGuardArm[] arms)
         {
             BoxingGuardArm Segment(Transform a,Transform b,float radius) => new BoxingGuardArm(a.position,b.position,
@@ -95,24 +99,42 @@ namespace Hapbeat.Boxing
             var lf = leftFoot.position + new Vector3(-.035f,0,-.13f);
             var rf = rightFoot.position + new Vector3(.035f,0,.13f);
             var lr = leftFoot.rotation; var rr = rightFoot.rotation;
+            Vector3 leftTarget = Pole(opponent, true, -1), rightTarget = Pole(opponent, false, 1);
+            if (!smoothingStarted) { leftPole = leftTarget; rightPole = rightTarget; smoothedYaw = opponent.BodyYaw; smoothingStarted = true; }
+            float step = Mathf.Max(0, dt);
+            float poleBlend = 1 - Mathf.Exp(-step / .08f);
+            leftPole = Vector3.Lerp(leftPole, leftTarget, poleBlend); rightPole = Vector3.Lerp(rightPole, rightTarget, poleBlend);
+            smoothedYaw = Mathf.Lerp(smoothedYaw, opponent.BodyYaw, 1 - Mathf.Exp(-step / .05f));
             float angle = (BodyReaction ? -10 : 6) * Reaction;
-            spine.rotation = Quaternion.Euler(angle, 12 + opponent.BodyYaw * .45f, 0) * spine.rotation;
-            chest.rotation = Quaternion.Euler(angle * .5f, opponent.BodyYaw * .55f, 0) * chest.rotation;
-            head.rotation = Quaternion.AngleAxis(-12 - opponent.BodyYaw,Vector3.up) * head.rotation;
+            spine.rotation = Quaternion.Euler(angle, 12 + smoothedYaw * .45f, 0) * spine.rotation;
+            chest.rotation = Quaternion.Euler(angle * .5f, smoothedYaw * .55f, 0) * chest.rotation;
+            head.rotation = Quaternion.AngleAxis(-12 - smoothedYaw,Vector3.up) * head.rotation;
             head.rotation = Quaternion.AngleAxis((BodyReaction ? -8 : 14) * Reaction, Vector3.right) * head.rotation;
             // Keep the head's rendered centre on its hit sphere while bending the body beneath it.
             transform.position += opponent.Head - HeadCenter;
             Solve(leftThigh, leftShin, leftFoot, lf, Vector3.back); leftFoot.rotation = lr;
             Solve(rightThigh, rightShin, rightFoot, rf, Vector3.back); rightFoot.rotation = rr;
-            Arm(leftUpper, leftFore, leftHand, leftCenter, opponent.Left, opponent.Head, -1, opponent.Guarding && opponent.HookGuard && !opponent.BodyGuard ? opponent.GuardWeight : opponent.Hook && opponent.AttackLeft ? opponent.MotionWeight : 0);
-            Arm(rightUpper, rightFore, rightHand, rightCenter, opponent.Right, opponent.Head, 1, opponent.Guarding && opponent.HookGuard && !opponent.BodyGuard ? opponent.GuardWeight : opponent.Hook && !opponent.AttackLeft ? opponent.MotionWeight : 0);
+            Arm(leftUpper, leftFore, leftHand, leftCenter, opponent.Left, opponent.Head, leftPole);
+            Arm(rightUpper, rightFore, rightHand, rightCenter, opponent.Right, opponent.Head, rightPole);
             Reaction = Mathf.Max(0, Reaction - Mathf.Max(0, dt) * 2.8f);
         }
-        private void Arm(Transform upper, Transform fore, Transform hand, Vector3 center, Vector3 target, Vector3 targetHead, float side, float hook)
+        // Elbow direction: horizontal for a hook, raised forward for the ear-muff guard, tucked down for body guards.
+        private static Vector3 Pole(BoxingOpponent opponent, bool left, float side)
+        {
+            if (opponent.Hook && opponent.AttackLeft == left) return new Vector3(side, .05f, .1f);
+            if (opponent.Guarding)
+                switch (opponent.Guard)
+                {
+                    case BoxingGuard.HeadHook: return new Vector3(side * .7f, -.35f, -.35f);
+                    case BoxingGuard.BodyStraight: return new Vector3(side * .15f, -1, -.05f);
+                    case BoxingGuard.BodyHook: return new Vector3(side * .35f, -1, .05f);
+                }
+            return new Vector3(side * .3f, -1, .1f);
+        }
+        private void Arm(Transform upper, Transform fore, Transform hand, Vector3 center, Vector3 target, Vector3 targetHead, Vector3 pole)
         {
             float extension = Mathf.Clamp01((targetHead.z - target.z - .28f) / .35f);
             Vector3 direction = Vector3.Lerp(Vector3.up, Vector3.back, extension).normalized;
-            Vector3 pole = Vector3.Lerp(new Vector3(side * .3f, -1, .1f), new Vector3(side, .05f, .1f), hook);
             // Explicit two-axis wrist frame: local Y runs cuff -> knuckles, local Z
             // is the back of the glove. Iterate towards the forearm to avoid bent wrists.
             for (int i=0; i<5; i++)

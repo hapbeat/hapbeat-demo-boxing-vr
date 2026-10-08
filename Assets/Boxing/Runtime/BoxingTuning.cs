@@ -22,13 +22,41 @@ namespace Hapbeat.Boxing
         [Min(0)] public float restartAfterResultsSeconds = 4;
         // Demo Session: the completion panel appears this long after the final bell (the bell and voice keep playing).
         [Min(0)] public float resultPanelDelaySeconds = 1;
+        // Opponent pace: 1.6 is the reference; larger values slow every Neutral decision proportionally.
         [Min(0.1f)] public float enemyInterval = 1.6f;
+        // Reference wind-up; each strike scales it (jab short, hook long, follow-ups and counters shorter).
         [Min(0.1f)] public float telegraphSeconds = 0.42f;
         [Min(0.08f)] public float strikeSeconds = 0.22f;
         [Min(0.1f)] public float recoverSeconds = 0.55f;
-        [Min(0.1f)] public float guardInterval = 2.5f;
+        // Reference hold for a covering guard (after an attack, a hit or a Hold choice).
         [Min(0.4f)] public float guardSeconds = 1.2f;
         [Min(0.5f)] public float playRadius = 1.0f;
+        [Header("Opponent AI")]
+        [Range(0, 1)] public float opponentSkill = 0.6f;
+        // Perception delay and the chance to act on a read punch, at skill 0 and at skill 1.
+        [Min(0)] public float opponentReactionSlow = 0.30f;
+        [Min(0)] public float opponentReactionFast = 0.15f;
+        [Range(0, 1)] public float opponentReadChanceLow = 0.35f;
+        [Range(0, 1)] public float opponentReadChanceHigh = 0.85f;
+        // A glove closing on the opponent faster than this is a threat; it is extrapolated this far ahead.
+        [Min(0.1f)] public float opponentThreatSpeed = 1.2f;
+        [Min(0)] public float opponentPredictSeconds = 0.15f;
+        // Remembered hits per zone halve over this time.
+        [Min(0.5f)] public float opponentHeatHalfLife = 6;
+        // Player punch launches / landed hits within the window that trigger a counter or a step out.
+        [Min(2)] public int opponentFlurryPunches = 3;
+        [Min(0.1f)] public float opponentFlurrySeconds = 1.5f;
+        [Min(2)] public int opponentFlurryHits = 3;
+        [Min(0.1f)] public float opponentFlurryHitSeconds = 2.5f;
+        [Header("Opponent motion (critically damped springs: seconds, m/s^2)")]
+        [Min(0.02f)] public float opponentGuardSmoothSeconds = 0.12f;
+        [Min(0.02f)] public float opponentDefendSmoothSeconds = 0.10f;
+        [Min(0.02f)] public float opponentFistReturnSeconds = 0.20f;
+        [Min(0.02f)] public float opponentHeadSmoothSeconds = 0.12f;
+        [Min(0.02f)] public float opponentRootSmoothSeconds = 0.25f;
+        [Min(1)] public float opponentHandMaxAcceleration = 45;
+        [Min(1)] public float opponentHeadMaxAcceleration = 25;
+        [Min(1)] public float opponentRootMaxAcceleration = 6;
         [Header("Collision (metres / seconds)")]
         [Min(0.01f)] public float gloveRadius = 0.07f;
         [Min(0.01f)] public float enemyGloveRadius = 0.09f;

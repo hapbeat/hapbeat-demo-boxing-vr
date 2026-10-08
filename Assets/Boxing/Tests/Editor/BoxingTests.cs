@@ -196,15 +196,16 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void GuardContactStopsEnemyStrikeAndRetractsInsteadOfPassingThrough()
         {
-            var pose = Pose(true);
-            for (int i = 0; i < 900 && game.Round.Blocks == 0; i++) game.Simulate(1f / 90, pose);
+            var pose = Pose(true); int takenBefore = 0;
+            // Earlier body attacks may land on the open torso; the blocked strike itself must not.
+            for (int i = 0; i < 900 && game.Round.Blocks == 0; i++) { takenBefore = game.Round.Taken; game.Simulate(1f / 90, pose); }
             Assert.That(game.Round.Blocks, Is.EqualTo(1));
             Assert.That(game.Opponent.Striking, Is.False, "A counted block must stop the visible strike.");
             bool left = game.Opponent.AttackLeft;
             Vector3 contact = left ? game.Opponent.Left : game.Opponent.Right;
             game.Simulate(1f / 90, pose);
             Assert.That((left ? game.Opponent.Left : game.Opponent.Right).z, Is.GreaterThanOrEqualTo(contact.z));
-            Assert.That(game.Round.Taken, Is.Zero);
+            Assert.That(game.Round.Taken, Is.EqualTo(takenBefore));
         }
         [Test] public void HealthBarsReplaceCueAndReflectBothHealthValues()
         {
@@ -262,9 +263,11 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.Round.Hits, Is.EqualTo(1));
             Assert.That(10000 - game.Round.EnemyHealth, Is.LessThanOrEqualTo(1), "A fast 5cm wrist tap is not a full punch.");
         }
+        // A passive opponent: these check punch strength, not whether the opponent reads the punch.
+        private void Passive() { game.tuning.telegraphSeconds = 100; game.tuning.opponentReadChanceLow = game.tuning.opponentReadChanceHigh = 0; }
         [Test] public void RealSimulationUsesHeadRelativeStrokeForBodyDamage()
         {
-            game.Round.Tick(3, false); game.tuning.telegraphSeconds = 100;
+            game.Round.Tick(3, false); Passive();
             var pose = Pose(); pose.head.z = 0.4f; pose.left = new Vector3(0, 1.22f, 0.25f);
             Advance(0.4f, pose);
             int before = game.Round.Hits;
@@ -279,7 +282,7 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void WalkingAnExtendedFistIntoOpponentIsOnlyATap()
         {
-            game.Round.Tick(3, false); game.tuning.telegraphSeconds = 100;
+            game.Round.Tick(3, false); Passive();
             var pose = Pose(); pose.left = new Vector3(0, 1.22f, 0.5f);
             Advance(0.4f, pose);
             int before = game.Round.Hits;
@@ -429,16 +432,20 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void LeanAfterTelegraphDodgesTheCommittedPunch()
         {
+            // The lean moves the gloves too; keep the opponent from reading it so the committed strike runs.
+            game.tuning.opponentReadChanceLow = game.tuning.opponentReadChanceHigh = 0;
             var pose = Pose();
             for (int i = 0; i < 600 && !game.Opponent.Telegraphing; i++) game.Simulate(1f / 90, pose);
             Assert.That(game.Opponent.Telegraphing, Is.True);
+            int completed = game.Opponent.CompletedAttacks, taken = game.Round.Taken;
             for (int i = 0; i < 10; i++)
             {
                 pose.head.x -= 0.05f; pose.left.x -= 0.05f; pose.right.x -= 0.05f;
                 game.Simulate(1f / 90, pose);
             }
-            Advance(1.2f, pose);
-            Assert.That(game.Round.Taken, Is.Zero); Assert.That(game.Round.Dodges, Is.GreaterThanOrEqualTo(1));
+            for (int i = 0; i < 180 && game.Opponent.CompletedAttacks == completed; i++) game.Simulate(1f / 90, pose);
+            Assert.That(game.Opponent.CompletedAttacks, Is.EqualTo(completed + 1));
+            Assert.That(game.Round.Taken, Is.EqualTo(taken)); Assert.That(game.Round.Dodges, Is.GreaterThanOrEqualTo(1));
         }
         [Test] public void TrackedControllersDoNotHaveGazeOverrideTheirMenuSelection()
         {

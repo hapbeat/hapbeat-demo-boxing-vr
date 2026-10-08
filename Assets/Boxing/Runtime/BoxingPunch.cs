@@ -9,10 +9,9 @@ namespace Hapbeat.Boxing
         private Vector3 last, contact, velocity;
         private float sinceContact, peakSpeed, peakAge;
         private bool initialized, ready;
-        public bool Moving { get; private set; }
         public void Reset()
         {
-            initialized=ready=Moving=false; velocity=Vector3.zero;
+            initialized=ready=false; velocity=Vector3.zero;
             sinceContact=1000; peakSpeed=peakAge=0;
         }
 
@@ -32,7 +31,6 @@ namespace Hapbeat.Boxing
             if(!ready && relativeHand.magnitude<=tuning.punchReturnDistance &&
                 (contact.magnitude-relativeHand.magnitude>=tuning.punchRetraction ||
                  Vector3.Distance(contact,relativeHand)>=tuning.punchRetraction*1.4f)) ready=true;
-            Moving=speed>=tuning.punchMinimumSpeed;
             last=relativeHand;
         }
 
@@ -40,7 +38,7 @@ namespace Hapbeat.Boxing
         {
             float strength=initialized && (ready || sinceContact>=tuning.punchRepeatSeconds) ?
                 tuning.PunchStrengthForSpeed(peakSpeed) : 0;
-            contact=contactRelativeToHead; sinceContact=0; ready=Moving=false;
+            contact=contactRelativeToHead; sinceContact=0; ready=false;
             peakSpeed=peakAge=0; velocity=Vector3.zero;
             return strength;
         }

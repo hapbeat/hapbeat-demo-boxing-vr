@@ -181,16 +181,14 @@ namespace Hapbeat.Boxing
                 if(number!=spokenCountdown) { feedback.SpeakCountdown(number); spokenCountdown=number; }
             }
             Round.Tick(dt, false);
-            Opponent.ObservePlayerStance(pose.head,pose.left,pose.right);
+            // Without history this frame restarts the opponent's view of the gloves (no velocity across a gap).
+            Opponent.ObservePlayer(pose, haveHistory ? dt : 0);
             Opponent.Tick(dt, pose.head, Round.Phase == BoxingPhase.Fighting);
             sampledHead = pose.head;
-            bool leftMoving = leftPunch.Moving, rightMoving = rightPunch.Moving;
             leftPunch.Sample(pose.left - pose.head, dt, tuning);
             rightPunch.Sample(pose.right - pose.head, dt, tuning);
             if (haveHistory && Round.Phase == BoxingPhase.Fighting)
             {
-                if ((!leftMoving && leftPunch.Moving) || (!rightMoving && rightPunch.Moving))
-                    Opponent.ObservePlayerPunch((!leftMoving && leftPunch.Moving ? pose.left.y : pose.right.y) > Opponent.Head.y - .25f);
                 leftBlockedThisFrame = rightBlockedThisFrame = false;
                 leftCooldown = Mathf.Max(0, leftCooldown - dt); rightCooldown = Mathf.Max(0, rightCooldown - dt);
                 ResolveEnemy(pose, dt);
@@ -291,7 +289,7 @@ namespace Hapbeat.Boxing
             var impact = new BoxingImpact(side, speed, point, tuning, surface, strength);
             if (surface == ImpactSurface.Body)
             {
-                Opponent.React(impact.gain);
+                Opponent.React(impact.gain, BoxingOpponent.Zone(hitHead, dt > 0 ? (to - from) / dt : Vector3.zero));
                 if (presentation != null && presentation.enemyAvatar != null) presentation.enemyAvatar.React(!hitHead, impact.gain);
             }
             Report(impact);

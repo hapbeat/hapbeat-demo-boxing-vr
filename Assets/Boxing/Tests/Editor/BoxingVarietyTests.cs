@@ -47,20 +47,5 @@ namespace Hapbeat.Boxing.Tests
             }
             finally { Object.DestroyImmediate(tuning); }
         }
-        [Test] public void CounterWaitsForTelegraphAndDoesNotInterruptActiveAttack()
-        {
-            var tuning = ScriptableObject.CreateInstance<BoxingTuning>();
-            try
-            {
-                var enemy = new BoxingOpponent(tuning);
-                for(int i=0;i<3;i++) enemy.ObservePlayerPunch(true);
-                enemy.Tick(.26f,Vector3.up*1.65f,true);
-                Assert.That(enemy.Counter,Is.True); Assert.That(enemy.Telegraphing,Is.True); Assert.That(enemy.Striking,Is.False);
-                int id=enemy.AttackId;
-                for(int i=0;i<30;i++) enemy.ObservePlayerPunch(false);
-                Assert.That(enemy.AttackId,Is.EqualTo(id)); Assert.That(enemy.Attack,Is.EqualTo(BoxingAttack.BodyStraight));
-            }
-            finally { Object.DestroyImmediate(tuning); }
-        }
     }
 }

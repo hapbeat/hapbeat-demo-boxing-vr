@@ -33,8 +33,9 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void NpcRaisesGuardAfterRetractingAPunch()
         {
             var enemy=new BoxingOpponent(tuning);
-            for(int i=0;i<1000 && enemy.CompletedAttacks==0;i++) enemy.Tick(.01f,Vector3.up*1.65f,true);
-            Assert.That(enemy.CompletedAttacks,Is.EqualTo(1));
+            // Wait for the whole first attack (a combo has several strikes) to finish retracting.
+            for(int i=0;i<1000 && (enemy.CompletedAttacks==0 || enemy.State!=BoxingOpponentState.Neutral);i++) enemy.Tick(.01f,Vector3.up*1.65f,true);
+            Assert.That(enemy.CompletedAttacks,Is.GreaterThanOrEqualTo(1)); Assert.That(enemy.State,Is.EqualTo(BoxingOpponentState.Neutral));
             for(int i=0;i<20;i++) enemy.Tick(.01f,Vector3.up*1.65f,true);
             Assert.That(enemy.Guarding,Is.True); Assert.That(enemy.GuardWeight,Is.GreaterThan(.9f));
         }
@@ -44,7 +45,7 @@ namespace Hapbeat.Boxing.Tests
             for(int i=0;i<40000;i++)
             {
                 var head=Vector3.up*1.65f;
-                enemy.ObservePlayerStance(head,head+new Vector3(-.4f,-.4f,.3f),head+new Vector3(.4f,-.4f,.3f));
+                enemy.ObservePlayer(new BoxerPose{valid=true,head=head,left=head+new Vector3(-.4f,-.4f,.3f),right=head+new Vector3(.4f,-.4f,.3f)},.01f);
                 enemy.Tick(.01f,head,true);
                 if(enemy.Guarding && !was) {total++; if(enemy.Guard==BoxingGuard.BodyHook) matches++; seen|=1<<(int)enemy.Guard;}
                 was=enemy.Guarding;
