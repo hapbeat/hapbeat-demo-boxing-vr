@@ -49,6 +49,14 @@ namespace Hapbeat.Boxing
         public event Action ResultsCompleted;
         private bool resultsReported;
         private float readyTime;
+        // Tracking dropouts: lost parts hold their last measured pose for up to tuning.trackingGraceSeconds.
+        public bool LeftHandActive { get; private set; } = true;
+        public bool RightHandActive { get; private set; } = true;
+        // Paused because tracking stayed lost beyond the grace time (the presentation shows the warning).
+        public bool TrackingWarning { get; private set; }
+        public float TrackingLostSeconds { get; private set; }
+        private BoxerPose held;
+        private bool haveHeld, leftWasActive = true, rightWasActive = true, headWasTracked = true;
 
         public void Initialize() { if (Opponent == null) Opponent = new BoxingOpponent(tuning); previousPhase = Round.Phase; }
         private void Awake() => Initialize();
@@ -132,7 +140,26 @@ namespace Hapbeat.Boxing
                 }
                 return;
             }
-            bool tracking = pose.valid && dt > 0 && dt <= 0.1f;
+            bool stepValid = dt > 0 && dt <= 0.1f;
+            // A brief dropout (Quest hands vanish for a few frames) keeps the round running: lost parts hold their
+            // last measured pose and take no part in contacts. Only a loss beyond trackingGraceSeconds pauses.
+            bool headOk = pose.valid || pose.headTracked, leftOk = pose.valid || pose.leftTracked, rightOk = pose.valid || pose.rightTracked;
+            bool complete = headOk && leftOk && rightOk;
+            if (complete) TrackingLostSeconds = 0; else if (stepValid) TrackingLostSeconds += dt;
+            bool graced = !complete && haveHeld && validTime > 0 && TrackingLostSeconds < tuning.trackingGraceSeconds;
+            if (headOk) { held.head = pose.head; held.headRotation = pose.headRotation; }
+            if (leftOk) { held.left = pose.left; held.leftRotation = pose.leftRotation; held.leftClosed = pose.leftClosed; }
+            if (rightOk) { held.right = pose.right; held.rightRotation = pose.rightRotation; held.rightClosed = pose.rightClosed; }
+            if (complete) haveHeld = true;
+            if (graced)
+            {
+                if (!headOk) { pose.head = held.head; pose.headRotation = held.headRotation; }
+                if (!leftOk) { pose.left = held.left; pose.leftRotation = held.leftRotation; }
+                if (!rightOk) { pose.right = held.right; pose.rightRotation = held.rightRotation; }
+                pose.valid = true;
+            }
+            LeftHandActive = !graced || leftOk; RightHandActive = !graced || rightOk;
+            bool tracking = pose.valid && stepValid;
             Vector3 fromStart = pose.head - input.StartPosition;
             bool outside = new Vector2(fromStart.x, fromStart.z).magnitude > tuning.playRadius;
             if (display != null && !display.running)
@@ -150,6 +177,7 @@ namespace Hapbeat.Boxing
             // Poll OpenXR as well as receiving events: startup focus may precede subscription.
             if (display != null) DisplayFocus(OpenXRUtility.IsSessionFocused);
             bool unavailable = !input.HasOverride && (appPaused || (displayFocusKnown ? !displayFocused : !focus));
+            TrackingWarning = !tracking && stepValid && !outside && !unavailable && !InputSuspended && !(menu != null && menu.IsOpen);
             if (!tracking || outside || unavailable || InputSuspended || (menu != null && menu.IsOpen))
             {
                 if (!Paused) feedback.StopImpacts();
@@ -159,6 +187,14 @@ namespace Hapbeat.Boxing
                 if (presentation != null) presentation.Render(this, pose, false);
                 return;
             }
+            // A part that comes back resumes from where it is now: no sweep or punch across the gap.
+            if (haveHistory)
+            {
+                if (LeftHandActive && !leftWasActive) { previous.left = pose.left; previous.leftRotation = pose.leftRotation; leftPunch.Reset(); leftContact = TouchingEnemy(pose.left); leftCooldown = tuning.hitCooldown; }
+                if (RightHandActive && !rightWasActive) { previous.right = pose.right; previous.rightRotation = pose.rightRotation; rightPunch.Reset(); rightContact = TouchingEnemy(pose.right); rightCooldown = tuning.hitCooldown; }
+                if (headOk && !headWasTracked) previous.head = pose.head;
+            }
+            leftWasActive = LeftHandActive; rightWasActive = RightHandActive; headWasTracked = headOk;
             validTime += dt;
             Paused = !TrackingReady;
             PauseReason = Paused ? "HOLD STILL" : "";
@@ -185,16 +221,16 @@ namespace Hapbeat.Boxing
             Opponent.ObservePlayer(pose, haveHistory ? dt : 0);
             Opponent.Tick(dt, pose.head, Round.Phase == BoxingPhase.Fighting);
             sampledHead = pose.head;
-            leftPunch.Sample(pose.left - pose.head, dt, tuning);
-            rightPunch.Sample(pose.right - pose.head, dt, tuning);
+            if (LeftHandActive) leftPunch.Sample(pose.left - pose.head, dt, tuning);
+            if (RightHandActive) rightPunch.Sample(pose.right - pose.head, dt, tuning);
             if (haveHistory && Round.Phase == BoxingPhase.Fighting)
             {
                 leftBlockedThisFrame = rightBlockedThisFrame = false;
                 leftCooldown = Mathf.Max(0, leftCooldown - dt); rightCooldown = Mathf.Max(0, rightCooldown - dt);
                 ResolveEnemy(pose, dt);
                 UpdateEnemyArms();
-                ResolvePlayer(pose.left, previous.left, pose.leftClosed, ImpactZone.LeftGlove, ref leftContact, ref leftCooldown, dt);
-                ResolvePlayer(pose.right, previous.right, pose.rightClosed, ImpactZone.RightGlove, ref rightContact, ref rightCooldown, dt);
+                if (LeftHandActive) ResolvePlayer(pose.left, previous.left, pose.leftClosed, ImpactZone.LeftGlove, ref leftContact, ref leftCooldown, dt);
+                if (RightHandActive) ResolvePlayer(pose.right, previous.right, pose.rightClosed, ImpactZone.RightGlove, ref rightContact, ref rightCooldown, dt);
                 if (Opponent.CompletedAttacks > lastCompleted)
                 {
                     if (resolvedAttack != Opponent.AttackId) Round.Dodge();
@@ -229,15 +265,16 @@ namespace Hapbeat.Boxing
                 if (BoxingCollision.Sweep(from, to, tuning.enemyGloveRadius, a, b, radius, out float t) && t < earliest)
                 { earliest = t; zone = z; targetFrom = a; targetTo = b; }
             }
-            Candidate(ImpactZone.LeftGlove, previous.left, p.left, tuning.gloveRadius);
-            Candidate(ImpactZone.RightGlove, previous.right, p.right, tuning.gloveRadius);
+            // A hand lost within the tracking grace cannot guard.
+            if (LeftHandActive) Candidate(ImpactZone.LeftGlove, previous.left, p.left, tuning.gloveRadius);
+            if (RightHandActive) Candidate(ImpactZone.RightGlove, previous.right, p.right, tuning.gloveRadius);
             void Forearm(ImpactZone side, Vector3 a, Quaternion ar, Vector3 b, Quaternion br)
             {
                 if(BoxingForearm.Sweep(from,to,tuning.enemyGloveRadius,a,ar,b,br,out float t,out var af,out var bf) && t<earliest)
                 { earliest=t; zone=side; targetFrom=af; targetTo=bf; }
             }
-            Forearm(ImpactZone.LeftGlove,previous.left,previous.leftRotation,p.left,p.leftRotation);
-            Forearm(ImpactZone.RightGlove,previous.right,previous.rightRotation,p.right,p.rightRotation);
+            if (LeftHandActive) Forearm(ImpactZone.LeftGlove,previous.left,previous.leftRotation,p.left,p.leftRotation);
+            if (RightHandActive) Forearm(ImpactZone.RightGlove,previous.right,previous.rightRotation,p.right,p.rightRotation);
             Candidate(ImpactZone.Head, previous.head, p.head, tuning.headRadius);
             Candidate(ImpactZone.Body, BoxingOpponent.PlayerBody(previous.head), BoxingOpponent.PlayerBody(p.head), tuning.bodyRadius);
             if (float.IsPositiveInfinity(earliest)) return;

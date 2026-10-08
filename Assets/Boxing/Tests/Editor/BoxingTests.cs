@@ -356,14 +356,32 @@ namespace Hapbeat.Boxing.Tests
         }
         [TestCase(false)] [TestCase(true)] public void LostTrackingAndRestoredDistantFistsNeverCreateGhostHits(bool wideVisual)
         {
-            Advance(4, Pose()); int hits = game.feedback.Reports; float time = game.Round.TimeLeft;
+            Advance(4, Pose()); int hits = game.Round.Hits;
             var missing = Pose(); missing.valid = false; missing.visualValid=wideVisual;
             missing.left=game.Opponent.Head; missing.right=game.Opponent.Body;
-            Advance(4, missing);
-            Assert.That(game.Round.TimeLeft, Is.EqualTo(time)); Assert.That(game.feedback.Reports, Is.EqualTo(hits));
+            // Beyond the tracking grace the round pauses with the warning; lost hands never land punches.
+            Advance(game.tuning.trackingGraceSeconds + .5f, missing);
+            Assert.That(game.Paused, Is.True); Assert.That(game.TrackingWarning, Is.True);
+            float time = game.Round.TimeLeft; Advance(1, missing); Assert.That(game.Round.TimeLeft, Is.EqualTo(time));
+            Assert.That(game.Round.Hits, Is.EqualTo(hits));
             Assert.That(game.presentation.leftGlove.gameObject.activeSelf,Is.EqualTo(wideVisual));
             var restored = Pose(); restored.left = game.Opponent.Head; restored.right = game.Opponent.Head;
-            Advance(0.3f, restored); Assert.That(game.Round.Hits, Is.Zero);
+            Advance(0.3f, restored); Assert.That(game.Round.Hits, Is.EqualTo(hits));
+        }
+        [Test] public void BriefHandDropoutKeepsTheRoundRunningWithoutGhostHits()
+        {
+            Advance(4, Pose()); int hits = game.Round.Hits; float time = game.Round.TimeLeft;
+            // Left hand lost for half a second, drawn on the opponent's head by the tracker meanwhile.
+            var lost = Pose(); lost.valid = false; lost.headTracked = lost.rightTracked = true; lost.left = game.Opponent.Head;
+            Advance(.5f, lost);
+            Assert.That(game.Paused, Is.False, game.PauseReason); Assert.That(game.TrackingWarning, Is.False);
+            Assert.That(game.Round.TimeLeft, Is.LessThan(time));
+            Assert.That(game.LeftHandActive, Is.False); Assert.That(game.presentation.leftGlove.gameObject.activeSelf, Is.False);
+            Assert.That(game.Round.Hits, Is.EqualTo(hits));
+            // It returns inside the opponent's head: no swing across the gap.
+            var back = Pose(); back.left = game.Opponent.Head;
+            Advance(.3f, back);
+            Assert.That(game.LeftHandActive, Is.True); Assert.That(game.Round.Hits, Is.EqualTo(hits));
         }
         [Test] public void OnlyReachableSurfaceAndStrengthHapticBindingsAreInstalled()
         {

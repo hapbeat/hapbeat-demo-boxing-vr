@@ -480,7 +480,7 @@ namespace Hapbeat.Boxing
             {
                 case BoxingGuard.HeadHook: return new Vector3(side * .17f, .005f, -.035f);       // ear-muff at the temples
                 case BoxingGuard.BodyStraight: return new Vector3(side * .06f, -.35f, -.21f);    // gloves before the solar plexus
-                case BoxingGuard.BodyHook: return new Vector3(side * .215f, -.36f, -.045f);      // elbows dropped onto the flanks
+                case BoxingGuard.BodyHook: return new Vector3(side * .265f, -.36f, -.045f);      // elbows dropped onto the flanks, gloves clear of the torso
                 default: return new Vector3(side * .065f, -.015f, -.20f);                        // high guard before the face
             }
         }

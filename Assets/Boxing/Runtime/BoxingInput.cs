@@ -106,7 +106,7 @@ namespace Hapbeat.Boxing
                     wide?.Prepare();
                     bool l = ReadHand(true, out frame.left, out frame.leftRotation, out frame.leftClosed);
                     bool r = ReadHand(false, out frame.right, out frame.rightRotation, out frame.rightClosed);
-                    frame.valid = headValid && l && r;
+                    frame.valid = headValid && l && r; frame.headTracked = headValid; frame.leftTracked = l; frame.rightTracked = r;
                     bool lv = leftVisual.Sample(l,ref frame.left,ref frame.leftRotation,frame.timestamp);
                     bool rv = rightVisual.Sample(r,ref frame.right,ref frame.rightRotation,frame.timestamp);
                     bool lw=ReadWideVisual(wide,true,l,ref frame.left,ref frame.leftRotation);
@@ -131,6 +131,7 @@ namespace Hapbeat.Boxing
                     frame.leftRotation = space.rotation * lp.rotation * Quaternion.Euler(controllerRotation);
                     frame.rightRotation = space.rotation * rp.rotation * Quaternion.Euler(controllerRotation);
                     frame.valid = headValid && l && r; frame.leftClosed = frame.rightClosed = true;
+                    frame.headTracked = headValid; frame.leftTracked = l; frame.rightTracked = r;
                     TrackingStatus = !headValid ? "HMD NOT TRACKED" : !l || !r ? "CONTROLLERS NOT TRACKED" : "CONTROLLERS READY";
                     if (frame.valid && game != null && !game.menu.IsOpen && !game.Paused)
                     {

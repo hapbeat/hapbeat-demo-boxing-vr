@@ -144,10 +144,59 @@ namespace Hapbeat.Boxing
                 if(back.sqrMagnitude<.001f) back=Vector3.ProjectOnPlane(Vector3.right,direction).normalized;
                 Quaternion rotation = Quaternion.LookRotation(back,direction);
                 Vector3 offset = rotation * Vector3.Scale(center, hand.lossyScale);
-                Solve(upper, fore, hand, target - offset, pole);
+                SolveArm(upper, fore, hand, target - offset, pole);
                 hand.rotation = rotation;
                 direction = (hand.position-fore.position).normalized;
             }
+        }
+        // The torso as an elliptic column from the belly to the shoulders (metres at scale 1), widened by the arm's thickness.
+        private const float TorsoHalfWidth = .15f, TorsoHalfDepth = .11f, ArmClearance = .045f;
+        // Signed clearance of a point from that column: negative inside.
+        private float TorsoClearance(Vector3 point, float shoulderHeight)
+        {
+            float scale = transform.localScale.x;
+            if (point.y < spine.position.y - .2f * scale || point.y > shoulderHeight) return 1;
+            Vector3 axis = Vector3.Lerp(spine.position, chest.position, Mathf.InverseLerp(spine.position.y, chest.position.y, point.y));
+            // Spine + chest turn the torso by 12 + BodyYaw degrees (Render); the column is symmetric under the root's half turn.
+            Vector3 local = Quaternion.Euler(0, -(12 + smoothedYaw), 0) * (point - axis);
+            float x = local.x / ((TorsoHalfWidth + ArmClearance) * scale), z = local.z / ((TorsoHalfDepth + ArmClearance) * scale);
+            return Mathf.Sqrt(x * x + z * z) - 1;
+        }
+        private float ArmClearanceScore(Vector3 elbow, Vector3 wrist, float shoulderHeight) =>
+            Mathf.Min(TorsoClearance(elbow, shoulderHeight),
+                Mathf.Min(TorsoClearance(Vector3.Lerp(elbow, wrist, .35f), shoulderHeight), TorsoClearance(Vector3.Lerp(elbow, wrist, .7f), shoulderHeight)));
+        // Two-bone arm IK whose elbow follows the pole unless the elbow or forearm would sink into the torso;
+        // then the elbow turns about the shoulder-wrist axis to the nearest clear direction (guards tuck the arms close).
+        private void SolveArm(Transform upper, Transform lower, Transform end, Vector3 target, Vector3 pole)
+        {
+            Vector3 start = upper.position, delta = target - start;
+            float distance = Mathf.Max(.0001f, delta.magnitude);
+            Vector3 direction = delta / distance;
+            float a = Vector3.Distance(start, lower.position), b = Vector3.Distance(lower.position, end.position);
+            float stretch = Mathf.Max(1, distance / (a + b) * 1.001f); a *= stretch; b *= stretch;
+            float along = Mathf.Clamp((a*a - b*b + distance*distance) / (2*distance), -a, a);
+            Vector3 bend = Vector3.ProjectOnPlane(pole, direction).normalized;
+            if (bend.sqrMagnitude < .001f) bend = Vector3.Cross(direction, Vector3.right).normalized;
+            float reach = Mathf.Sqrt(Mathf.Max(0, a*a - along*along));
+            Vector3 centre = start + direction * along;
+            float original = ArmClearanceScore(centre + bend * reach, target, start.y), bestScore = original;
+            Vector3 best = bend;
+            bool clear = original >= 0;
+            for (int step = 1; step <= 12 && !clear; step++)
+                for (int sign = 1; sign >= -1 && !clear; sign -= 2)
+                {
+                    Vector3 candidate = Quaternion.AngleAxis(sign * step * 12f, direction) * bend;
+                    float score = ArmClearanceScore(centre + candidate * reach, target, start.y);
+                    if (score >= 0) { best = candidate; clear = true; }
+                    else if (score > bestScore) { best = candidate; bestScore = score; }
+                }
+            // Without a clear direction keep the pole unless turning helps noticeably (no flipping between poor choices).
+            if (!clear && bestScore < original + .1f) best = bend;
+            Vector3 elbow = centre + best * reach;
+            upper.rotation = Quaternion.FromToRotation(lower.position - start, elbow - start) * upper.rotation;
+            lower.position = elbow;
+            lower.rotation = Quaternion.FromToRotation(end.position - lower.position, target - lower.position) * lower.rotation;
+            end.position = target;
         }
         private static void Solve(Transform upper, Transform lower, Transform end, Vector3 target, Vector3 pole)
         {

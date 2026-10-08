@@ -41,9 +41,11 @@ namespace Hapbeat.Boxing
             bool panelHands = game.InputSuspended && game.input.ActiveMode == BoxingInputMode.Hands;
             bool gloves = (pose.valid || pose.visualValid) && !menuOpen && !panelHands;
             timerText.transform.parent.gameObject.SetActive(!menuOpen);
-            leftGlove.gameObject.SetActive(gloves); rightGlove.gameObject.SetActive(gloves);
-            RenderForearm(leftForearm,pose.left,pose.leftRotation,gloves);
-            RenderForearm(rightForearm,pose.right,pose.rightRotation,gloves);
+            // A hand lost within the tracking grace is hidden instead of drawn frozen.
+            bool left = gloves && game.LeftHandActive, right = gloves && game.RightHandActive;
+            leftGlove.gameObject.SetActive(left); rightGlove.gameObject.SetActive(right);
+            RenderForearm(leftForearm,pose.left,pose.leftRotation,left);
+            RenderForearm(rightForearm,pose.right,pose.rightRotation,right);
             enemyAvatar.gameObject.SetActive(!menuOpen);
             if (pose.valid || pose.visualValid)
             {
@@ -53,7 +55,9 @@ namespace Hapbeat.Boxing
             enemyAvatar.Render(game.Opponent, !game.Paused && valid ? deltaTime : 0);
             string result = (game.Round.PlayerHealth<=0 || game.Round.EnemyHealth<=0 ? "KNOCKOUT" : "ROUND COMPLETE") + " - " +
                 (game.Round.Outcome==BoxingOutcome.Win ? "YOU WIN" : game.Round.Outcome==BoxingOutcome.Lose ? "YOU LOSE" : "DRAW");
-            timerText.text = game.Round.Phase == BoxingPhase.Results ? result :
+            timerText.text = game.TrackingWarning && game.Round.Phase != BoxingPhase.Results ?
+                (game.input.ActiveMode == BoxingInputMode.Hands ? "HAND TRACKING LOST" : "TRACKING LOST") :
+                game.Round.Phase == BoxingPhase.Results ? result :
                 game.Round.Phase == BoxingPhase.Countdown ? Mathf.CeilToInt(game.Round.Countdown).ToString() :
                 game.Round.Phase == BoxingPhase.Ready ? game.tuning.roundSeconds.ToString("0") + " SECOND ROUND" : Mathf.CeilToInt(game.Round.TimeLeft).ToString("00") + "s";
             scoreText.text = "SCORE " + game.Round.Score + "     HIT " + game.Round.Hits + "     BLOCK " + game.Round.Blocks + "     DODGE " + game.Round.Dodges;

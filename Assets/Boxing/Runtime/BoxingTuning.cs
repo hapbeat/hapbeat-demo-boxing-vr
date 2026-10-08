@@ -31,6 +31,9 @@ namespace Hapbeat.Boxing
         // Reference hold for a covering guard (after an attack, a hit or a Hold choice).
         [Min(0.4f)] public float guardSeconds = 1.2f;
         [Min(0.5f)] public float playRadius = 1.0f;
+        // Tracking dropouts shorter than this keep the round running (the lost hand holds still and takes no part in contacts);
+        // a longer loss pauses with the tracking warning.
+        [Min(0)] public float trackingGraceSeconds = 3;
         [Header("Opponent AI")]
         [Range(0, 1)] public float opponentSkill = 0.6f;
         // Perception delay and the chance to act on a read punch, at skill 0 and at skill 1.
@@ -100,6 +103,8 @@ namespace Hapbeat.Boxing
         public Vector3 head, left, right;
         public Quaternion headRotation, leftRotation, rightRotation;
         public bool valid, visualValid, leftClosed, rightClosed;
+        // Per-part tracking (valid = all three). Test poses set only valid.
+        public bool headTracked, leftTracked, rightTracked;
         public double timestamp;
     }
 

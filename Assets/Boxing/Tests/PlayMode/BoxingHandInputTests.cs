@@ -123,8 +123,12 @@ namespace Hapbeat.Boxing.Tests
             yield return Pump(0.04f, game);
             Assert.That(game.input.HasTracking, Is.False, "Visual prediction must not restore combat tracking.");
             Assert.That(game.input.Current.visualValid, Is.True, "Brief loss keeps a render-only hand pose.");
-            yield return Pump(0.2f, game); Assert.That(game.Paused, Is.True);
+            yield return Pump(0.2f, game);
+            Assert.That(game.Paused, Is.False, "A brief dropout keeps the round running: " + game.PauseReason);
+            Assert.That(game.RightHandActive, Is.False); Assert.That(game.presentation.rightGlove.gameObject.activeSelf, Is.False);
             Assert.That(game.input.Current.visualValid, Is.False, "Prediction expires instead of inventing a hidden swing.");
+            yield return Pump(game.tuning.trackingGraceSeconds, game);
+            Assert.That(game.Paused, Is.True); Assert.That(game.TrackingWarning, Is.True, game.PauseReason);
             BoxingTestHandProvider.rightTracked = true;
             yield return Pump(0.5f, game); Assert.That(game.Paused, Is.False, game.PauseReason);
             BoxingTestHandProvider.rightTracked = false; BoxingTestHandProvider.palmMenu = true;
