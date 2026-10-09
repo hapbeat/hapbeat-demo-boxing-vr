@@ -107,7 +107,7 @@ Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です�
 
 決着したフレームで終了ゴングと勝敗音声を同時に開始します。専用音源を使い、最後の打撃音・触覚は中断しません。Demo Sessionでは終了から1秒（`BoxingTuning.resultPanelDelaySeconds`）で完了パネルを出し、ゴングと音声はそのまま最後まで鳴ります。完了・ポーズのパネル表示中はグローブの代わりにDemo Hubと同じ手（`DemoHands`）を表示し、指先で押します。Demo Session外ではゴングと音声が終わってから次のラウンドを始めます。
 
-手・HMDのトラッキングが一瞬外れても試合は続きます。外れた手は非表示になり、その間はパンチもガードもしません。戻った手は今の位置から再開し、外れていた間の移動をパンチとして扱いません。`BoxingTuning.trackingGraceSeconds`（既定3秒）を超えて外れたままなら、`HAND TRACKING LOST` を表示して停止し、戻ると再開します。その間に新しい攻撃やダメージは発生しません。時間切れも残りHPで判定し、同じHPなら引き分けです。開始カウント「3・2・1」と勝敗「You win / You lose / It's a tie」はKenney Voiceover Packの男性音声です（CC0、`Assets/Boxing/Audio/Voice/License.txt`）。SOUND OFFは全音声に適用されます。
+手・HMDのトラッキングが一瞬外れても試合は続きます。外れた手は非表示になり、その間はパンチもガードもしません。戻った手は今の位置から再開し、外れていた間の移動をパンチとして扱いません。`BoxingTuning.trackingGraceSeconds`（既定3秒）を超えて外れたままなら、`HAND TRACKING LOST` を表示して停止し、戻ると再開します。その間に新しい攻撃やダメージは発生しません。時間切れも残りHPで判定し、同じHPなら引き分けです。開始カウント「3・2・1」と勝敗「You win / You lose / It's a tie」はKenney Voiceover Packの男性音声です（CC0、`Assets/Boxing/Audio/Voice/License.txt`）。音声は全デモ共通の-20 LUFSに正規化してあり（`hapbeat-demos/tools/tts/loudness.py`）、Demo Hubのナレーション音量（`DemoNarration.Gain`）で鳴ります。SOUND OFFは全音声に適用されます。
 
 頭への命中は上体と頭を反らし、胴への命中は少し前屈して肘を寄せます。ガードはこの被弾リアクションを起こしません。メニュー／停止中はリアクションの時間も止まり、ラウンド再開時にリセットします。FBXに同梱した見本クリップは実行せず、ゲームの攻撃・ガードに同期した逆運動学（IK）で動かします。従来の攻撃距離が骨格の腕長を超える場合は腕を伸長して拳を判定位置に合わせます。実機での伸び方・遮蔽の見え方は調整対象です。
 

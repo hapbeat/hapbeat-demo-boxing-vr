@@ -1,5 +1,6 @@
 using System;
 using Hapbeat;
+using Hapbeat.DemoSwitch;
 using UnityEngine;
 
 namespace Hapbeat.Boxing
@@ -11,6 +12,7 @@ namespace Hapbeat.Boxing
         // Wrists: glove/body x soft/hard. Neck: received body soft/hard only.
         public HapbeatUnityEventTrigger[] impactTriggers = new HapbeatUnityEventTrigger[10];
         public AudioSource audioSource, bellSource, voiceSource;
+        // Kenney voice OGGs normalized to -20 LUFS (tools/tts/loudness.py), played at the Hub's narration volume.
         public AudioClip[] countdownVoice = new AudioClip[3];
         public AudioClip winVoice, loseVoice, tieVoice;
         public int ResultVoiceCues { get; private set; }
@@ -84,14 +86,14 @@ namespace Hapbeat.Boxing
             if(number<1 || number>3) return;
             LastSpokenNumber=number; VoiceCues++;
             if(!Application.isBatchMode && !forceSilent && soundEnabled && voiceSource!=null && countdownVoice[number-1]!=null)
-            { voiceSource.Stop(); voiceSource.PlayOneShot(countdownVoice[number-1],.75f); }
+            { voiceSource.Stop(); voiceSource.PlayOneShot(countdownVoice[number-1],DemoNarration.Gain); }
         }
         public AudioClip ResultClip(BoxingOutcome outcome) => outcome==BoxingOutcome.Win ? winVoice : outcome==BoxingOutcome.Lose ? loseVoice : tieVoice;
         public void SpeakResult(BoxingOutcome outcome)
         {
             LastSpokenOutcome=outcome; ResultVoiceCues++;
             if(!Application.isBatchMode && !forceSilent && soundEnabled && voiceSource!=null)
-            { voiceSource.Stop(); voiceSource.PlayOneShot(ResultClip(outcome),.75f); }
+            { voiceSource.Stop(); voiceSource.PlayOneShot(ResultClip(outcome),DemoNarration.Gain); }
         }
         private void PlaySound(AudioClip clip, float volume)
         {
