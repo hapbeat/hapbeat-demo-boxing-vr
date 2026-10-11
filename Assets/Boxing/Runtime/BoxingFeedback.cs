@@ -9,8 +9,14 @@ namespace Hapbeat.Boxing
     public sealed class BoxingFeedback : MonoBehaviour
     {
         public GameObject sdkRoot;
-        // Wrists: glove/body x soft/hard. Neck: received body soft/hard only.
-        public HapbeatUnityEventTrigger[] impactTriggers = new HapbeatUnityEventTrigger[10];
+        // Haptic / sound cues (Assets/Boxing/Haptics/boxing-cues.json): where the contact was x soft/hard.
+        // The first eight play at a wrist (the punching or the guarding hand), hit_body at the neck.
+        public static readonly string[] Cues = {
+            "punch_glove_soft", "punch_glove_hard", "punch_body_soft", "punch_body_hard",
+            "guard_glove_soft", "guard_glove_hard", "guard_arm_soft", "guard_arm_hard", "hit_body_soft", "hit_body_hard" };
+        public const int WristCues = 8;
+        // left_<cue> x 8, right_<cue> x 8, then the neck's hit_body_soft / hit_body_hard (TriggerIndex).
+        public HapbeatUnityEventTrigger[] impactTriggers = new HapbeatUnityEventTrigger[2 * WristCues + 2];
         public AudioSource audioSource, bellSource, voiceSource;
         // Kenney voice OGGs normalized to -20 LUFS (tools/tts/loudness.py), played at the Hub's narration volume.
         public AudioClip[] countdownVoice = new AudioClip[3];
@@ -20,7 +26,9 @@ namespace Hapbeat.Boxing
         public int LastSpokenNumber { get; private set; }
         public int VoiceCues { get; private set; }
         public float ImpactTailSeconds { get; private set; }
-        public AudioClip[] contactSounds = new AudioClip[4];
+        // Per cue (Cues order): its sound (null = none) and volume (sfx volume x sound intensity), from the cue table.
+        public AudioClip[] cueSounds = new AudioClip[10];
+        public float[] cueSoundVolumes = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
         public AudioClip bell;
         public bool soundEnabled = true;
         public bool hapticsEnabled = true;
@@ -44,7 +52,7 @@ namespace Hapbeat.Boxing
         }
         public void Impact(BoxingImpact impact)
         {
-            var clip=contactSounds[SoundIndex(impact)];
+            var clip=cueSounds[CueIndex(impact)];
             // Haptic tails are finite (max 0.19s); preserve the whole sound as well.
             ImpactTailSeconds=Mathf.Max(ImpactTailSeconds,.19f,clip!=null ? clip.length : 0);
             LastImpact = impact; Reports++; Reported?.Invoke(impact);
@@ -60,19 +68,29 @@ namespace Hapbeat.Boxing
                     trigger.Fire(); Sends++;
                 }
             }
-            PlaySound(contactSounds[SoundIndex(impact)], Mathf.Clamp01(impact.gain));
+            int cue = CueIndex(impact);
+            PlaySound(cueSounds[cue], Mathf.Clamp01(impact.gain) * cueSoundVolumes[cue]);
         }
-        public static int SoundIndex(BoxingImpact impact) => (int)impact.surface * 2 + (impact.hard ? 1 : 0);
+        // Own punch: on the opponent's glove, or anywhere else (head, body, arms). Received: on the glove,
+        // the forearm, or the head / body. Scoring keeps counting arm contacts as glove surfaces.
+        public static int CueIndex(BoxingImpact impact)
+        {
+            int hard = impact.hard ? 1 : 0;
+            if (impact.attack) return (impact.surface == ImpactSurface.Glove && impact.part == ImpactPart.Glove ? 0 : 2) + hard;
+            if (impact.zone == ImpactZone.Head || impact.zone == ImpactZone.Body)
+            {
+                if (impact.surface != ImpactSurface.Body) throw new ArgumentException("Received head/body hits cannot be glove guards.");
+                return 8 + hard;
+            }
+            return (impact.part == ImpactPart.Forearm ? 6 : 4) + hard;
+        }
+        public static string CueName(BoxingImpact impact) => Cues[CueIndex(impact)];
         // This demo has wrist L/R and neck receivers, not a fourth torso device.
-        // Both received body/head hits use the existing neck feedback bank.
+        // Both received body/head hits use the neck entries.
         public static int TriggerIndex(BoxingImpact impact)
         {
-            if(impact.zone == ImpactZone.Head || impact.zone == ImpactZone.Body)
-            {
-                if(impact.surface != ImpactSurface.Body) throw new ArgumentException("Received head/body hits cannot be glove guards.");
-                return 8 + (impact.hard ? 1 : 0);
-            }
-            return (int)impact.zone * 4 + SoundIndex(impact);
+            int cue = CueIndex(impact);
+            return cue >= WristCues ? 2 * WristCues + cue - WristCues : (int)impact.zone * WristCues + cue;
         }
         public void Ring()
         {

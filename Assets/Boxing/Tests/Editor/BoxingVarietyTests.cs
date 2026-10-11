@@ -34,7 +34,7 @@ namespace Hapbeat.Boxing.Tests
             }
             finally { Object.DestroyImmediate(tuning); }
         }
-        [Test] public void BodyHitDamagesPlayerAndUsesExistingReceivedHitFeedback()
+        [Test] public void BodyHitDamagesPlayerAndUsesTheNeckHitFeedback()
         {
             var tuning = ScriptableObject.CreateInstance<BoxingTuning>();
             try
@@ -43,7 +43,8 @@ namespace Hapbeat.Boxing.Tests
                 var impact = new BoxingImpact(ImpactZone.Body,4,false,Vector3.zero,tuning,ImpactSurface.Body);
                 round.Report(impact);
                 Assert.That(round.PlayerHealth,Is.LessThan(tuning.maximumHealth));
-                Assert.That(BoxingFeedback.TriggerIndex(impact),Is.EqualTo(9));
+                Assert.That(BoxingFeedback.CueName(impact),Is.EqualTo("hit_body_hard"));
+                Assert.That(BoxingFeedback.TriggerIndex(impact),Is.EqualTo(17));
             }
             finally { Object.DestroyImmediate(tuning); }
         }

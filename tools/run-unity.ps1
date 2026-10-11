@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('Feedback','Forearms','Wmm','Avatar','AvatarPreview','Reach','Content','ContentPreview','Polish','Hands','Upgrade','Configure','Validate','Tests','InputTests','Smoke','Capture','Windows','Android','Simulator','AirLink','SimulatorSmoke')]
+    [ValidateSet('Feedback','HapticEvents','Forearms','Wmm','Avatar','AvatarPreview','Reach','Content','ContentPreview','Polish','Hands','Upgrade','Configure','Validate','Tests','InputTests','Smoke','Capture','Windows','Android','Simulator','AirLink','SimulatorSmoke')]
     [string]$Task = 'Validate',
     [string]$UnityExe = 'M:/GameEngine/Unity/Editor/6000.3.12f1/Editor/Unity.exe',
     [string]$TestFilter = ''
@@ -17,6 +17,7 @@ elseif ($Task -eq 'InputTests') { $arguments += @('-runTests', '-testPlatform', 
 else {
     $method = switch ($Task) {
         'Feedback' { 'Hapbeat.Boxing.Editor.BoxingContent.SimplifyHapticEvents' }
+        'HapticEvents' { 'Hapbeat.Boxing.Editor.BoxingContent.RebuildHapticEvents' }
         'Forearms' { 'Hapbeat.Boxing.Editor.BoxingForearmSetup.Apply' }
         'Wmm' { 'Hapbeat.Boxing.Editor.BoxingWideMotionBuild.Configure' }
         'Avatar' { 'Hapbeat.Boxing.Editor.BoxingAvatarSetup.Install' }

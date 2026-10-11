@@ -274,12 +274,13 @@ namespace Hapbeat.Boxing.Editor
             if (hands.Length != 2 || hands.Any(h => h.fallbackPrefab == null || h.menuHand == null)) throw new InvalidOperationException("Menu hand resolvers incomplete");
             foreach (var trigger in game.feedback.impactTriggers)
                 if (trigger == null || trigger.ResolveEntry() == null || trigger.ResolveEntry().streamClip == null) throw new InvalidOperationException("Unwired haptic trigger");
-            if (game.feedback.impactTriggers.Length != 10 || game.feedback.contactSounds.Length != 4 || game.feedback.contactSounds.Any(c => c == null) || game.feedback.bell == null || game.feedback.bellSource == null)
+            int cues = BoxingFeedback.Cues.Length;
+            if (game.feedback.impactTriggers.Length != BoxingFeedback.WristCues + cues || game.feedback.cueSounds.Length != cues || game.feedback.cueSoundVolumes.Length != cues || game.feedback.bell == null || game.feedback.bellSource == null)
                 throw new InvalidOperationException("Incomplete surface feedback assets");
             if(game.feedback.voiceSource==null || game.feedback.winVoice==null || game.feedback.loseVoice==null || game.feedback.tieVoice==null ||
                 game.presentation.leftForearm==null || game.presentation.rightForearm==null)
                 throw new InvalidOperationException("Missing result voice or player forearms");
-            Debug.Log("BOXING_SCENE_VALID: XR rig, menu, opponent, menu hand resolvers, ten surface haptic bindings, no missing scripts or prefabs");
+            Debug.Log("BOXING_SCENE_VALID: XR rig, menu, opponent, menu hand resolvers, eighteen cue haptic bindings, no missing scripts or prefabs");
         }
         private static void ValidateLayerSettings(string path, string property)
         {

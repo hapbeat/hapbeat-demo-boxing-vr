@@ -78,9 +78,12 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void TapsAndFullPunchesHaveIndependentDamageAndFeedback()
         {
             var tap = new BoxingImpact(ImpactZone.LeftGlove, 10, Vector3.zero, tuning, ImpactSurface.Body, 0);
-            var full = new BoxingImpact(ImpactZone.LeftGlove, 1, Vector3.zero, tuning, ImpactSurface.Body, 1);
-            Assert.That(tap.damage, Is.EqualTo(0.5f)); Assert.That(tap.hard, Is.False);
+            var full = new BoxingImpact(ImpactZone.LeftGlove, 4, Vector3.zero, tuning, ImpactSurface.Body, 1);
+            var slow = new BoxingImpact(ImpactZone.LeftGlove, 1, Vector3.zero, tuning, ImpactSurface.Body, 1);
+            Assert.That(tap.damage, Is.EqualTo(0.5f)); Assert.That(tap.hard, Is.False, "An unprepared tap stays soft at any speed.");
             Assert.That(full.damage, Is.EqualTo(20)); Assert.That(full.hard, Is.True); Assert.That(full.gain, Is.GreaterThan(tap.gain));
+            // Soft / hard follows the contact speed; damage and gain follow the punch strength.
+            Assert.That(slow.hard, Is.False); Assert.That(slow.damage, Is.EqualTo(full.damage)); Assert.That(slow.gain, Is.EqualTo(full.gain));
         }
         [Test] public void AuthoredStartIsInComfortableReachAndRecenterResetsDebugOffset()
         {

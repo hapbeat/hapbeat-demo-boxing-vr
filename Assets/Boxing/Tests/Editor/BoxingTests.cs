@@ -250,12 +250,14 @@ namespace Hapbeat.Boxing.Tests
             resolve.Invoke(game, args);
             Assert.That(game.Round.EnemyBlocks, Is.EqualTo(1)); Assert.That(game.Round.Hits, Is.Zero);
             Assert.That(game.feedback.LastImpact.surface, Is.EqualTo(ImpactSurface.Glove));
+            Assert.That(BoxingFeedback.CueName(game.feedback.LastImpact), Does.StartWith("punch_glove_"));
             Assert.That(game.Round.EnemyHealth, Is.EqualTo(10000));
             resolve.Invoke(game, args); Assert.That(game.Round.EnemyBlocks, Is.EqualTo(1), "Held overlap must not repeatedly fire.");
             Vector3 uncovered=bodyGuard ? game.Opponent.Head : game.Opponent.Body;
             resolve.Invoke(game, new object[] { uncovered, uncovered + Vector3.back * 0.6f, true, ImpactZone.RightGlove, false, 0f, 0.1f });
             Assert.That(game.Round.Hits, Is.EqualTo(1)); Assert.That(game.Round.EnemyHealth, Is.LessThan(10000));
             Assert.That(game.feedback.LastImpact.surface, Is.EqualTo(ImpactSurface.Body));
+            Assert.That(BoxingFeedback.CueName(game.feedback.LastImpact), Does.StartWith("punch_body_"));
         }
         [Test] public void ExtendedWristTapCannotDealFullPunchDamage()
         {
@@ -299,18 +301,27 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.feedback.LastImpact.damage, Is.LessThanOrEqualTo(1));
         }
         [TestCase(true)] [TestCase(false)]
-        public void SurfaceSelectsDistinctAudioAndTheSameWristRouteForBothDirections(bool attack)
+        public void ContactPartSelectsItsOwnCueOnTheSameWristRouteForBothDirections(bool attack)
         {
-            foreach (ImpactZone zone in System.Enum.GetValues(typeof(ImpactZone)))
+            foreach (var zone in new[] { ImpactZone.LeftGlove, ImpactZone.RightGlove })
             foreach (float speed in new[] { 1f, 5f })
             {
-                if(zone==ImpactZone.Head || zone==ImpactZone.Body) continue; // These zones receive body hits, never guards.
-                var glove = new BoxingImpact(zone, speed, attack, Vector3.zero, game.tuning, ImpactSurface.Glove);
-                var body = new BoxingImpact(zone, speed, attack, Vector3.zero, game.tuning, ImpactSurface.Body);
-                Assert.That(game.feedback.contactSounds[BoxingFeedback.SoundIndex(glove)], Is.Not.SameAs(game.feedback.contactSounds[BoxingFeedback.SoundIndex(body)]));
+                // Own punch: the opponent's glove / body. Received: the player's glove / forearm.
+                var glove = attack ? new BoxingImpact(zone, speed, Vector3.zero, game.tuning, ImpactSurface.Glove, 1)
+                    : new BoxingImpact(zone, speed, false, Vector3.zero, game.tuning, ImpactSurface.Glove);
+                var other = attack ? new BoxingImpact(zone, speed, Vector3.zero, game.tuning, ImpactSurface.Body, 1)
+                    : new BoxingImpact(zone, speed, false, Vector3.zero, game.tuning, ImpactSurface.Glove, ImpactPart.Forearm);
                 var g = game.feedback.impactTriggers[BoxingFeedback.TriggerIndex(glove)].ResolveEntry();
-                var b = game.feedback.impactTriggers[BoxingFeedback.TriggerIndex(body)].ResolveEntry();
-                Assert.That(g.target, Is.EqualTo(b.target)); Assert.That(g.eventName, Is.Not.EqualTo(b.eventName));
+                var o = game.feedback.impactTriggers[BoxingFeedback.TriggerIndex(other)].ResolveEntry();
+                Assert.That(g.target, Is.EqualTo(zone == ImpactZone.LeftGlove ? "*/pos_l_wrist" : "*/pos_r_wrist")); Assert.That(o.target, Is.EqualTo(g.target));
+                Assert.That(g.eventName, Is.EqualTo((zone == ImpactZone.LeftGlove ? "left_" : "right_") + BoxingFeedback.CueName(glove)));
+                Assert.That(o.eventName, Is.EqualTo((zone == ImpactZone.LeftGlove ? "left_" : "right_") + BoxingFeedback.CueName(other)));
+                Assert.That(g.eventName, Is.Not.EqualTo(o.eventName));
+                // Default sounds: glove contacts (forearm guards too) and body contacts differ.
+                var gloveSound = game.feedback.cueSounds[BoxingFeedback.CueIndex(glove)];
+                var otherSound = game.feedback.cueSounds[BoxingFeedback.CueIndex(other)];
+                Assert.That(gloveSound, Is.Not.Null); Assert.That(otherSound, Is.Not.Null);
+                if (attack) Assert.That(gloveSound, Is.Not.SameAs(otherSound)); else Assert.That(gloveSound, Is.SameAs(otherSound));
             }
             Assert.That(game.feedback.Sends, Is.Zero);
         }
@@ -385,7 +396,7 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void OnlyReachableSurfaceAndStrengthHapticBindingsAreInstalled()
         {
-            Assert.That(game.feedback.impactTriggers.Length, Is.EqualTo(10));
+            Assert.That(game.feedback.impactTriggers.Length, Is.EqualTo(18));
             foreach (var trigger in game.feedback.impactTriggers)
             {
                 var entry = trigger.ResolveEntry(); Assert.That(entry, Is.Not.Null); Assert.That(entry.streamClip, Is.Not.Null);
@@ -438,7 +449,7 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(settings.TryResolveTarget("gloveball", out var target), Is.True);
             Assert.That(target.PackageName, Is.EqualTo("jp.hapbeat.gloveballdemo"));
             string[] targets = { "*/pos_l_wrist", "*/pos_r_wrist", "*/pos_neck" };
-            for (int i = 0; i < 10; i++) Assert.That(game.feedback.impactTriggers[i].ResolveEntry().target, Is.EqualTo(targets[i / 4]));
+            for (int i = 0; i < 18; i++) Assert.That(game.feedback.impactTriggers[i].ResolveEntry().target, Is.EqualTo(targets[i / 8]));
             Assert.That(settings.TryResolveTarget("handdemo", out target), Is.True);
             Assert.That(target.PackageName, Is.EqualTo("com.Hapbeat.HapticHandDemo_G2"));
         }

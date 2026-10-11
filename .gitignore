@@ -28,6 +28,8 @@ crashlog.txt
 *_BurstDebugInformation_DoNotShip/
 *_BackUpThisFolder_ButDontShipItWithYourGame/
 tools/logs/
+# Haptic authoring output (Scripts/record-haptic-clips.ps1, import-haptic-kit.ps1)
+/Saved/
 Assets/Resources/PerformanceTestRunInfo.json
 Assets/Resources/PerformanceTestRunSettings.json
 

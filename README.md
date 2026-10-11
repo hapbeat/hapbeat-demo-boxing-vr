@@ -64,9 +64,9 @@ Controllersモードでは、メニューを閉じた追跡安定中に左ステ
 
 ### 前腕のガード
 
-NPCは左右の上腕・前腕にも、描画リグに追従する連続スイープ判定を持ちます。グローブ・腕・身体のうち最初に接触した面を採用し、腕で遮られたパンチは身体を傷つけません。腕への接触は既存のグローブ接触と同じ音・触覚分類です。NPCグローブは幅18cm、プレイヤーは既存の15cmを維持します。
+NPCは左右の上腕・前腕にも、描画リグに追従する連続スイープ判定を持ちます。グローブ・腕・身体のうち最初に接触した面を採用し、腕で遮られたパンチは身体を傷つけません。腕への接触は得点上はグローブ接触（相手のガード）と同じ扱いで、音・触覚は頭・胴への命中と同じ `punch_body_*` です。NPCグローブは幅18cm、プレイヤーは既存の15cmを維持します。
 
-プレイヤーにはグローブの手首方向へ伸びる長さ28cm・直径9cmの簡易前腕を表示します。実際の肘の推定ではなく、手首の向きに固定した防御用モデルです。前腕への接触も同じ左腕／右腕のガードとして処理し、対応する手首の音・触覚ルートを使います。前腕自体は相手にダメージを与えません。判定は既存の移動掃引方式（重なる13個の球）で、頭・胴・グローブと最初の接触を比較します。追跡喪失・メニュー中には判定せず、メニューでは前腕も非表示です。
+プレイヤーにはグローブの手首方向へ伸びる長さ28cm・直径9cmの簡易前腕を表示します。実際の肘の推定ではなく、手首の向きに固定した防御用モデルです。前腕への接触も同じ左腕／右腕のガードとして処理し、受けた側の手首で `guard_arm_*` の音・触覚を鳴らします。前腕自体は相手にダメージを与えません。判定は既存の移動掃引方式（重なる13個の球）で、頭・胴・グローブと最初の接触を比較します。追跡喪失・メニュー中には判定せず、メニューでは前腕も非表示です。
 
 ### 外部操作への接続点とHands
 
@@ -80,8 +80,8 @@ Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です�
 - 相手は単発（ジャブ、クロス、リード／リアフック、ボディストレート、ボディフック）とコンビネーション（ジャブ-クロス、ジャブ-クロス-フック、ボディ-ヘッドのダブル、フック-クロス）、フェイント、踏み込み・後退・左右への回り込み、ガードでの待機を状況に応じて選びます。足を前後に置き、リズムのある小刻みなステップと膝の曲げ・小さな上体の揺れで待機します。パンチでは肩の回転・上体の前進・拳の軌道を連動させます。狙いは予備動作開始時に固定し、パンチ中は頭を追尾しません。
 - メニュー表示、Questのシステムメニュー・フォーカス喪失、追跡喪失、開始点から1m以上離れた時は対戦時間・敵・触覚を停止します。システムメニューから戻った時は `RESUME` で明示的に再開します。
 - `Assets/Boxing/BoxingTuning.asset` でラウンド時間、攻撃間隔、予備動作、判定サイズ、強打の再準備・速度、敵の速度→ゲインのカーブ・閾値を変更できます。
-- `IMPACT: WeakHard` はプレイヤーの距離強度0.65、敵は接触速度2.5m/sを境に波形を変更します。`Continuous` は同じ波形のゲインだけを連続変更します。接触速度0.25m/s未満は無視しますが、それ以上のプレイヤーの強度は速度ではなく距離で決まります。敵は6m/sで最大ゲインです。
-- `Assets/Boxing/Haptics/BoxingEventMap.asset` は使用する10エントリーのみです。左右手首は各4種（グローブ・腕接触／身体接触 × 弱／強）、頭・胴体への被弾は共通の2種（`head_body_soft/hard`）。未使用の`head_glove_*`はありません。ユーザー調整の`damage.wav`を左右手首の8種（ガード・腕接触と自分のパンチの命中）と`head_body_hard`（0始まりの9番）で使い、`head_body_soft`だけが`BodySoft.wav`です。波形、絶対ゲイン、送信先を編集できます。
+- `IMPACT: WeakHard` は接触の相対速度2.5m/s（`hardHitSpeed`）を境に弱（`_soft`）／強（`_hard`）のイベントを切り替えます。自分のパンチで準備なし（強度0）の当たりは速くても弱です。`Continuous` は常に弱のイベントを使い、ゲインだけを連続変更します。接触速度0.25m/s未満は無視します。ゲインはプレイヤーのパンチが準備状態と振りの速さ、敵のパンチが接触速度（6m/sで最大）で決まります。
+- 触覚・音のイベントは「当たった部位 × 弱／強」の10種類です（下の「触覚の作業」の表）。`Assets/Boxing/Haptics/BoxingEventMap.asset` は手首の8種を左右別（`left_<イベント>` / `right_<イベント>`）、首の2種をそのまま（`hit_body_soft/hard`）の18エントリーで持ちます。
 
 ## 相手のリグ付きモデル
 
@@ -117,9 +117,27 @@ Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です�
 
 既定の送信先はGloveBallと同じ `*/pos_l_wrist`、`*/pos_r_wrist`、`*/pos_neck` です。デバイスのposition設定を合わせ、PC（Air Link時）またはQuest（APK時）と同じ到達可能なLANに接続してください。1台で試す場合はEventMapのtargetをそのデバイスのpositionに合わせます。
 
-Unity SDKのStreamClipを使うため、事前のKit転送は不要です。手首（ガード・腕への接触と自分のパンチの命中）と頭・胴体への強打は同じ`damage.wav`、頭・胴体への弱打は長めの75Hzの`BodySoft.wav`です。弱打・強打の差は`GainMultiplier`で付きます。`GainMultiplier` にプレイヤーは距離応答、敵は接触速度応答を渡し、EventMap側のゲインと掛け合わせます。自動検証はSDK GameObjectをAwake前に無効化し、PC音声も実機送信も行いません。通常のEditor Playは音声・触覚ONです。
+Unity SDKのStreamClipを使うため、事前のKit転送は不要です。イベントごとに波形（`Assets/Boxing/Haptics/stream-clips/<イベント>.wav`）と効果音（`Assets/Boxing/Haptics/sounds/<音>.wav`）を持ちます。既定の波形は強のイベントが従来の`damage.wav`、弱のイベントが従来の`BodySoft.wav`（長めの75Hz）と同じ内容で、Studioで作り込む前の仮の割り当てです。`GainMultiplier` にプレイヤーは準備状態と振りの速さ、敵は接触速度から求めたゲインを渡し、EventMap側のゲインと掛け合わせます。効果音の音量も同じゲインに追従します。自動検証はSDK GameObjectをAwake前に無効化し、PC音声も実機送信も行いません。通常のEditor Playは音声・触覚ONです。
 
 ガードの保持時間の基準は `BoxingTuning.guardSeconds` です。手前のグローブに当たった攻撃はガードされ、身体にはダメージが入りません。身体へ届いた攻撃のみHPを減らします。接触表示はワールド空間の小さなリングで、カメラ前の半透明パネルはありません。開始・終了にはCC0実録ベルを編集した4連打のゴングを専用音源で鳴らします。
+
+## 触覚の作業（Hapbeat Studio Scene タブ）
+
+| イベント（cue） | 状況 | 鳴る場所 | EventMapエントリー | 既定の波形 / 音 |
+|---|---|---|---|---|
+| `punch_glove_soft` / `punch_glove_hard` | 自分のパンチが相手のグローブに当たる | 打った側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactSoft_medium_000` / `impactSoft_heavy_000` |
+| `punch_body_soft` / `punch_body_hard` | 自分のパンチが相手の頭・胴・腕（グローブ以外）に当たる | 打った側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactPunch_medium_000` / `impactPunch_heavy_000` |
+| `guard_glove_soft` / `guard_glove_hard` | 相手のパンチを自分のグローブで受ける | 受けた側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactSoft_medium_000` / `impactSoft_heavy_000` |
+| `guard_arm_soft` / `guard_arm_hard` | 相手のパンチを自分の前腕で受ける | 受けた側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactSoft_medium_000` / `impactSoft_heavy_000` |
+| `hit_body_soft` / `hit_body_hard` | 相手のパンチが自分の頭・胴に当たる | 首 | cue（`*/pos_neck`） | BodySoft / damage、`impactPunch_medium_000` / `impactPunch_heavy_000` |
+
+- 弱／強は接触の相対速度2.5m/sが境です（自分のパンチで準備なしの当たりは常に弱）。得点・ダメージ・`EnemyBlocks` の数え方はイベントの分け方と関係なく従来のままです。
+- cue 表 `Assets/Boxing/Haptics/boxing-cues.json`（cue 表 v2、workspace の `docs/haptic-authoring-cue-table.md`）が10イベントの正本です。各イベントに波形1つ（`haptics`、手首は `at: hand`、首は `at: pos_neck`、gain 0.8）と音1つ（`sfx`）を持ちます。波形は `stream-clips/<イベント>.wav`、音は `sounds/<音>.wav` です（音は Kenney Impact Sounds の OGG を WAV にしたもの）。
+- ① `Scripts/record-haptic-clips.ps1 [-Ffmpeg <ffmpeg.exe>]`（Unity Editor を閉じて実行）: `BoxingHapticRecord` が10イベントを3回ずつPC上で再現し、プレイヤーの目線から固定30fpsで録画します（音なし・実機送信なし）。自分のパンチは台本の軌道（弱 ≈ 1m/s、強 ≈ 4m/s、引き戻しで準備）で相手のグローブ／頭・胴へ、相手の打撃は録画用の呼び口（`BoxingOpponent.ScriptedStrike`、AIは止める）で弱 ≈ 1.2m/s、強 ≈ 3.5〜4.5m/s です。ゲーム自身の判定で記録したイベント・相対速度・ゲインをログ（`Saved/Logs/HapticRecord.log`）に残し、意図と違うイベントになった回があれば失敗します。続けて `Scripts/haptic_session.py` が `repos-tools/hapbeat-haptic-authoring/build_viewer.py` で `Saved/HapticViewer/`（git管理外）へ1回ずつのclipを切り出します。ffmpeg（libx264）と Python 3.8+ が必要です。
+- ② Studio の Scene タブ（`http://localhost:5173/?tab=scene`、`repos-tools/hapbeat-studio` で `npm run dev`）を Chrome / Edge で開き、このプロジェクトのフォルダーを選んで、イベントごとに波形と音を決めて保存します。
+- ③ `Scripts/import-haptic-kit.ps1`（Unity Editor を閉じて実行）: `build_haptic_import.py` が cue 表を検査し（route 1本・clip 1個・音 1つ。variants / variation / clip・音のリスト / levelMap / ループは非対応でエラー）、`BoxingHapticImport` が波形・gain・intensity を手首イベントの左右2エントリー（首は1エントリー）へ、音と音量（`sfx.volume` × 音の intensity）を `BoxingFeedback` へ書き込みます。差分だけを書くので、変更のない cue 表を取り込んでもファイルは変わりません。取込後は APK を再ビルド・再インストールしてください。
+- 作業ツールのランチャーには `boxing-vr` として登録しています（`repos-tools/hapbeat-haptic-authoring/projects/boxing-vr.json`）。
+- EventMap とシーンのトリガーを既定状態から作り直すときは `./tools/run-unity.ps1 -Task HapticEvents`（`Hapbeat Boxing > Rebuild Haptic Events`）。cue 表の既定値（gain 0.8、intensity 1、上の表の音）で18エントリーを作ります。
 
 ## Demo Switch
 
@@ -145,6 +163,7 @@ Unity Editorを閉じて、PowerShellから実行します。Unityの場所が�
 
 ```powershell
 ./tools/run-unity.ps1 -Task Tests
+./tools/run-unity.ps1 -Task HapticEvents
 ./tools/run-unity.ps1 -Task Simulator
 ./tools/run-unity.ps1 -Task InputTests
 ./tools/run-unity.ps1 -Task SimulatorSmoke
@@ -155,7 +174,7 @@ Unity Editorを閉じて、PowerShellから実行します。Unityの場所が�
 ./tools/verify-apk.ps1
 ```
 
-`Logs/` にテスト結果・実行ログ・画像が出ます。Smokeは実際のPlay Modeで90秒ラウンド、パンチ、ガード、回避、被弾、メニュー停止を再生し、3部位・弱打／強打・ゲイン変化・触覚送信ゼロ・エラーゼロを検証します。`Builds/Windows/HapbeatBoxing.exe`、`Builds/HapbeatBoxing.apk` が生成先です。
+`Logs/` にテスト結果・実行ログ・画像が出ます。Smokeは実際のPlay Modeで90秒ラウンド、パンチ、ガード、回避、被弾、メニュー停止を再生し、3部位・弱打／強打・接触のイベント（自分のパンチのグローブ／それ以外、ガード、被弾）・ゲイン変化・触覚送信ゼロ・エラーゼロを検証します。`Builds/Windows/HapbeatBoxing.exe`、`Builds/HapbeatBoxing.apk` が生成先です。
 
 InputTestsはUnity公式InputTestFixtureを使うPlay Modeの入力テストです。XRIシミュレーターに加え、OpenXRのOculus Touch／Touch Plusレイアウトを検査します。実シーンで明示的なControllersモードの維持、左右スティック選択、Aで開始、グローブ追従、カウントダウン進行を確認します。テスト用XR Handsプロバイダーで、コントローラーなし起動、遅れて届く手追跡、視線で開始、追跡復帰、左手だけでメニューを開く操作も検査します。Hand Interactionデバイスと遅れて認識したTouchの姿勢が混ざらない回帰テストを含みます。InputTestsはEditor InputをSimulatorにしてネイティブXRを無効にした状態で実行し、実機確認時はAir Linkへ戻してください。SimulatorSmokeは標準Prefabへキーボードイベントを渡し、頭・左右の個別移動、ボタン、追跡喪失／復帰を実際のゲーム入力で確認します。全自動検証は無音・実機送信なしです。ビルドでは詳細レポートからEditorシミュレーター資産の混入も検査します。
 

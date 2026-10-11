@@ -259,11 +259,12 @@ namespace Hapbeat.Boxing
             Vector3 to = Opponent.AttackLeft ? Opponent.Left : Opponent.Right;
             float earliest = float.PositiveInfinity;
             ImpactZone zone = ImpactZone.Head;
+            var part = ImpactPart.Glove;
             Vector3 targetFrom = Vector3.zero, targetTo = Vector3.zero;
             void Candidate(ImpactZone z, Vector3 a, Vector3 b, float radius)
             {
                 if (BoxingCollision.Sweep(from, to, tuning.enemyGloveRadius, a, b, radius, out float t) && t < earliest)
-                { earliest = t; zone = z; targetFrom = a; targetTo = b; }
+                { earliest = t; zone = z; targetFrom = a; targetTo = b; part = ImpactPart.Glove; }
             }
             // A hand lost within the tracking grace cannot guard.
             if (LeftHandActive) Candidate(ImpactZone.LeftGlove, previous.left, p.left, tuning.gloveRadius);
@@ -271,7 +272,7 @@ namespace Hapbeat.Boxing
             void Forearm(ImpactZone side, Vector3 a, Quaternion ar, Vector3 b, Quaternion br)
             {
                 if(BoxingForearm.Sweep(from,to,tuning.enemyGloveRadius,a,ar,b,br,out float t,out var af,out var bf) && t<earliest)
-                { earliest=t; zone=side; targetFrom=af; targetTo=bf; }
+                { earliest=t; zone=side; targetFrom=af; targetTo=bf; part=ImpactPart.Forearm; }
             }
             if (LeftHandActive) Forearm(ImpactZone.LeftGlove,previous.left,previous.leftRotation,p.left,p.leftRotation);
             if (RightHandActive) Forearm(ImpactZone.RightGlove,previous.right,previous.rightRotation,p.right,p.rightRotation);
@@ -289,7 +290,7 @@ namespace Hapbeat.Boxing
                 (zone == ImpactZone.LeftGlove ? leftPunch : rightPunch).Consume(hand - Vector3.Lerp(previous.head, p.head, earliest), tuning);
             }
             if (speed >= tuning.minimumImpactSpeed) Report(new BoxingImpact(zone, speed, false, Vector3.Lerp(from, to, earliest), tuning,
-                zone == ImpactZone.Head || zone == ImpactZone.Body ? ImpactSurface.Body : ImpactSurface.Glove));
+                zone == ImpactZone.Head || zone == ImpactZone.Body ? ImpactSurface.Body : ImpactSurface.Glove, part));
         }
         private void ResolvePlayer(Vector3 to, Vector3 from, bool closed, ImpactZone side, ref bool contact, ref float cooldown, float dt)
         {
@@ -297,18 +298,19 @@ namespace Hapbeat.Boxing
             float earliest = float.PositiveInfinity;
             Vector3 targetFrom = default, targetTo = default;
             var surface = ImpactSurface.Body;
+            var part = ImpactPart.Glove;
             bool hitHead = false;
             void Candidate(Vector3 a, Vector3 b, float radius, ImpactSurface material, bool head = false)
             {
                 if (BoxingCollision.Sweep(from, to, tuning.gloveRadius, a, b, radius, out float t) && t < earliest)
-                { earliest = t; targetFrom = a; targetTo = b; surface = material; hitHead = head; }
+                { earliest = t; targetFrom = a; targetTo = b; surface = material; hitHead = head; part = ImpactPart.Glove; }
             }
             // Earliest surface wins; a glove interception cannot also damage the body behind it.
             Candidate(oldEnemyLeft, Opponent.Left, tuning.enemyGloveRadius, ImpactSurface.Glove);
             Candidate(oldEnemyRight, Opponent.Right, tuning.enemyGloveRadius, ImpactSurface.Glove);
             for(int i=0;i<enemyArms.Length;i++)
                 if(BoxingGuardArm.Sweep(from,to,tuning.gloveRadius,oldEnemyArms[i],enemyArms[i],out float t,out var a,out var b) && t<earliest)
-                { earliest=t; targetFrom=a; targetTo=b; surface=ImpactSurface.Glove; hitHead=false; }
+                { earliest=t; targetFrom=a; targetTo=b; surface=ImpactSurface.Glove; hitHead=false; part=ImpactPart.Forearm; }
             Candidate(oldEnemyHead, Opponent.Head, tuning.enemyHeadRadius, ImpactSurface.Body, true);
             Candidate(oldEnemyBody, Opponent.Body, tuning.enemyBodyRadius, ImpactSurface.Body);
             bool hit = !float.IsPositiveInfinity(earliest);
@@ -323,7 +325,7 @@ namespace Hapbeat.Boxing
             Vector3 point = Vector3.Lerp(from, to, earliest);
             Vector3 headAtContact = Vector3.Lerp(previous.head, sampledHead, earliest);
             float strength = (side == ImpactZone.LeftGlove ? leftPunch : rightPunch).Consume(point - headAtContact, tuning);
-            var impact = new BoxingImpact(side, speed, point, tuning, surface, strength);
+            var impact = new BoxingImpact(side, speed, point, tuning, surface, strength, part);
             if (surface == ImpactSurface.Body)
             {
                 Opponent.React(impact.gain, BoxingOpponent.Zone(hitHead, dt > 0 ? (to - from) / dt : Vector3.zero));

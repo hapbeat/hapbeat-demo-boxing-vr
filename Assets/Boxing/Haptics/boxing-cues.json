@@ -1,0 +1,211 @@
+{
+  "kit": "boxing-kit",
+  "clips": {
+    "punch_glove_soft": {
+      "intensity": 1,
+      "loop": false,
+      "description": "自分のパンチが相手のグローブに当たる（打った側の手首）・弱（元 BodySoft.wav）"
+    },
+    "punch_glove_hard": {
+      "intensity": 1,
+      "loop": false,
+      "description": "自分のパンチが相手のグローブに当たる（打った側の手首）・強（元 damage.wav）"
+    },
+    "punch_body_soft": {
+      "intensity": 1,
+      "loop": false,
+      "description": "自分のパンチが相手の頭・胴・腕（グローブ以外）に当たる（打った側の手首）・弱（元 BodySoft.wav）"
+    },
+    "punch_body_hard": {
+      "intensity": 1,
+      "loop": false,
+      "description": "自分のパンチが相手の頭・胴・腕（グローブ以外）に当たる（打った側の手首）・強（元 damage.wav）"
+    },
+    "guard_glove_soft": {
+      "intensity": 1,
+      "loop": false,
+      "description": "相手のパンチを自分のグローブで受ける（受けた側の手首）・弱（元 BodySoft.wav）"
+    },
+    "guard_glove_hard": {
+      "intensity": 1,
+      "loop": false,
+      "description": "相手のパンチを自分のグローブで受ける（受けた側の手首）・強（元 damage.wav）"
+    },
+    "guard_arm_soft": {
+      "intensity": 1,
+      "loop": false,
+      "description": "相手のパンチを自分の前腕で受ける（受けた側の手首）・弱（元 BodySoft.wav）"
+    },
+    "guard_arm_hard": {
+      "intensity": 1,
+      "loop": false,
+      "description": "相手のパンチを自分の前腕で受ける（受けた側の手首）・強（元 damage.wav）"
+    },
+    "hit_body_soft": {
+      "intensity": 1,
+      "loop": false,
+      "description": "相手のパンチが自分の頭・胴に当たる（首）・弱（元 BodySoft.wav）"
+    },
+    "hit_body_hard": {
+      "intensity": 1,
+      "loop": false,
+      "description": "相手のパンチが自分の頭・胴に当たる（首）・強（元 damage.wav）"
+    }
+  },
+  "sounds": {
+    "impactSoft_medium_000": {
+      "intensity": 1
+    },
+    "impactSoft_heavy_000": {
+      "intensity": 1
+    },
+    "impactPunch_medium_000": {
+      "intensity": 1
+    },
+    "impactPunch_heavy_000": {
+      "intensity": 1
+    }
+  },
+  "cues": {
+    "punch_glove_soft": {
+      "description": "自分のパンチが相手のグローブに当たる（打った側の手首）。弱: 接触の相対速度 2.5 m/s 未満、または準備なし（引き戻し無し）の当たり。gain = 準備状態と振りの速さ（0.12〜1）",
+      "sfx": {
+        "sound": "impactSoft_medium_000",
+        "volume": 1
+      },
+      "haptics": [
+        {
+          "clip": "punch_glove_soft",
+          "at": "hand",
+          "gain": 0.8
+        }
+      ]
+    },
+    "punch_glove_hard": {
+      "description": "自分のパンチが相手のグローブに当たる（打った側の手首）。強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）。gain = 準備状態と振りの速さ（0.12〜1）",
+      "sfx": {
+        "sound": "impactSoft_heavy_000",
+        "volume": 1
+      },
+      "haptics": [
+        {
+          "clip": "punch_glove_hard",
+          "at": "hand",
+          "gain": 0.8
+        }
+      ]
+    },
+    "punch_body_soft": {
+      "description": "自分のパンチが相手の頭・胴・腕（グローブ以外）に当たる（打った側の手首）。弱: 接触の相対速度 2.5 m/s 未満、または準備なし（引き戻し無し）の当たり。gain = 準備状態と振りの速さ（0.12〜1）",
+      "sfx": {
+        "sound": "impactPunch_medium_000",
+        "volume": 1
+      },
+      "haptics": [
+        {
+          "clip": "punch_body_soft",
+          "at": "hand",
+          "gain": 0.8
+        }
+      ]
+    },
+    "punch_body_hard": {
+      "description": "自分のパンチが相手の頭・胴・腕（グローブ以外）に当たる（打った側の手首）。強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）。gain = 準備状態と振りの速さ（0.12〜1）",
+      "sfx": {
+        "sound": "impactPunch_heavy_000",
+        "volume": 1
+      },
+      "haptics": [
+        {
+          "clip": "punch_body_hard",
+          "at": "hand",
+          "gain": 0.8
+        }
+      ]
+    },
+    "guard_glove_soft": {
+      "description": "相手のパンチを自分のグローブで受ける（受けた側の手首）。弱: 接触の相対速度 2.5 m/s 未満。gain = 相対速度（0.25 m/s で 0.12 〜 6 m/s で 1）",
+      "sfx": {
+        "sound": "impactSoft_medium_000",
+        "volume": 1
+      },
+      "haptics": [
+        {
+          "clip": "guard_glove_soft",
+          "at": "hand",
+          "gain": 0.8
+        }
+      ]
+    },
+    "guard_glove_hard": {
+      "description": "相手のパンチを自分のグローブで受ける（受けた側の手首）。強: 接触の相対速度 2.5 m/s 以上。gain = 相対速度（0.25 m/s で 0.12 〜 6 m/s で 1）",
+      "sfx": {
+        "sound": "impactSoft_heavy_000",
+        "volume": 1
+      },
+      "haptics": [
+        {
+          "clip": "guard_glove_hard",
+          "at": "hand",
+          "gain": 0.8
+        }
+      ]
+    },
+    "guard_arm_soft": {
+      "description": "相手のパンチを自分の前腕で受ける（受けた側の手首）。弱: 接触の相対速度 2.5 m/s 未満。gain = 相対速度（0.25 m/s で 0.12 〜 6 m/s で 1）",
+      "sfx": {
+        "sound": "impactSoft_medium_000",
+        "volume": 1
+      },
+      "haptics": [
+        {
+          "clip": "guard_arm_soft",
+          "at": "hand",
+          "gain": 0.8
+        }
+      ]
+    },
+    "guard_arm_hard": {
+      "description": "相手のパンチを自分の前腕で受ける（受けた側の手首）。強: 接触の相対速度 2.5 m/s 以上。gain = 相対速度（0.25 m/s で 0.12 〜 6 m/s で 1）",
+      "sfx": {
+        "sound": "impactSoft_heavy_000",
+        "volume": 1
+      },
+      "haptics": [
+        {
+          "clip": "guard_arm_hard",
+          "at": "hand",
+          "gain": 0.8
+        }
+      ]
+    },
+    "hit_body_soft": {
+      "description": "相手のパンチが自分の頭・胴に当たる（首）。弱: 接触の相対速度 2.5 m/s 未満。gain = 相対速度（0.25 m/s で 0.12 〜 6 m/s で 1）",
+      "sfx": {
+        "sound": "impactPunch_medium_000",
+        "volume": 1
+      },
+      "haptics": [
+        {
+          "clip": "hit_body_soft",
+          "at": "pos_neck",
+          "gain": 0.8
+        }
+      ]
+    },
+    "hit_body_hard": {
+      "description": "相手のパンチが自分の頭・胴に当たる（首）。強: 接触の相対速度 2.5 m/s 以上。gain = 相対速度（0.25 m/s で 0.12 〜 6 m/s で 1）",
+      "sfx": {
+        "sound": "impactPunch_heavy_000",
+        "volume": 1
+      },
+      "haptics": [
+        {
+          "clip": "hit_body_hard",
+          "at": "pos_neck",
+          "gain": 0.8
+        }
+      ]
+    }
+  }
+}

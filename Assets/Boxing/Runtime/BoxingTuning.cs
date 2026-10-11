@@ -9,6 +9,9 @@ namespace Hapbeat.Boxing
     public enum ImpactMode { Continuous, WeakHard }
     public enum ImpactZone { LeftGlove, RightGlove, Head, Body }
     public enum ImpactSurface { Glove, Body }
+    // The part that took the contact, for the haptic / sound cue only (scoring uses the surface).
+    // A received punch: the player's glove or forearm. An own punch: the opponent's glove or arm (BoxingGuardArm).
+    public enum ImpactPart { Glove, Forearm }
 
     [CreateAssetMenu(menuName = "Hapbeat Boxing/Tuning")]
     public sealed class BoxingTuning : ScriptableObject
@@ -114,19 +117,21 @@ namespace Hapbeat.Boxing
         public readonly float relativeSpeed, gain, damage;
         public readonly bool hard, attack;
         public readonly ImpactSurface surface;
+        public readonly ImpactPart part;
         public readonly Vector3 point;
-        public BoxingImpact(ImpactZone zone, float speed, bool attack, Vector3 point, BoxingTuning tuning, ImpactSurface surface)
+        public BoxingImpact(ImpactZone zone, float speed, bool attack, Vector3 point, BoxingTuning tuning, ImpactSurface surface, ImpactPart part = ImpactPart.Glove)
         {
             this.zone = zone; relativeSpeed = speed; gain = tuning.Gain(speed);
-            hard = tuning.IsHard(speed); this.attack = attack; this.point = point; this.surface = surface;
+            hard = tuning.IsHard(speed); this.attack = attack; this.point = point; this.surface = surface; this.part = part;
             damage = hard ? 20 : 10;
         }
-        public BoxingImpact(ImpactZone zone, float speed, Vector3 point, BoxingTuning tuning, ImpactSurface surface, float punchStrength)
+        public BoxingImpact(ImpactZone zone, float speed, Vector3 point, BoxingTuning tuning, ImpactSurface surface, float punchStrength, ImpactPart part = ImpactPart.Glove)
         {
-            this.zone = zone; relativeSpeed = speed; attack = true; this.point = point; this.surface = surface;
+            this.zone = zone; relativeSpeed = speed; attack = true; this.point = point; this.surface = surface; this.part = part;
             float strength = Mathf.Clamp01(punchStrength);
             gain = Mathf.Lerp(tuning.minimumGain, tuning.maximumGain, strength);
-            hard = tuning.impactMode == ImpactMode.WeakHard && strength >= tuning.punchHardStrength;
+            // Soft / hard by the contact speed, as for the opponent's punches; an unprepared tap (strength 0) stays soft.
+            hard = tuning.IsHard(speed) && strength > 0;
             damage = Mathf.Lerp(tuning.tapDamage, tuning.fullPunchDamage, strength);
         }
     }

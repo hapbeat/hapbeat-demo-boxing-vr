@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Hapbeat.Boxing.Editor
 {
-    // Authored geometry and tactile waveforms; source audio provenance is in THIRD_PARTY_NOTICES.md.
+    // Authored geometry and haptic event wiring; source audio provenance is in THIRD_PARTY_NOTICES.md.
     public static class BoxingContent
     {
         private const string Root = "Assets/Boxing/";
@@ -30,6 +30,16 @@ namespace Hapbeat.Boxing.Editor
             map.entries.RemoveAll(e=>Unused(e.eventName));
             feedback.impactTriggers=retained.ToArray();
             EditorUtility.SetDirty(map); EditorUtility.SetDirty(feedback);
+            EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); AssetDatabase.SaveAssets();
+            BoxingProject.Validate();
+        }
+        // One EventMap entry per cue and side (left_<cue> / right_<cue> at the wrists, <cue> at the neck) and the
+        // cue sounds, at their defaults (the cue table Assets/Boxing/Haptics/boxing-cues.json as checked in).
+        [MenuItem("Hapbeat Boxing/Rebuild Haptic Events")]
+        public static void RebuildHapticEvents()
+        {
+            var scene=EditorSceneManager.OpenScene(BoxingProject.ScenePath);
+            ConfigureHapticEvents(UnityEngine.Object.FindFirstObjectByType<BoxingGame>());
             EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); AssetDatabase.SaveAssets();
             BoxingProject.Validate();
         }
@@ -140,36 +150,44 @@ namespace Hapbeat.Boxing.Editor
             if (f.bellSource == null) f.bellSource = game.gameObject.AddComponent<AudioSource>();
             f.audioSource.playOnAwake = f.bellSource.playOnAwake = false;
             f.audioSource.spatialBlend = f.bellSource.spatialBlend = 0;
-            string[] sounds = { "impactSoft_medium_000.ogg", "impactSoft_heavy_000.ogg", "impactPunch_medium_000.ogg", "impactPunch_heavy_000.ogg" };
-            f.contactSounds = sounds.Select(n => ImportAudio(Root + "Audio/" + n)).ToArray();
             var source = ImportAudio(Root + "Audio/BoxingBellSource.wav");
             ComposeGong(source, Root + "Audio/BoxingGongFour.wav");
             f.bell = ImportAudio(Root + "Audio/BoxingGongFour.wav");
-            var waves = new AudioClip[4];
-            for (int i = 0; i < 4; i++)
-            {
-                string path = Root + "Haptics/" + (i < 2 ? "Glove" : "Body") + (i % 2 == 0 ? "Soft" : "Hard") + ".wav";
-                WriteWave(path, 16000, HapticSamples(i < 2, i % 2 != 0)); waves[i] = ImportAudio(path);
-            }
+            ConfigureHapticEvents(game);
+        }
+        public const string StreamClips = Root + "Haptics/stream-clips/", CueSounds = Root + "Haptics/sounds/";
+        public const float DefaultEventGain = 0.8f;
+        // Default cue sounds (Kenney Impact Sounds as WAV): glove contacts / body contacts x soft / hard (BoxingFeedback.Cues order).
+        public static string DefaultSound(int cue) =>
+            (cue < 2 || (cue >= 4 && cue < 8) ? "impactSoft_" : "impactPunch_") + (cue % 2 == 0 ? "medium" : "heavy") + "_000";
+        // Replaces the EventMap entries and the scene's impact triggers (BoxingFeedback.TriggerIndex order):
+        // stream clip stream-clips/<cue>.wav, gain 0.8, clip intensity 1, and the default cue sounds.
+        public static void ConfigureHapticEvents(BoxingGame game)
+        {
+            var f = game.feedback;
+            int cues = BoxingFeedback.Cues.Length, wrist = BoxingFeedback.WristCues;
+            f.cueSounds = new AudioClip[cues]; f.cueSoundVolumes = new float[cues];
+            for (int i = 0; i < cues; i++) { f.cueSounds[i] = ImportAudio(CueSounds + DefaultSound(i) + ".wav"); f.cueSoundVolumes[i] = 1; }
             foreach (var trigger in f.impactTriggers) if (trigger != null) UnityEngine.Object.DestroyImmediate(trigger.gameObject);
             var map = AssetDatabase.LoadAssetAtPath<HapbeatEventMap>(Root + "Haptics/BoxingEventMap.asset");
             if (map == null) { map = ScriptableObject.CreateInstance<HapbeatEventMap>(); AssetDatabase.CreateAsset(map, Root + "Haptics/BoxingEventMap.asset"); }
-            map.entries.Clear(); f.impactTriggers = new HapbeatUnityEventTrigger[10];
-            for (int i = 0; i < 10; i++)
+            map.entries.Clear(); f.impactTriggers = new HapbeatUnityEventTrigger[2 * wrist + cues - wrist];
+            for (int i = 0; i < f.impactTriggers.Length; i++)
             {
-                int surfaceIndex=i<8 ? i%4 : i-6;
-                string zone = i / 4 == 0 ? "left_glove" : i / 4 == 1 ? "right_glove" : "head";
-                string name = zone + (surfaceIndex < 2 ? "_glove_" : "_body_") + (i % 2 == 0 ? "soft" : "hard");
+                int cue = i < 2 * wrist ? i % wrist : i - wrist;
+                string name = (i < wrist ? "left_" : i < 2 * wrist ? "right_" : "") + BoxingFeedback.Cues[cue];
                 var entry = new HapbeatEventEntry { displayName = name, category = "boxing", eventName = name, mode = HapticMode.StreamClip,
-                    streamClip = waves[surfaceIndex], gain = 0.8f, target = i / 4 == 0 ? "*/pos_l_wrist" : i / 4 == 1 ? "*/pos_r_wrist" : "*/pos_neck" };
+                    streamClip = ImportAudio(StreamClips + BoxingFeedback.Cues[cue] + ".wav"), gain = DefaultEventGain,
+                    target = i < wrist ? "*/pos_l_wrist" : i < 2 * wrist ? "*/pos_r_wrist" : "*/pos_neck" };
+                // The clip intensity lives in the cue table, not in a Kit manifest (BoxingHapticImport).
+                entry.SetCachedManifestIntensity(1);
                 map.entries.Add(entry);
                 var go = new GameObject("Haptic " + name); go.transform.SetParent(f.transform, false);
                 f.impactTriggers[i] = go.AddComponent<HapbeatUnityEventTrigger>(); f.impactTriggers[i].EditorSetupEntry(map, entry.id);
             }
-            foreach (string obsolete in new[] { "Soft.wav", "Hard.wav", "Bell.wav" }) AssetDatabase.DeleteAsset(Root + "Haptics/" + obsolete);
             EditorUtility.SetDirty(map); EditorUtility.SetDirty(f);
         }
-        private static AudioClip ImportAudio(string path)
+        public static AudioClip ImportAudio(string path)
         {
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
             var importer = (AudioImporter)AssetImporter.GetAtPath(path);
@@ -178,19 +196,6 @@ namespace Hapbeat.Boxing.Editor
             settings.compressionFormat = AudioCompressionFormat.PCM; settings.sampleRateSetting = AudioSampleRateSetting.PreserveSampleRate;
             importer.defaultSampleSettings = settings; importer.SaveAndReimport();
             return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
-        }
-        public static float[] HapticSamples(bool glove, bool hard)
-        {
-            int count = (int)(16000 * (glove ? hard ? 0.10f : 0.07f : hard ? 0.19f : 0.14f));
-            var samples = new float[count];
-            for (int i = 0; i < count; i++)
-            {
-                double t = i / 16000.0, decay = glove ? 0.018 : 0.050;
-                double envelope = Math.Min(1, t / 0.003) * Math.Exp(-t / decay);
-                if (glove && hard && t > 0.035) envelope += 0.45 * Math.Min(1, (t - 0.035) / 0.002) * Math.Exp(-(t - 0.035) / 0.012);
-                samples[i] = (float)(Math.Sin(2 * Math.PI * (glove ? 155 : 75) * t) * envelope * (hard ? 0.8 : 0.6));
-            }
-            return samples;
         }
         private static void ComposeGong(AudioClip source, string path)
         {

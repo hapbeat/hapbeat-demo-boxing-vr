@@ -1,5 +1,8 @@
 using UnityEngine;
 
+// The haptic recording (Editor BoxingHapticRecord) drives the opponent through its internal script hooks.
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Hapbeat.Boxing.Editor")]
+
 namespace Hapbeat.Boxing
 {
     public enum BoxingAttack { HeadStraight, BodyStraight, HeadHook, BodyHook }
@@ -47,6 +50,8 @@ namespace Hapbeat.Boxing
         // A wind-up that never strikes. Telegraphing stays reserved for real strikes.
         public bool Feinting { get; private set; }
         public BoxingEvade Evade { get; private set; }
+        // Haptic recording only: no own choices, reads, staggers or covers; strikes only through ScriptedStrike.
+        internal bool Scripted { get; set; }
 
         private const float HomeZ = 1.08f, MaxStep = 1f / 240, OpeningSeconds = 1.2f;
         private const float HeatGain = 1.2f, StanceBonus = 3.5f, GuardTolerance = .2f;
@@ -79,7 +84,7 @@ namespace Hapbeat.Boxing
         private bool attacking, retracting, pendingStrike, hitDuringDefense, hitFlurry, punchFlurry;
         private Strike[] combo = Combos[0];
         private int comboIndex;
-        private float telegraphScale = 1, phaseTime, phaseDuration, retractFrom;
+        private float telegraphScale = 1, strikeScale = 1, phaseTime, phaseDuration, retractFrom;
         private Vector3 aim, strikeStart, strikeVelocity, bulge, evadeOffset;
         private float staggerPush;
         private BoxingGuard coverGuard;
@@ -156,6 +161,7 @@ namespace Hapbeat.Boxing
         }
         public void React(float gain, BoxingHitZone zone)
         {
+            if (Scripted) return;
             heat[(int)zone] += 1;
             hitTimes[hitNext] = clock; hitNext = (hitNext + 1) % hitTimes.Length;
             if (State == BoxingOpponentState.Defend) hitDuringDefense = true;
@@ -188,6 +194,7 @@ namespace Hapbeat.Boxing
         private void Think(float dt, Vector3 playerHead)
         {
             stateTime += dt;
+            if (Scripted) { if (State == BoxingOpponentState.Attack) AttackTick(dt, playerHead); return; }
             if (goalTime > 0 && (goalTime -= dt) <= 0) rootGoal = Vector2.zero;
             feintBoost = Mathf.Max(0, feintBoost - dt);
             // The head comes back from a hit slowly (below the impact threshold), not with a second spring snap.
@@ -386,7 +393,13 @@ namespace Hapbeat.Boxing
         {
             State = counter ? BoxingOpponentState.Counter : BoxingOpponentState.Attack;
             combo = Combos[(int)action]; comboIndex = 0; telegraphScale = counter ? .6f : 1;
-            Guarding = false; attacking = pendingStrike = true; retracting = false;
+            Guarding = false; attacking = pendingStrike = true; retracting = false; strikeScale = 1;
+        }
+        // Haptic recording: one strike of this kind, its strike phase strikeScale times the usual length (> 1 = slower).
+        internal void ScriptedStrike(BoxingAttack attack, bool left, float strikeScale)
+        {
+            State = BoxingOpponentState.Attack; combo = new[] { new Strike(attack, left) }; comboIndex = 0; telegraphScale = 1;
+            Guarding = false; attacking = pendingStrike = true; retracting = false; this.strikeScale = strikeScale;
         }
         private void BeginFeint()
         {
@@ -430,7 +443,7 @@ namespace Hapbeat.Boxing
         private void BeginStrikeMotion()
         {
             Telegraphing = false; Striking = true; phaseTime = 0;
-            phaseDuration = tuning.strikeSeconds * StrikeFactor(combo[comboIndex]);
+            phaseDuration = tuning.strikeSeconds * StrikeFactor(combo[comboIndex]) * strikeScale;
             strikeStart = AttackLeft ? Left : Right;
             strikeVelocity = rootVelocity + headVelocity + (AttackLeft ? leftVelocity : rightVelocity);
             float side = AttackLeft ? -1 : 1;
@@ -453,6 +466,7 @@ namespace Hapbeat.Boxing
         private void FinishAttack()
         {
             attacking = false; Counter = false; State = BoxingOpponentState.Neutral;
+            if (Scripted) return;
             if (combo.Length > 1) { rootGoal = new Vector2(rootGoal.x, .05f); goalTime = .8f; }
             if (hitFlurry || punchFlurry) { HandleFlurry(); return; }
             Cover(coverGuard, tuning.guardSeconds * Next(.5f, .9f));

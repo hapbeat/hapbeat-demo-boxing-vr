@@ -39,6 +39,7 @@ namespace Hapbeat.Boxing.Tests
             game.feedback.Reported+=impact=> {
                 if(impact.attack || impact.surface!=ImpactSurface.Glove) return;
                 Assert.That(impact.point.y,Is.LessThan(1.85f),"The raised glove itself must not make this guard.");
+                Assert.That(BoxingFeedback.CueName(impact),Does.StartWith("guard_arm_"));
                 if(impact.zone==ImpactZone.LeftGlove) left++; else if(impact.zone==ImpactZone.RightGlove) right++;
             };
             for(int i=0;i<8500;i++) game.Simulate(.01f,pose);

@@ -20,7 +20,7 @@ namespace Hapbeat.Boxing.Editor
         private static int errors;
         private static int progressBucket = -1;
         private static BoxingGame game;
-        private static int softImpacts, hardImpacts, zones, surfaces;
+        private static int softImpacts, hardImpacts, zones, cueKinds;
         private static float minGain = float.PositiveInfinity, maxGain;
         static BoxingVerification()
         {
@@ -71,7 +71,8 @@ namespace Hapbeat.Boxing.Editor
                 game.feedback.Reported += impact => {
                     if (impact.hard) hardImpacts++; else softImpacts++;
                     zones |= 1 << (int)impact.zone;
-                    surfaces |= 1 << ((int)impact.surface + (impact.attack ? 2 : 0));
+                    // Cue kinds (BoxingFeedback.Cues / 2): punch_glove, punch_body, guard_glove, guard_arm, hit_body.
+                    cueKinds |= 1 << (BoxingFeedback.CueIndex(impact) / 2);
                     minGain = Mathf.Min(minGain, impact.gain); maxGain = Mathf.Max(maxGain, impact.gain);
                 };
                 var driver = game.gameObject.AddComponent<BoxingSmokeDriver>();
@@ -101,9 +102,9 @@ namespace Hapbeat.Boxing.Editor
             // The result has been presented; outside a session the next round starts by itself after it.
             if (game.Round.Phase == BoxingPhase.Results && game.ResultPresentationTime >= game.ResultDuration)
             {
-                string summary = $"hits={game.Round.Hits} blocks={game.Round.Blocks} enemyBlocks={game.Round.EnemyBlocks} headHits={game.Round.Taken} dodges={game.Round.Dodges} soft={softImpacts} hard={hardImpacts} zones={zones} surfaces={surfaces} rings={game.feedback.Rings} gain={minGain:0.00}..{maxGain:0.00} sends={game.feedback.Sends} errors={errors}";
+                string summary = $"hits={game.Round.Hits} blocks={game.Round.Blocks} enemyBlocks={game.Round.EnemyBlocks} headHits={game.Round.Taken} dodges={game.Round.Dodges} soft={softImpacts} hard={hardImpacts} zones={zones} cueKinds={cueKinds} rings={game.feedback.Rings} gain={minGain:0.00}..{maxGain:0.00} sends={game.feedback.Sends} errors={errors}";
                 Finish(game.Round.Hits >= 3 && game.Round.Blocks >= 2 && game.Round.Taken >= 2 && game.Round.Dodges >= 1 &&
-                    softImpacts > 0 && hardImpacts > 0 && (zones & 7) == 7 && surfaces == 15 && game.feedback.Rings == 2 && maxGain > minGain + 0.2f && game.feedback.Sends == 0 && errors == 0 &&
+                    softImpacts > 0 && hardImpacts > 0 && (zones & 7) == 7 && (cueKinds & 0b10011) == 0b10011 && (cueKinds & 0b01100) != 0 && game.feedback.Rings == 2 && maxGain > minGain + 0.2f && game.feedback.Sends == 0 && errors == 0 &&
                     capturedAvatarStrike && capturedAvatarHead && capturedAvatarBody && game.feedback.ResultVoiceCues==1 && game.ResultPresentationTime>=game.ResultDuration, summary + $" avatarStrike={capturedAvatarStrike} avatarHead={capturedAvatarHead} avatarBody={capturedAvatarBody} resultHold={game.ResultPresentationTime:0.00} resultVoice={game.feedback.ResultVoiceCues}");
             }
         }
