@@ -64,6 +64,30 @@
     },
     "impactPunch_heavy_000": {
       "intensity": 1
+    },
+    "punch_glove_hard_T107_B": {
+      "intensity": 0.9440085046532036
+    },
+    "punch_glove_hard_T107_D": {
+      "intensity": 0.6608059532572425
+    },
+    "punch_body_hard_T109_C": {
+      "intensity": 0.9440085046532036
+    },
+    "guard_glove_hard_T111_A": {
+      "intensity": 0.9440120402939565
+    },
+    "guard_glove_hard_T111_B": {
+      "intensity": 0.9440085046532036
+    },
+    "guard_glove_hard_T111_E": {
+      "intensity": 0.9440120402939565
+    },
+    "guard_glove_hard_T111_F": {
+      "intensity": 0.9440120402939565
+    },
+    "guard_arm_hard_T113_A": {
+      "intensity": 0.9440085046532036
     }
   },
   "cues": {
@@ -85,7 +109,11 @@
       "description": "自分のパンチが相手のグローブに当たる（打った側の手首）。強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）。gain = 準備状態と振りの速さ（0.12〜1）",
       "sfx": {
         "sound": "impactSoft_heavy_000",
-        "volume": 1
+        "volume": 1,
+        "alternates": [
+          "punch_glove_hard_T107_B",
+          "punch_glove_hard_T107_D"
+        ]
       },
       "haptics": [
         {
@@ -113,7 +141,10 @@
       "description": "自分のパンチが相手の頭・胴・腕（グローブ以外）に当たる（打った側の手首）。強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）。gain = 準備状態と振りの速さ（0.12〜1）",
       "sfx": {
         "sound": "impactPunch_heavy_000",
-        "volume": 1
+        "volume": 1,
+        "alternates": [
+          "punch_body_hard_T109_C"
+        ]
       },
       "haptics": [
         {
@@ -141,7 +172,13 @@
       "description": "相手のパンチを自分のグローブで受ける（受けた側の手首）。強: 接触の相対速度 2.5 m/s 以上。gain = 相対速度（0.25 m/s で 0.12 〜 6 m/s で 1）",
       "sfx": {
         "sound": "impactSoft_heavy_000",
-        "volume": 1
+        "volume": 1,
+        "alternates": [
+          "guard_glove_hard_T111_A",
+          "guard_glove_hard_T111_B",
+          "guard_glove_hard_T111_E",
+          "guard_glove_hard_T111_F"
+        ]
       },
       "haptics": [
         {
@@ -169,7 +206,10 @@
       "description": "相手のパンチを自分の前腕で受ける（受けた側の手首）。強: 接触の相対速度 2.5 m/s 以上。gain = 相対速度（0.25 m/s で 0.12 〜 6 m/s で 1）",
       "sfx": {
         "sound": "impactSoft_heavy_000",
-        "volume": 1
+        "volume": 1,
+        "alternates": [
+          "guard_arm_hard_T113_A"
+        ]
       },
       "haptics": [
         {
