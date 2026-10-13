@@ -5,6 +5,28 @@ using UnityEngine;
 
 namespace Hapbeat.Boxing
 {
+    public enum CueSoundPick { Random, RoundRobin }
+    // One cue's sounds (cue table sfx.sound / sfx.sounds) with their volumes (sfx volume x sound intensity)
+    // and how one is picked per impact (variation.pick).
+    [Serializable]
+    public sealed class CueSoundSet
+    {
+        public AudioClip[] clips = new AudioClip[0];
+        public float[] volumes = new float[0];
+        public CueSoundPick pick;
+        private int last = -1;
+        // The index of the sound to play, -1 = none. Random never repeats the previous sound; RoundRobin goes in order.
+        public int Next()
+        {
+            int count = clips == null ? 0 : clips.Length;
+            if (count == 0) return -1;
+            if (count == 1) last = 0;
+            else if (pick == CueSoundPick.RoundRobin) last = (last + 1) % count;
+            else if (last < 0) last = UnityEngine.Random.Range(0, count);
+            else { int next = UnityEngine.Random.Range(0, count - 1); last = next >= last ? next + 1 : next; }
+            return last;
+        }
+    }
     [DefaultExecutionOrder(-10000)]
     public sealed class BoxingFeedback : MonoBehaviour
     {
@@ -26,9 +48,9 @@ namespace Hapbeat.Boxing
         public int LastSpokenNumber { get; private set; }
         public int VoiceCues { get; private set; }
         public float ImpactTailSeconds { get; private set; }
-        // Per cue (Cues order): its sound (null = none) and volume (sfx volume x sound intensity), from the cue table.
-        public AudioClip[] cueSounds = new AudioClip[10];
-        public float[] cueSoundVolumes = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+        // Per cue (Cues order): its sounds (none = no sound), from the cue table.
+        public CueSoundSet[] cueSounds = new CueSoundSet[10];
+        public AudioClip LastSound { get; private set; }
         public AudioClip bell;
         public bool soundEnabled = true;
         public bool hapticsEnabled = true;
@@ -52,7 +74,10 @@ namespace Hapbeat.Boxing
         }
         public void Impact(BoxingImpact impact)
         {
-            var clip=cueSounds[CueIndex(impact)];
+            int cue = CueIndex(impact);
+            var sounds = cueSounds[cue]; int sound = sounds.Next();
+            var clip = sound < 0 ? null : sounds.clips[sound];
+            LastSound = clip;
             // Haptic tails are finite (max 0.19s); preserve the whole sound as well.
             ImpactTailSeconds=Mathf.Max(ImpactTailSeconds,.19f,clip!=null ? clip.length : 0);
             LastImpact = impact; Reports++; Reported?.Invoke(impact);
@@ -68,8 +93,7 @@ namespace Hapbeat.Boxing
                     trigger.Fire(); Sends++;
                 }
             }
-            int cue = CueIndex(impact);
-            PlaySound(cueSounds[cue], Mathf.Clamp01(impact.gain) * cueSoundVolumes[cue]);
+            if (clip != null) PlaySound(clip, Mathf.Clamp01(impact.gain) * sounds.volumes[sound]);
         }
         // Own punch: on the opponent's glove, or anywhere else (head, body, arms). Received: on the glove,
         // the forearm, or the head / body. Scoring keeps counting arm contacts as glove surfaces.

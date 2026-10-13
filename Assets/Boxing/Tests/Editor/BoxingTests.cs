@@ -317,13 +317,43 @@ namespace Hapbeat.Boxing.Tests
                 Assert.That(g.eventName, Is.EqualTo((zone == ImpactZone.LeftGlove ? "left_" : "right_") + BoxingFeedback.CueName(glove)));
                 Assert.That(o.eventName, Is.EqualTo((zone == ImpactZone.LeftGlove ? "left_" : "right_") + BoxingFeedback.CueName(other)));
                 Assert.That(g.eventName, Is.Not.EqualTo(o.eventName));
-                // Default sounds: glove contacts (forearm guards too) and body contacts differ.
-                var gloveSound = game.feedback.cueSounds[BoxingFeedback.CueIndex(glove)];
-                var otherSound = game.feedback.cueSounds[BoxingFeedback.CueIndex(other)];
-                Assert.That(gloveSound, Is.Not.Null); Assert.That(otherSound, Is.Not.Null);
-                if (attack) Assert.That(gloveSound, Is.Not.SameAs(otherSound)); else Assert.That(gloveSound, Is.SameAs(otherSound));
+                // Every cue has its own sounds from the cue table, one volume per sound.
+                foreach (var sounds in new[] { game.feedback.cueSounds[BoxingFeedback.CueIndex(glove)], game.feedback.cueSounds[BoxingFeedback.CueIndex(other)] })
+                { Assert.That(sounds.clips, Is.Not.Empty.And.All.Not.Null); Assert.That(sounds.volumes.Length, Is.EqualTo(sounds.clips.Length)); }
             }
             Assert.That(game.feedback.Sends, Is.Zero);
+        }
+        [Test] public void CueWithSeveralSoundsUsesAllWithoutRepeatingAndASingleSoundCueKeepsIt()
+        {
+            Random.InitState(5);
+            // hit_body_soft (a received head hit) has several sounds picked at random; guard_glove_soft one.
+            var hit = new BoxingImpact(ImpactZone.Head, 1, false, Vector3.zero, game.tuning, ImpactSurface.Body);
+            var guard = new BoxingImpact(ImpactZone.LeftGlove, 1, false, Vector3.zero, game.tuning, ImpactSurface.Glove);
+            var several = game.feedback.cueSounds[BoxingFeedback.CueIndex(hit)];
+            var single = game.feedback.cueSounds[BoxingFeedback.CueIndex(guard)];
+            Assert.That(several.clips.Length, Is.GreaterThan(1)); Assert.That(several.pick, Is.EqualTo(CueSoundPick.Random));
+            Assert.That(single.clips.Length, Is.EqualTo(1));
+            var used = new System.Collections.Generic.HashSet<AudioClip>(); AudioClip previous = null;
+            for (int i = 0; i < 200; i++)
+            {
+                game.feedback.Impact(hit);
+                Assert.That(game.feedback.LastSound, Is.Not.Null.And.Not.SameAs(previous));
+                previous = game.feedback.LastSound; used.Add(previous);
+                game.feedback.Impact(guard); Assert.That(game.feedback.LastSound, Is.SameAs(single.clips[0]));
+            }
+            Assert.That(used, Is.EquivalentTo(several.clips));
+            Assert.That(game.feedback.Sends, Is.Zero);
+        }
+        [Test] public void RoundRobinSoundsGoInOrder()
+        {
+            var clips = new[] { AudioClip.Create("a", 10, 1, 48000, false), AudioClip.Create("b", 10, 1, 48000, false), AudioClip.Create("c", 10, 1, 48000, false) };
+            try
+            {
+                var sounds = new CueSoundSet { clips = clips, volumes = new[] { 1f, 1f, 1f }, pick = CueSoundPick.RoundRobin };
+                Assert.That(new[] { sounds.Next(), sounds.Next(), sounds.Next(), sounds.Next() }, Is.EqualTo(new[] { 0, 1, 2, 0 }));
+                Assert.That(new CueSoundSet().Next(), Is.EqualTo(-1));
+            }
+            finally { foreach (var clip in clips) Object.DestroyImmediate(clip); }
         }
         [Test] public void StartAndEndRingOnceAndResultsRemainStable()
         {

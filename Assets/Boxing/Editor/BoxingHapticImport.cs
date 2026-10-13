@@ -11,8 +11,8 @@ namespace Hapbeat.Boxing.Editor
     /// by Scripts/build_haptic_import.py) into BoxingEventMap and the scene's BoxingFeedback: per cue its stream
     /// clip (Assets/Boxing/Haptics/stream-clips/&lt;clip&gt;.wav), route gain and clip intensity (cached manifest
     /// intensity, so the effective gain = gain x intensity as with a Kit) into left_&lt;cue&gt; and right_&lt;cue&gt;
-    /// (wrist cues) or &lt;cue&gt; (hit_body, neck), and its sound (Assets/Boxing/Haptics/sounds/&lt;Name&gt;.wav,
-    /// none when empty) and volume into BoxingFeedback.cueSounds / cueSoundVolumes. The clips and sounds get the
+    /// (wrist cues) or &lt;cue&gt; (hit_body, neck), and its sounds (Assets/Boxing/Haptics/sounds/&lt;Name&gt;.wav,
+    /// none when empty), their volumes and the pick (random / roundRobin) into BoxingFeedback.cueSounds. The clips and sounds get the
     /// import settings of BoxingContent.ImportAudio (decompressed PCM; the SDK reads the clips' samples).
     /// Only what differs is written, so importing the checked-in table changes nothing.
     ///
@@ -23,7 +23,7 @@ namespace Hapbeat.Boxing.Editor
         public const string MapPath = "Assets/Boxing/Haptics/BoxingEventMap.asset";
 
         [Serializable] private sealed class Plan { public Item[] items; }
-        [Serializable] private sealed class Item { public string cue; public string clip; public float gain; public float intensity; public string sound; public float volume; }
+        [Serializable] private sealed class Item { public string cue; public string clip; public float gain; public float intensity; public string[] sounds; public float[] volumes; public string pick; }
 
         public static void Run()
         {
@@ -58,14 +58,24 @@ namespace Hapbeat.Boxing.Editor
                     entries++;
                     Debug.Log("HAPTIC_KIT_IMPORT " + name + " <- " + item.clip + " gain=" + item.gain + " intensity=" + item.intensity);
                 }
-                var sound = string.IsNullOrEmpty(item.sound) ? null : BoxingContent.ImportAudio(BoxingContent.CueSounds + item.sound + ".wav");
-                if (!string.IsNullOrEmpty(item.sound) && sound == null) throw new Exception("HAPTIC_KIT_IMPORT_FAILED: sound " + item.sound + " missing");
-                if (feedback.cueSounds[cue] != sound || !Mathf.Approximately(feedback.cueSoundVolumes[cue], item.volume))
+                var sounds = new AudioClip[item.sounds.Length];
+                for (int i = 0; i < sounds.Length; i++)
                 {
-                    feedback.cueSounds[cue] = sound; feedback.cueSoundVolumes[cue] = item.volume;
+                    sounds[i] = BoxingContent.ImportAudio(BoxingContent.CueSounds + item.sounds[i] + ".wav");
+                    if (sounds[i] == null) throw new Exception("HAPTIC_KIT_IMPORT_FAILED: sound " + item.sounds[i] + " missing");
+                }
+                var pick = item.pick == "roundRobin" ? CueSoundPick.RoundRobin : item.pick == "random" ? CueSoundPick.Random
+                    : throw new Exception("HAPTIC_KIT_IMPORT_FAILED: " + item.cue + " pick " + item.pick);
+                var set = feedback.cueSounds[cue];
+                bool same = set != null && set.pick == pick && set.clips.Length == sounds.Length && set.volumes.Length == sounds.Length;
+                for (int i = 0; same && i < sounds.Length; i++) same = set.clips[i] == sounds[i] && Mathf.Approximately(set.volumes[i], item.volumes[i]);
+                if (!same)
+                {
+                    feedback.cueSounds[cue] = new CueSoundSet { clips = sounds, volumes = (float[])item.volumes.Clone(), pick = pick };
                     sceneChanges++;
                 }
-                Debug.Log("HAPTIC_KIT_IMPORT sound " + item.cue + " <- " + (sound == null ? "(none)" : item.sound) + " volume=" + item.volume);
+                for (int i = 0; i < sounds.Length; i++) Debug.Log("HAPTIC_KIT_IMPORT sound " + item.cue + " <- " + item.sounds[i] + " volume=" + item.volumes[i]);
+                Debug.Log("HAPTIC_KIT_IMPORT sounds " + item.cue + " count=" + sounds.Length + " pick=" + item.pick);
             }
             if (mapChanges > 0) { EditorUtility.SetDirty(map); AssetDatabase.SaveAssets(); }
             if (sceneChanges > 0) { EditorUtility.SetDirty(feedback); EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); }

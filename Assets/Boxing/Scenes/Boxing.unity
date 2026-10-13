@@ -2323,27 +2323,78 @@ MonoBehaviour:
   loseVoice: {fileID: 8300000, guid: 43419f364e5815043992b9343ac9a688, type: 3}
   tieVoice: {fileID: 8300000, guid: e938aa3c768cdc04da2470470c27da10, type: 3}
   cueSounds:
-  - {fileID: 8300000, guid: 49db50e110e44d040829c5b731c03249, type: 3}
-  - {fileID: 8300000, guid: f589e213d9fbfdf47a8a47f2635629f7, type: 3}
-  - {fileID: 8300000, guid: 65ecb7a9a61d8da4a86ae790543dc1ee, type: 3}
-  - {fileID: 8300000, guid: 59a8e5ddf62e3774d9700b67b49922b9, type: 3}
-  - {fileID: 8300000, guid: 49db50e110e44d040829c5b731c03249, type: 3}
-  - {fileID: 8300000, guid: f589e213d9fbfdf47a8a47f2635629f7, type: 3}
-  - {fileID: 8300000, guid: 49db50e110e44d040829c5b731c03249, type: 3}
-  - {fileID: 8300000, guid: f589e213d9fbfdf47a8a47f2635629f7, type: 3}
-  - {fileID: 8300000, guid: 65ecb7a9a61d8da4a86ae790543dc1ee, type: 3}
-  - {fileID: 8300000, guid: 59a8e5ddf62e3774d9700b67b49922b9, type: 3}
-  cueSoundVolumes:
-  - 1
-  - 1
-  - 1
-  - 1
-  - 1
-  - 1
-  - 1
-  - 1
-  - 1
-  - 1
+  - clips:
+    - {fileID: 8300000, guid: d0f91314cf30c0f4197dca36529a2812, type: 3}
+    - {fileID: 8300000, guid: 8fda9b9f3ca26734c85fb9552e8ea651, type: 3}
+    volumes:
+    - 0.94404083
+    - 0.9440085
+    pick: 0
+  - clips:
+    - {fileID: 8300000, guid: 274a7920efd445d419e04fbfb81bc4fc, type: 3}
+    volumes:
+    - 0.94404083
+    pick: 0
+  - clips:
+    - {fileID: 8300000, guid: 124a7bb5e033cff4cbd2cf94b98ed390, type: 3}
+    - {fileID: 8300000, guid: c217c476407b43844bea7ce7b54a4963, type: 3}
+    - {fileID: 8300000, guid: 3f7cf62fc589f0a439174aaa0f645279, type: 3}
+    volumes:
+    - 0.9440767
+    - 0.9440767
+    - 0.94404083
+    pick: 0
+  - clips:
+    - {fileID: 8300000, guid: 124a7bb5e033cff4cbd2cf94b98ed390, type: 3}
+    - {fileID: 8300000, guid: c217c476407b43844bea7ce7b54a4963, type: 3}
+    - {fileID: 8300000, guid: 3f7cf62fc589f0a439174aaa0f645279, type: 3}
+    volumes:
+    - 0.9440767
+    - 0.9440767
+    - 0.94404083
+    pick: 0
+  - clips:
+    - {fileID: 8300000, guid: 7c9643793afda2a4e8ae1ef326819eea, type: 3}
+    volumes:
+    - 0.9440085
+    pick: 0
+  - clips:
+    - {fileID: 8300000, guid: d41e78dad9e50f74b8f6c561e4006894, type: 3}
+    volumes:
+    - 0.94401205
+    pick: 0
+  - clips:
+    - {fileID: 8300000, guid: 0bbdc1a0c4e033b4ea95a5b4a8bd32f2, type: 3}
+    - {fileID: 8300000, guid: 08f887b0120f06045a786c72a51c1079, type: 3}
+    volumes:
+    - 0.94404083
+    - 0.94404083
+    pick: 0
+  - clips:
+    - {fileID: 8300000, guid: 7acf2e8890da30f4eb9f9b6f9044a11b, type: 3}
+    volumes:
+    - 1
+    pick: 0
+  - clips:
+    - {fileID: 8300000, guid: d31d96486903f6242896cee88a895893, type: 3}
+    - {fileID: 8300000, guid: 08d98a5a6312e7d499c929b9e30f271e, type: 3}
+    - {fileID: 8300000, guid: 6c0c3f2fa61d13642897adc3e17e9f30, type: 3}
+    - {fileID: 8300000, guid: 973319e1f35c2de44b9c410a72f874ec, type: 3}
+    - {fileID: 8300000, guid: aad09b98ab7b1ff4bba715974508dbec, type: 3}
+    volumes:
+    - 0.94397974
+    - 0.46256417
+    - 0.9440767
+    - 0.9440767
+    - 0.94404083
+    pick: 0
+  - clips:
+    - {fileID: 8300000, guid: c3e964817038ff0418ed9917e4b1f439, type: 3}
+    - {fileID: 8300000, guid: 64003ccc49339f248ac3c0cb7e8fce90, type: 3}
+    volumes:
+    - 0.94404083
+    - 0.94404083
+    pick: 0
   bell: {fileID: 8300000, guid: 8f348c78e42f99841b49203eabafe55b, type: 3}
   soundEnabled: 1
   hapticsEnabled: 1

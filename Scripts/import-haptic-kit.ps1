@@ -1,8 +1,8 @@
 # Step 3 of the haptic authoring tool for Boxing: applies Assets\Boxing\Haptics\boxing-cues.json (as saved by
 # Hapbeat Studio) to BoxingEventMap and the scene: each cue's clip (Assets\Boxing\Haptics\stream-clips\<clip>.wav),
 # route gain and clip intensity into left_<cue> / right_<cue> (wrist cues) or <cue> (hit_body, neck), and its
-# sound (Assets\Boxing\Haptics\sounds\<Name>.wav) and volume into BoxingFeedback (build_haptic_import.py checks
-# and flattens the table, BoxingHapticImport writes it). Close the Unity Editor on this project first.
+# sounds (Assets\Boxing\Haptics\sounds\<Name>.wav), volumes and pick (random / roundRobin) into BoxingFeedback
+# (build_haptic_import.py checks and flattens the table, BoxingHapticImport writes it). Close the Unity Editor on this project first.
 # Rebuild and reinstall the APK afterwards. -EngineRoot is passed by the launcher (Unreal) and ignored.
 param([string]$Unity=$(if($env:BOXING_UNITY){$env:BOXING_UNITY}else{'M:\GameEngine\Unity\Editor\6000.3.12f1\Editor\Unity.exe'}),
     [string]$EngineRoot)

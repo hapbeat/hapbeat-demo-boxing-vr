@@ -275,7 +275,7 @@ namespace Hapbeat.Boxing.Editor
             foreach (var trigger in game.feedback.impactTriggers)
                 if (trigger == null || trigger.ResolveEntry() == null || trigger.ResolveEntry().streamClip == null) throw new InvalidOperationException("Unwired haptic trigger");
             int cues = BoxingFeedback.Cues.Length;
-            if (game.feedback.impactTriggers.Length != BoxingFeedback.WristCues + cues || game.feedback.cueSounds.Length != cues || game.feedback.cueSoundVolumes.Length != cues || game.feedback.bell == null || game.feedback.bellSource == null)
+            if (game.feedback.impactTriggers.Length != BoxingFeedback.WristCues + cues || game.feedback.cueSounds.Length != cues || game.feedback.cueSounds.Any(sounds => sounds == null || sounds.clips.Length != sounds.volumes.Length) || game.feedback.bell == null || game.feedback.bellSource == null)
                 throw new InvalidOperationException("Incomplete surface feedback assets");
             if(game.feedback.voiceSource==null || game.feedback.winVoice==null || game.feedback.loseVoice==null || game.feedback.tieVoice==null ||
                 game.presentation.leftForearm==null || game.presentation.rightForearm==null)

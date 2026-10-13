@@ -166,8 +166,8 @@ namespace Hapbeat.Boxing.Editor
         {
             var f = game.feedback;
             int cues = BoxingFeedback.Cues.Length, wrist = BoxingFeedback.WristCues;
-            f.cueSounds = new AudioClip[cues]; f.cueSoundVolumes = new float[cues];
-            for (int i = 0; i < cues; i++) { f.cueSounds[i] = ImportAudio(CueSounds + DefaultSound(i) + ".wav"); f.cueSoundVolumes[i] = 1; }
+            f.cueSounds = new CueSoundSet[cues];
+            for (int i = 0; i < cues; i++) f.cueSounds[i] = new CueSoundSet { clips = new[] { ImportAudio(CueSounds + DefaultSound(i) + ".wav") }, volumes = new[] { 1f } };
             foreach (var trigger in f.impactTriggers) if (trigger != null) UnityEngine.Object.DestroyImmediate(trigger.gameObject);
             var map = AssetDatabase.LoadAssetAtPath<HapbeatEventMap>(Root + "Haptics/BoxingEventMap.asset");
             if (map == null) { map = ScriptableObject.CreateInstance<HapbeatEventMap>(); AssetDatabase.CreateAsset(map, Root + "Haptics/BoxingEventMap.asset"); }
