@@ -24,7 +24,7 @@ namespace Hapbeat.Boxing.Tests
             game.Opponent.Reset(height); bool attack = false, guard = false;
             for (int i=0; i<1800; i++)
             {
-                game.Opponent.Tick(1f/90,new Vector3(0,height,.2f),true);
+                game.Opponent.Tick(1f/90,new Vector3(0,height,.2f),Quaternion.identity,true);
                 avatar.Render(game.Opponent,1f/90);
                 Assert.That(Vector3.Distance(avatar.LeftCenter,game.Opponent.Left),Is.LessThan(.002f));
                 Assert.That(Vector3.Distance(avatar.RightCenter,game.Opponent.Right),Is.LessThan(.002f));
@@ -53,7 +53,7 @@ namespace Hapbeat.Boxing.Tests
             var scale=avatar.transform.localScale; var left=avatar.leftFoot.position; var right=avatar.rightFoot.position;
             var knee=avatar.leftShin.rotation;
             Assert.That(game.Opponent.Head.y,Is.EqualTo(1.65f).Within(.001f));
-            for(int i=0;i<45;i++) { game.Opponent.Tick(1f/90,Vector3.up*1.65f,false); avatar.Render(game.Opponent,0); }
+            for(int i=0;i<45;i++) { game.Opponent.Tick(1f/90,Vector3.up*1.65f,Quaternion.identity,false); avatar.Render(game.Opponent,0); }
             Assert.That(avatar.transform.localScale,Is.EqualTo(scale));
             Assert.That(Vector3.Distance(left,avatar.leftFoot.position),Is.LessThan(.001f));
             Assert.That(Vector3.Distance(right,avatar.rightFoot.position),Is.LessThan(.001f));

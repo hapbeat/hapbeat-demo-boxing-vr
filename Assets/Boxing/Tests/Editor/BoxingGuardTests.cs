@@ -13,7 +13,7 @@ namespace Hapbeat.Boxing.Tests
             var enemy=new BoxingOpponent(tuning, 11); int seen=0;
             for(int i=0;i<30000 && seen!=15;i++)
             {
-                enemy.Tick(.01f,Vector3.up*1.65f,true);
+                enemy.Tick(.01f,Vector3.up*1.65f,Quaternion.identity,true);
                 if(enemy.GuardWeight<.999f) continue;
                 Vector3 target=enemy.BodyGuard ? enemy.Body : enemy.Head;
                 float radius=enemy.BodyGuard ? tuning.enemyBodyRadius : tuning.enemyHeadRadius;
@@ -34,9 +34,9 @@ namespace Hapbeat.Boxing.Tests
         {
             var enemy=new BoxingOpponent(tuning, 11);
             // Wait for the whole first attack (a combo has several strikes) to finish retracting.
-            for(int i=0;i<1000 && (enemy.CompletedAttacks==0 || enemy.State!=BoxingOpponentState.Neutral);i++) enemy.Tick(.01f,Vector3.up*1.65f,true);
+            for(int i=0;i<1000 && (enemy.CompletedAttacks==0 || enemy.State!=BoxingOpponentState.Neutral);i++) enemy.Tick(.01f,Vector3.up*1.65f,Quaternion.identity,true);
             Assert.That(enemy.CompletedAttacks,Is.GreaterThanOrEqualTo(1)); Assert.That(enemy.State,Is.EqualTo(BoxingOpponentState.Neutral));
-            for(int i=0;i<20;i++) enemy.Tick(.01f,Vector3.up*1.65f,true);
+            for(int i=0;i<20;i++) enemy.Tick(.01f,Vector3.up*1.65f,Quaternion.identity,true);
             Assert.That(enemy.Guarding,Is.True); Assert.That(enemy.GuardWeight,Is.GreaterThan(.9f));
         }
         [Test] public void LowWidePreparationBiasesBodyHookGuardButLeavesOtherChoices()
@@ -46,7 +46,7 @@ namespace Hapbeat.Boxing.Tests
             {
                 var head=Vector3.up*1.65f;
                 enemy.ObservePlayer(new BoxerPose{valid=true,head=head,left=head+new Vector3(-.4f,-.4f,.3f),right=head+new Vector3(.4f,-.4f,.3f)},.01f);
-                enemy.Tick(.01f,head,true);
+                enemy.Tick(.01f,head,Quaternion.identity,true);
                 if(enemy.Guarding && !was) {total++; if(enemy.Guard==BoxingGuard.BodyHook) matches++; seen|=1<<(int)enemy.Guard;}
                 was=enemy.Guarding;
             }

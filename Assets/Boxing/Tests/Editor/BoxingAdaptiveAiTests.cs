@@ -13,7 +13,7 @@ namespace Hapbeat.Boxing.Tests
         [TearDown] public void Cleanup() => Object.DestroyImmediate(tuning);
         private static void Run(BoxingOpponent enemy, float seconds)
         {
-            for (int i = 0; i < Mathf.RoundToInt(seconds * 100); i++) enemy.Tick(.01f, PlayerHead, true);
+            for (int i = 0; i < Mathf.RoundToInt(seconds * 100); i++) enemy.Tick(.01f, PlayerHead, Quaternion.identity, true);
         }
         private static bool Covers(BoxingGuard guard, BoxingHitZone zone) =>
             zone == BoxingHitZone.Body ? guard == BoxingGuard.BodyStraight || guard == BoxingGuard.BodyHook :
@@ -38,7 +38,7 @@ namespace Hapbeat.Boxing.Tests
                 bool was = enemy.Guarding; int seen = 0;
                 for (int i = 0; i < 500 && seen < 3; i++)
                 {
-                    enemy.Tick(.01f, PlayerHead, true);
+                    enemy.Tick(.01f, PlayerHead, Quaternion.identity, true);
                     if (enemy.Guarding && !was) { seen++; total++; if (Covers(enemy.Guard, zone)) covered++; }
                     was = enemy.Guarding;
                 }
@@ -55,11 +55,11 @@ namespace Hapbeat.Boxing.Tests
                 Run(enemy, 2);
                 for (int i = 0; i < 3; i++) { if (i > 0) Run(enemy, .6f); enemy.React(.5f, BoxingHitZone.HeadCenter); }
                 bool countered = false;
-                for (int i = 0; i < 100 && !countered; i++) { enemy.Tick(.01f, PlayerHead, true); countered = enemy.Counter && enemy.Telegraphing; }
+                for (int i = 0; i < 100 && !countered; i++) { enemy.Tick(.01f, PlayerHead, Quaternion.identity, true); countered = enemy.Counter && enemy.Telegraphing; }
                 Assert.That(countered, Is.True, "trial " + trial);
                 Assert.That(enemy.State, Is.EqualTo(BoxingOpponentState.Counter));
                 // A hit during the committed strike lets that strike continue.
-                for (int i = 0; i < 100 && !enemy.Striking; i++) enemy.Tick(.01f, PlayerHead, true);
+                for (int i = 0; i < 100 && !enemy.Striking; i++) enemy.Tick(.01f, PlayerHead, Quaternion.identity, true);
                 Assert.That(enemy.Striking, Is.True);
                 int id = enemy.AttackId; enemy.React(.5f, BoxingHitZone.Body);
                 Assert.That(enemy.Striking, Is.True); Assert.That(enemy.AttackId, Is.EqualTo(id));
@@ -72,7 +72,7 @@ namespace Hapbeat.Boxing.Tests
             float worst = 0, fastestRoot = 0;
             for (int frame = 0; frame < 90 * 90; frame++)
             {
-                enemy.Tick(dt, PlayerHead, true);
+                enemy.Tick(dt, PlayerHead, Quaternion.identity, true);
                 int k = frame % 3;
                 points[k, 0] = enemy.Left; points[k, 1] = enemy.Right; points[k, 2] = enemy.Head; striking[k] = enemy.Striking;
                 fastestRoot = Mathf.Max(fastestRoot, (enemy.Root - root).magnitude / dt); root = enemy.Root;
@@ -91,7 +91,7 @@ namespace Hapbeat.Boxing.Tests
             var actions = new List<BoxingAction>(); int count = enemy.Actions;
             for (int i = 0; i < 9000; i++)
             {
-                enemy.Tick(.01f, PlayerHead, true);
+                enemy.Tick(.01f, PlayerHead, Quaternion.identity, true);
                 if (enemy.Actions != count) { count = enemy.Actions; actions.Add(enemy.Action); }
             }
             return actions;

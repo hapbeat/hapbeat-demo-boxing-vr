@@ -76,7 +76,7 @@ namespace Hapbeat.Boxing.Tests
             var opponent = new BoxingOpponent(tuning, 12); int left = 0, right = 0, id = 0;
             for (int i = 0; i < 9000; i++)
             {
-                opponent.Tick(0.01f, Vector3.up * 1.65f, true);
+                opponent.Tick(0.01f, Vector3.up * 1.65f, Quaternion.identity, true);
                 Assert.That(Mathf.Abs(opponent.Root.x), Is.LessThanOrEqualTo(0.161f));
                 Assert.That(opponent.Root.z, Is.InRange(0.97f, 1.19f));
                 if (opponent.AttackId != id) { id = opponent.AttackId; if (opponent.AttackLeft) left++; else right++; }
@@ -112,7 +112,7 @@ namespace Hapbeat.Boxing.Tests
             var enemy = new BoxingOpponent(tuning, 13); int guarded = 0, transitions = 0; bool old = false;
             for (int i = 0; i < 6000; i++)
             {
-                enemy.Tick(0.01f, Vector3.up * 1.65f, true);
+                enemy.Tick(0.01f, Vector3.up * 1.65f, Quaternion.identity, true);
                 if (enemy.Guarding && !old) transitions++;
                 if (enemy.GuardWeight > 0.9f)
                 {
@@ -241,7 +241,7 @@ namespace Hapbeat.Boxing.Tests
         {
             game.Round.Tick(3, false);
             // The head case uses the earmuff guard: a high guard's forearms legitimately cover the chest.
-            for (int i = 0; i < 12000 && (game.Opponent.GuardWeight < 0.99f || game.Opponent.BodyGuard!=bodyGuard || (!bodyGuard && !game.Opponent.HookGuard)); i++) game.Opponent.Tick(0.01f, Pose().head, true);
+            for (int i = 0; i < 12000 && (game.Opponent.GuardWeight < 0.99f || game.Opponent.BodyGuard!=bodyGuard || (!bodyGuard && !game.Opponent.HookGuard)); i++) game.Opponent.Tick(0.01f, Pose().head, Quaternion.identity, true);
             Assert.That(game.Opponent.Guarding, Is.True);
             typeof(BoxingGame).GetMethod("SaveHistory", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(game, new object[] { Pose() });
             var resolve = typeof(BoxingGame).GetMethod("ResolvePlayer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);

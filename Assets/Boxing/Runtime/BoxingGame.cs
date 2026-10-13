@@ -219,7 +219,7 @@ namespace Hapbeat.Boxing
             Round.Tick(dt, false);
             // Without history this frame restarts the opponent's view of the gloves (no velocity across a gap).
             Opponent.ObservePlayer(pose, haveHistory ? dt : 0);
-            Opponent.Tick(dt, pose.head, Round.Phase == BoxingPhase.Fighting);
+            Opponent.Tick(dt, pose.head, pose.headRotation, Round.Phase == BoxingPhase.Fighting);
             sampledHead = pose.head;
             if (LeftHandActive) leftPunch.Sample(pose.left - pose.head, dt, tuning);
             if (RightHandActive) rightPunch.Sample(pose.right - pose.head, dt, tuning);
@@ -277,7 +277,8 @@ namespace Hapbeat.Boxing
             if (LeftHandActive) Forearm(ImpactZone.LeftGlove,previous.left,previous.leftRotation,p.left,p.leftRotation);
             if (RightHandActive) Forearm(ImpactZone.RightGlove,previous.right,previous.rightRotation,p.right,p.rightRotation);
             Candidate(ImpactZone.Head, previous.head, p.head, tuning.headRadius);
-            Candidate(ImpactZone.Body, BoxingOpponent.PlayerBody(previous.head), BoxingOpponent.PlayerBody(p.head), tuning.bodyRadius);
+            if (BoxingPlayerBody.Sweep(from, to, tuning.enemyGloveRadius, previous.head, previous.headRotation, p.head, p.headRotation, out float bodyTime, out var bodyFrom, out var bodyTo) && bodyTime < earliest)
+            { earliest = bodyTime; zone = ImpactZone.Body; targetFrom = bodyFrom; targetTo = bodyTo; part = ImpactPart.Glove; }
             if (float.IsPositiveInfinity(earliest)) return;
             resolvedAttack = Opponent.AttackId;
             float speed = BoxingCollision.RelativeSpeed(from, to, targetFrom, targetTo, dt);

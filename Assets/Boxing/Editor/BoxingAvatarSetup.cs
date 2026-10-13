@@ -80,21 +80,21 @@ namespace Hapbeat.Boxing.Editor
             int captured = 0;
             for(int i=0;i<12000 && captured!=15;i++)
             {
-                game.Opponent.Tick(.005f,pose.head,true);
+                game.Opponent.Tick(.005f,pose.head,Quaternion.identity,true);
                 int bit=1<<(int)game.Opponent.Attack;
                 if(!game.Opponent.Striking || game.Opponent.MotionWeight<.8f || (captured&bit)!=0) continue;
                 game.presentation.Render(game,pose,true);
                 Capture(game,camera,"Logs/boxing-attack-"+game.Opponent.Attack+".png"); captured|=bit;
             }
             game.Opponent.Reset(1.65f);
-            for(int i=0;i<1000 && !game.Opponent.Striking;i++) game.Opponent.Tick(.01f,pose.head,true);
-            game.Opponent.Tick(game.tuning.strikeSeconds*.75f,pose.head,true);
+            for(int i=0;i<1000 && !game.Opponent.Striking;i++) game.Opponent.Tick(.01f,pose.head,Quaternion.identity,true);
+            game.Opponent.Tick(game.tuning.strikeSeconds*.75f,pose.head,Quaternion.identity,true);
             game.presentation.Render(game,pose,true); Capture(game,camera,"Logs/boxing-avatar-strike.png");
             game.Opponent.Reset(1.65f);
             bool hookCaptured=false, crossCaptured=false;
             for(int i=0;i<5000 && !(hookCaptured && crossCaptured);i++)
             {
-                game.Opponent.Tick(.01f,pose.head,true);
+                game.Opponent.Tick(.01f,pose.head,Quaternion.identity,true);
                 if(!game.Opponent.Striking || game.Opponent.MotionWeight<.65f) continue;
                 if(game.Opponent.Hook && !hookCaptured)
                 { game.presentation.Render(game,pose,true); Capture(game,camera,"Logs/boxing-avatar-hook.png"); hookCaptured=true; }
@@ -107,7 +107,7 @@ namespace Hapbeat.Boxing.Editor
             int guards=0;
             for(int i=0;i<30000 && guards!=15;i++)
             {
-                game.Opponent.Tick(.01f,pose.head,true);
+                game.Opponent.Tick(.01f,pose.head,Quaternion.identity,true);
                 int bit=1<<(int)game.Opponent.Guard;
                 if(game.Opponent.GuardWeight<.999f || (guards&bit)!=0) continue;
                 game.presentation.Render(game,pose,true);

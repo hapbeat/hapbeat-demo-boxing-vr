@@ -20,7 +20,7 @@ namespace Hapbeat.Boxing.Tests
             game.RecenterPlayer();
             Assert.That(game.Opponent.Head.y,Is.EqualTo(height).Within(.001f));
             game.input.headCamera.transform.position=Vector3.up*(height-.3f);
-            game.Opponent.Tick(.01f,game.input.headCamera.transform.position,false);
+            game.Opponent.Tick(.01f,game.input.headCamera.transform.position,Quaternion.identity,false);
             Assert.That(game.Opponent.Head.y,Is.EqualTo(height).Within(.002f));
         }
         [Test] public void OpponentUsesHeadAndBodyGuards()
@@ -28,7 +28,7 @@ namespace Hapbeat.Boxing.Tests
             bool head=false,body=false;
             for(int i=0;i<9000;i++)
             {
-                game.Opponent.Tick(.01f,Vector3.up*1.65f,true);
+                game.Opponent.Tick(.01f,Vector3.up*1.65f,Quaternion.identity,true);
                 if(game.Opponent.GuardWeight<.95f) continue;
                 if(game.Opponent.BodyGuard) {body=true; Assert.That(game.Opponent.Left.y,Is.LessThan(game.Opponent.Head.y-.3f));}
                 else {head=true; Assert.That(game.Opponent.Left.y,Is.GreaterThan(game.Opponent.Head.y-.1f));}

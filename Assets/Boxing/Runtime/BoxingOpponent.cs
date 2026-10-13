@@ -41,7 +41,6 @@ namespace Hapbeat.Boxing
         public BoxingAttack Attack { get; private set; }
         public bool Hook => attacking && (Attack == BoxingAttack.HeadHook || Attack == BoxingAttack.BodyHook);
         public bool BodyAttack => attacking && (Attack == BoxingAttack.BodyStraight || Attack == BoxingAttack.BodyHook);
-        public static Vector3 PlayerBody(Vector3 head) => head + Vector3.down * .43f;
         public bool Counter { get; private set; }
         public BoxingOpponentState State { get; private set; }
         // Last chosen behaviour (Neutral choices and counters) and how many have been chosen since Reset.
@@ -174,13 +173,13 @@ namespace Hapbeat.Boxing
             if (!Striking) return;
             EndStrike(contact);
         }
-        public void Tick(float dt, Vector3 playerHead, bool fighting)
+        public void Tick(float dt, Vector3 playerHead, Quaternion playerHeadRotation, bool fighting)
         {
             if (dt <= 0) return;
             clock += dt;
             float decay = Mathf.Pow(.5f, dt / Mathf.Max(.1f, tuning.opponentHeatHalfLife));
             for (int i = 0; i < heat.Length; i++) heat[i] *= decay;
-            if (fighting) Think(dt, playerHead);
+            if (fighting) Think(dt, playerHead, playerHeadRotation);
             else { StopCombat(); decisionWait = OpeningSeconds * Pace; rootGoal = Vector2.zero; goalTime = 0; }
             Move(dt, fighting);
         }
@@ -191,10 +190,10 @@ namespace Hapbeat.Boxing
             Striking = Telegraphing = Feinting = Guarding = Counter = false; GuardWeight = 0;
             Evade = BoxingEvade.None; evadeOffset = Vector3.zero; staggerPush = 0; MotionWeight = BodyYaw = 0;
         }
-        private void Think(float dt, Vector3 playerHead)
+        private void Think(float dt, Vector3 playerHead, Quaternion playerHeadRotation)
         {
             stateTime += dt;
-            if (Scripted) { if (State == BoxingOpponentState.Attack) AttackTick(dt, playerHead); return; }
+            if (Scripted) { if (State == BoxingOpponentState.Attack) AttackTick(dt, playerHead, playerHeadRotation); return; }
             if (goalTime > 0 && (goalTime -= dt) <= 0) rootGoal = Vector2.zero;
             feintBoost = Mathf.Max(0, feintBoost - dt);
             // The head comes back from a hit slowly (below the impact threshold), not with a second spring snap.
@@ -207,7 +206,7 @@ namespace Hapbeat.Boxing
                     if (hitFlurry || punchFlurry) { HandleFlurry(); break; }
                     if ((decisionWait -= dt) <= 0) Decide();
                     break;
-                case BoxingOpponentState.Attack: case BoxingOpponentState.Counter: AttackTick(dt, playerHead); break;
+                case BoxingOpponentState.Attack: case BoxingOpponentState.Counter: AttackTick(dt, playerHead, playerHeadRotation); break;
                 case BoxingOpponentState.Defend: if (stateTime >= stateDuration) EndDefend(); break;
                 case BoxingOpponentState.Stagger: if (stateTime >= stateDuration) EndStagger(); break;
             }
@@ -412,19 +411,19 @@ namespace Hapbeat.Boxing
             s.attack == BoxingAttack.HeadHook ? 1.1f : s.attack == BoxingAttack.BodyStraight ? .85f : 1.05f;
         private static float StrikeFactor(Strike s) => s.attack == BoxingAttack.HeadStraight ? (s.left ? .9f : 1f) :
             s.attack == BoxingAttack.BodyStraight ? 1.05f : 1.15f;
-        private void StartStrike(Vector3 playerHead)
+        private void StartStrike(Vector3 playerHead, Quaternion playerHeadRotation)
         {
             var s = combo[comboIndex];
             AttackId++; Attack = s.attack; AttackLeft = s.left; Counter = State == BoxingOpponentState.Counter;
             Telegraphing = true; Striking = retracting = false; phaseTime = 0;
             phaseDuration = tuning.telegraphSeconds * TelegraphFactor(s) * telegraphScale * (comboIndex > 0 ? .55f : 1);
             // Aim is committed at the start of the wind-up, so moving the head afterwards dodges.
-            aim = BodyAttack ? PlayerBody(playerHead) : playerHead;
+            aim = BodyAttack ? BoxingPlayerBody.Aim(playerHead, playerHeadRotation) : playerHead;
         }
-        private void AttackTick(float dt, Vector3 playerHead)
+        private void AttackTick(float dt, Vector3 playerHead, Quaternion playerHeadRotation)
         {
             phaseTime += dt;
-            if (pendingStrike) { pendingStrike = false; StartStrike(playerHead); return; }
+            if (pendingStrike) { pendingStrike = false; StartStrike(playerHead, playerHeadRotation); return; }
             if (Feinting)
             {
                 if (phaseTime < phaseDuration) return;

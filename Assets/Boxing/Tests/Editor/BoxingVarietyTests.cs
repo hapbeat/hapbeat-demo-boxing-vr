@@ -23,11 +23,11 @@ namespace Hapbeat.Boxing.Tests
                 var enemy = new BoxingOpponent(tuning, 14); int mask = 0; Vector3 head = new Vector3(0,1.65f,.4f);
                 for (int i=0;i<24000;i++)
                 {
-                    enemy.Tick(.005f,head,true);
+                    enemy.Tick(.005f,head,Quaternion.identity,true);
                     if (!enemy.Striking || enemy.MotionWeight < .96f) continue;
                     mask |= 1 << (int)enemy.Attack;
                     Vector3 fist = enemy.AttackLeft ? enemy.Left : enemy.Right;
-                    float height = enemy.BodyAttack ? head.y-.43f : head.y;
+                    float height = enemy.BodyAttack ? BoxingPlayerBody.Aim(head,Quaternion.identity).y : head.y;
                     Assert.That(fist.y, Is.EqualTo(height).Within(.07f));
                 }
                 Assert.That(mask,Is.EqualTo(15));

@@ -46,7 +46,6 @@ MonoBehaviour:
   gloveRadius: 0.07
   enemyGloveRadius: 0.09
   headRadius: 0.14
-  bodyRadius: 0.21
   enemyHeadRadius: 0.145
   enemyBodyRadius: 0.21
   minimumImpactSpeed: 0.25

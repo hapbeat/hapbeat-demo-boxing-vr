@@ -85,7 +85,7 @@ namespace Hapbeat.Boxing.Editor
             var camera = game.input.headCamera; camera.transform.SetPositionAndRotation(pose.head, Quaternion.identity);
             game.presentation.Render(game, pose, true); Directory.CreateDirectory("Logs");
             BoxingVerification.Render(camera, "Logs/boxing-content-rest.png");
-            for (int i = 0; i < 2000 && game.Opponent.GuardWeight < 0.99f; i++) game.Opponent.Tick(0.01f, pose.head, true);
+            for (int i = 0; i < 2000 && game.Opponent.GuardWeight < 0.99f; i++) game.Opponent.Tick(0.01f, pose.head, Quaternion.identity, true);
             game.presentation.Render(game, pose, true);
             BoxingVerification.Render(camera, "Logs/boxing-content-guard.png");
         }

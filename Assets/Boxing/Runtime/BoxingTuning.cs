@@ -67,7 +67,6 @@ namespace Hapbeat.Boxing
         [Min(0.01f)] public float gloveRadius = 0.07f;
         [Min(0.01f)] public float enemyGloveRadius = 0.09f;
         [Min(0.01f)] public float headRadius = 0.14f;
-        [Min(0.01f)] public float bodyRadius = 0.21f;
         [Min(0.01f)] public float enemyHeadRadius = 0.145f;
         [Min(0.01f)] public float enemyBodyRadius = 0.21f;
         [Min(0)] public float minimumImpactSpeed = 0.25f;
