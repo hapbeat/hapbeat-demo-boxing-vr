@@ -28,6 +28,8 @@ namespace Hapbeat.Boxing
     {
         public AudioClip[] clips = new AudioClip[0];
         public float[] volumes = new float[0];
+        // Each sound's sync point (ms from its start, cue table sounds.<name>.syncMs, DEC-093).
+        public float[] syncMs = new float[0];
         public CueSoundPick pick;
         private int last = -1;
         // The index of the sound to play, -1 = none.
@@ -39,6 +41,8 @@ namespace Hapbeat.Boxing
     public sealed class CueHapticSet
     {
         public HapbeatUnityEventTrigger[] triggers = new HapbeatUnityEventTrigger[0];
+        // Each clip's sync point (ms from its start, cue table clips.<clip>.syncMs, DEC-093).
+        public float[] syncMs = new float[0];
         public CueSoundPick pick;
     }
     [DefaultExecutionOrder(-10000)]
@@ -84,6 +88,12 @@ namespace Hapbeat.Boxing
         public BoxingImpact LastImpact { get; private set; }
         public event Action<BoxingImpact> Reported;
         public bool CanSend => !Application.isBatchMode && !forceSilent && hapticsEnabled;
+        // Impact sounds on the audio clock (DEC-093): each at an exact time, overlapping ones never cut each other.
+        private DemoTimedSound timedSound;
+        // How far ahead of an impact its sound and haptic are placed (seconds): one audio buffer, so both land exactly.
+        public double ImpactLeadSeconds { get; private set; }
+        public double LastSoundDelay { get; private set; }
+        public double LastHapticDelay { get; private set; }
         private void Awake()
         {
             if (Application.isBatchMode || forceSilent)
@@ -107,15 +117,22 @@ namespace Hapbeat.Boxing
             int pick = haptics == null ? -1 : (lastHapticClip[cue] = CuePick.Next(haptics.triggers.Length, haptics.pick, lastHapticClip[cue]));
             LastHaptic = pick < 0 ? null : haptics.triggers[pick];
             LastImpact = impact; Reports++; Reported?.Invoke(impact);
+            // DEC-093: the haptic goes (sound sync point − clip sync point) + this device's offset after the sound, or
+            // the sound waits when that is negative; both a lead ahead, so the sound is placed exactly on the audio clock.
+            double soundSync = clip != null && sounds.syncMs != null && sound < sounds.syncMs.Length ? sounds.syncMs[sound] : 0;
+            double hapticSync = haptics != null && pick >= 0 && haptics.syncMs != null && pick < haptics.syncMs.Length ? haptics.syncMs[pick] : 0;
+            HapbeatAvSync.Split(clip != null ? soundSync : hapticSync, hapticSync, out var soundDelay, out var hapticDelay);
+            ImpactLeadSeconds = DemoTimedSound.Lead;
+            LastSoundDelay = ImpactLeadSeconds + soundDelay; LastHapticDelay = ImpactLeadSeconds + hapticDelay;
             if (CanSend && LastHaptic != null)
             {
                 var trigger = LastHaptic;
                 trigger.GainMultiplier = HapticGain(impact);
                 // Position addressing selects the wearable; do not silence one channel of a wrist unit.
                 trigger.Pan = 0;
-                trigger.Fire(); Sends++;
+                trigger.FireAfter((float)LastHapticDelay); Sends++;
             }
-            if (clip != null) PlaySound(clip, Mathf.Clamp01(impact.gain) * sounds.volumes[sound]);
+            if (clip != null) PlaySound(clip, Mathf.Clamp01(impact.gain) * sounds.volumes[sound], LastSoundDelay);
         }
         // Own punch: on the opponent's glove, or anywhere else (head, body, arms). Received: on the glove,
         // the forearm, or the head / body. Scoring keeps counting arm contacts as glove surfaces.
@@ -161,10 +178,11 @@ namespace Hapbeat.Boxing
             if(!Application.isBatchMode && !forceSilent && soundEnabled && voiceSource!=null)
             { voiceSource.Stop(); voiceSource.PlayOneShot(ResultClip(outcome),DemoNarration.Gain); }
         }
-        private void PlaySound(AudioClip clip, float volume)
+        private void PlaySound(AudioClip clip, float volume, double delaySeconds)
         {
-            if (!Application.isBatchMode && !forceSilent && soundEnabled && audioSource != null && clip != null)
-                audioSource.PlayOneShot(clip, volume);
+            if (Application.isBatchMode || forceSilent || !soundEnabled || audioSource == null || clip == null) return;
+            if (timedSound == null) timedSound = new DemoTimedSound(audioSource, 8);
+            timedSound.Play(clip, volume, delaySeconds);
         }
         public void StopImpacts()
         {
@@ -174,7 +192,10 @@ namespace Hapbeat.Boxing
                 if (trigger != null) { trigger.FlushPendingDelayCoroutines(); if (!Application.isBatchMode && !forceSilent) trigger.Stop(); }
             if (!Application.isBatchMode && !forceSilent && HapbeatManager.Instance != null && HapbeatManager.Instance.IsConnected) HapbeatManager.Instance.StopAll();
             if (audioSource != null) audioSource.Stop();
+            StopImpactSounds();
         }
+        /// <summary>Impact sounds playing or scheduled (they play on their own voices, not on audioSource).</summary>
+        public void StopImpactSounds() => timedSound?.StopAll();
         /// <summary>Hapbeat output only (Demo Session haptics switch); sounds keep playing.</summary>
         public void SetHapticsEnabled(bool enabled) { hapticsEnabled = enabled; if (!enabled) StopHaptics(); }
         public void StopHaptics()

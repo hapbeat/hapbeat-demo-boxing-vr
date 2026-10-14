@@ -131,8 +131,11 @@ def plan(table, clips_dir=CLIPS_DIR, sfx_dir=SFX_DIR):
                     err.extend(f'{name}: {Path(sfx_dir) / (s + ".wav")} missing' for s in missing)
                     continue
             volumes = [float(sfx.get('volume', 1)) * float(table.get('sounds', {}).get(s, {}).get('intensity', 1)) for s in sounds]
+            # DEC-093: where each sound and clip is put together with the other (ms from the file start; absent = 0).
+            sound_sync = [float(table.get('sounds', {}).get(s, {}).get('syncMs', 0)) for s in sounds]
+            clip_sync = [float(table.get('clips', {}).get(c, {}).get('syncMs', 0)) for c in clips]
             items.append({'cue': f'{cue}_{variant}', 'clips': clips, 'gain': float(route.get('gain', 1)), 'intensities': intensities,
-                          'sounds': sounds, 'volumes': volumes, 'pick': pick})
+                          'sounds': sounds, 'volumes': volumes, 'pick': pick, 'soundSyncMs': sound_sync, 'clipSyncMs': clip_sync})
     return items, err
 
 

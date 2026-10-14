@@ -28,7 +28,7 @@ namespace Hapbeat.Boxing.Editor
         public const string MapPath = "Assets/Boxing/Haptics/BoxingEventMap.asset";
 
         [Serializable] private sealed class Plan { public Item[] items; }
-        [Serializable] private sealed class Item { public string cue; public string[] clips; public float gain; public float[] intensities; public string[] sounds; public float[] volumes; public string pick; }
+        [Serializable] private sealed class Item { public string cue; public string[] clips; public float gain; public float[] intensities; public string[] sounds; public float[] volumes; public string pick; public float[] soundSyncMs; public float[] clipSyncMs; }
 
         /// <summary>The cue table's name of a game cue: punch_glove_soft -&gt; punch_glove:soft.</summary>
         public static string TableCue(string gameCue)
@@ -106,9 +106,10 @@ namespace Hapbeat.Boxing.Editor
                         Debug.Log("HAPTIC_KIT_IMPORT " + name + " <- " + item.clips[k] + " gain=" + item.gain + " intensity=" + item.intensities[k]);
                     }
                     var set = feedback.impactHaptics[place];
-                    if (set == null || set.pick != pick || set.triggers == null || !set.triggers.SequenceEqual(triggers))
+                    var clipSync = Sync(item.clipSyncMs, clips.Length);
+                    if (set == null || set.pick != pick || set.triggers == null || !set.triggers.SequenceEqual(triggers) || set.syncMs == null || !set.syncMs.SequenceEqual(clipSync))
                     {
-                        feedback.impactHaptics[place] = new CueHapticSet { triggers = triggers, pick = pick };
+                        feedback.impactHaptics[place] = new CueHapticSet { triggers = triggers, pick = pick, syncMs = clipSync };
                         sceneChanges++;
                     }
                 }
@@ -120,11 +121,13 @@ namespace Hapbeat.Boxing.Editor
                     if (sounds[i] == null) throw new Exception("HAPTIC_KIT_IMPORT_FAILED: sound " + item.sounds[i] + " missing");
                 }
                 var soundSet = feedback.cueSounds[cue];
-                bool same = soundSet != null && soundSet.pick == pick && soundSet.clips.Length == sounds.Length && soundSet.volumes.Length == sounds.Length;
+                var soundSync = Sync(item.soundSyncMs, sounds.Length);
+                bool same = soundSet != null && soundSet.pick == pick && soundSet.clips.Length == sounds.Length && soundSet.volumes.Length == sounds.Length
+                    && soundSet.syncMs != null && soundSet.syncMs.SequenceEqual(soundSync);
                 for (int i = 0; same && i < sounds.Length; i++) same = soundSet.clips[i] == sounds[i] && Mathf.Approximately(soundSet.volumes[i], item.volumes[i]);
                 if (!same)
                 {
-                    feedback.cueSounds[cue] = new CueSoundSet { clips = sounds, volumes = (float[])item.volumes.Clone(), pick = pick };
+                    feedback.cueSounds[cue] = new CueSoundSet { clips = sounds, volumes = (float[])item.volumes.Clone(), pick = pick, syncMs = soundSync };
                     sceneChanges++;
                 }
                 for (int i = 0; i < sounds.Length; i++) Debug.Log("HAPTIC_KIT_IMPORT sound " + item.cue + " <- " + item.sounds[i] + " volume=" + item.volumes[i]);
@@ -137,6 +140,13 @@ namespace Hapbeat.Boxing.Editor
             if (mapChanges > 0) { EditorUtility.SetDirty(map); AssetDatabase.SaveAssets(); }
             if (sceneChanges > 0) { EditorUtility.SetDirty(feedback); EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); }
             Debug.Log("HAPTIC_KIT_IMPORTED cues=" + plan.items.Length + " entries=" + entries + " changed=" + (mapChanges + sceneChanges));
+        }
+        // The plan's sync points (ms) for count materials; an older plan without them = 0 each (DEC-093).
+        private static float[] Sync(float[] values, int count)
+        {
+            var result = new float[count];
+            if (values != null) for (int i = 0; i < count && i < values.Length; i++) result[i] = values[i];
+            return result;
         }
     }
 }

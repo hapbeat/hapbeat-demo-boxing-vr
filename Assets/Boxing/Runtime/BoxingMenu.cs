@@ -109,7 +109,7 @@ namespace Hapbeat.Boxing
                     bool haptics = !game.feedback.hapticsEnabled;
                     game.feedback.SetHapticsEnabled(haptics); Hapbeat.DemoSwitch.DemoSession.SetHapticsEnabled(haptics);
                     break;
-                case 6: game.feedback.soundEnabled = !game.feedback.soundEnabled; if (!game.feedback.soundEnabled) { game.feedback.audioSource.Stop(); game.feedback.bellSource.Stop(); if(game.feedback.voiceSource!=null) game.feedback.voiceSource.Stop(); } break;
+                case 6: game.feedback.soundEnabled = !game.feedback.soundEnabled; if (!game.feedback.soundEnabled) { game.feedback.audioSource.Stop(); game.feedback.StopImpactSounds(); game.feedback.bellSource.Stop(); if(game.feedback.voiceSource!=null) game.feedback.voiceSource.Stop(); } break;
             }
         }
         private void Refresh()
