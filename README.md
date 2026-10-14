@@ -81,7 +81,7 @@ Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です�
 - メニュー表示、Questのシステムメニュー・フォーカス喪失、追跡喪失、開始点から1m以上離れた時は対戦時間・敵・触覚を停止します。システムメニューから戻った時は `RESUME` で明示的に再開します。
 - `Assets/Boxing/BoxingTuning.asset` でラウンド時間、攻撃間隔、予備動作、判定サイズ、強打の再準備・速度、敵の速度→ゲインのカーブ・閾値を変更できます。
 - `IMPACT: WeakHard` は接触の相対速度2.5m/s（`hardHitSpeed`）を境に弱（`_soft`）／強（`_hard`）のイベントを切り替えます。自分のパンチで準備なし（強度0）の当たりは速くても弱です。`Continuous` は常に弱のイベントを使い、ゲインだけを連続変更します。接触速度0.25m/s未満は無視します。ゲインはプレイヤーのパンチが準備状態と振りの速さ、敵のパンチが接触速度（6m/sで最大）で決まります。
-- 触覚・音のイベントは「当たった部位 × 弱／強」の10種類です（下の「触覚の作業」の表）。`Assets/Boxing/Haptics/BoxingEventMap.asset` は手首の8種を左右別（`left_<イベント>` / `right_<イベント>`）、首の2種をそのまま（`hit_body_soft/hard`）の18エントリーで持ちます。
+- 触覚・音のイベントは「当たった部位 × 弱／強」の10種類です（下の「触覚の作業」の表）。`Assets/Boxing/Haptics/BoxingEventMap.asset` は手首の8種を左右別（`left_<イベント>` / `right_<イベント>`）、首の2種をそのまま（`hit_body_soft/hard`）の18エントリーで持ちます。波形が複数あるイベントは、2つ目以降を `<エントリー>_2`、`_3` … のエントリーで持ちます。
 
 ## 相手のリグ付きモデル
 
@@ -125,7 +125,7 @@ Unity SDKのStreamClipを使うため、事前のKit転送は不要です。イ�
 
 ## 触覚の作業（Hapbeat Studio Scene タブ）
 
-| イベント（cue） | 状況 | 鳴る場所 | EventMapエントリー | 既定の波形 / 音 |
+| ゲームのイベント（cue 表の cue:variant） | 状況 | 鳴る場所 | EventMapエントリー | 既定の波形 / 音 |
 |---|---|---|---|---|
 | `punch_glove_soft` / `punch_glove_hard` | 自分のパンチが相手のグローブに当たる | 打った側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactSoft_medium_000` / `impactSoft_heavy_000` |
 | `punch_body_soft` / `punch_body_hard` | 自分のパンチが相手の頭・胴・腕（グローブ以外）に当たる | 打った側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactPunch_medium_000` / `impactPunch_heavy_000` |
@@ -134,12 +134,12 @@ Unity SDKのStreamClipを使うため、事前のKit転送は不要です。イ�
 | `hit_body_soft` / `hit_body_hard` | 相手のパンチが自分の頭・胴に当たる | 首 | cue（`*/pos_neck`） | BodySoft / damage、`impactPunch_medium_000` / `impactPunch_heavy_000` |
 
 - 弱／強は接触の相対速度2.5m/sが境です（自分のパンチで準備なしの当たりは常に弱）。得点・ダメージ・`EnemyBlocks` の数え方はイベントの分け方と関係なく従来のままです。
-- cue 表 `Assets/Boxing/Haptics/boxing-cues.json`（cue 表 v2、workspace の `docs/haptic-authoring-cue-table.md`）が10イベントの正本です。各イベントに波形1つ（`haptics`、手首は `at: hand`、首は `at: pos_neck`、gain 0.8）と音（`sfx`）を持ちます。波形は `stream-clips/<イベント>.wav`、音は `sounds/<音>.wav` です（音は Kenney Impact Sounds の OGG を WAV にしたもの）。
-- ① `Scripts/record-haptic-clips.ps1 [-Ffmpeg <ffmpeg.exe>]`（Unity Editor を閉じて実行）: `BoxingHapticRecord` が10イベントを3回ずつPC上で再現し、プレイヤーの目線から固定30fpsで録画します（音なし・実機送信なし）。自分のパンチは台本の軌道（弱 ≈ 1m/s、強 ≈ 4m/s、引き戻しで準備）で相手のグローブ／頭・胴へ、相手の打撃は録画用の呼び口（`BoxingOpponent.ScriptedStrike`、AIは止める）で弱 ≈ 1.2m/s、強 ≈ 3.5〜4.5m/s です。ゲーム自身の判定で記録したイベント・相対速度・ゲインをログ（`Saved/Logs/HapticRecord.log`）に残し、意図と違うイベントになった回があれば失敗します。続けて `Scripts/haptic_session.py` が `repos-tools/hapbeat-haptic-authoring/build_viewer.py` で `Saved/HapticViewer/`（git管理外）へ1回ずつのclipを切り出します。ffmpeg（libx264）と Python 3.8+ が必要です。
+- cue 表 `Assets/Boxing/Haptics/boxing-cues.json`（cue 表 v2、workspace の `docs/haptic-authoring-cue-table.md`）が10イベントの正本です。cue は当たった部位の5つ（`punch_glove` `punch_body` `guard_glove` `guard_arm` `hit_body`）で、弱／強はその variant `soft` / `hard` です（DEC-091。ゲームのイベント `punch_glove_soft` = cue 表の `punch_glove:soft`）。音（`sfx`）と触覚（`haptics`、手首は `at: hand`、首は `at: pos_neck`、gain 0.8）は、親の cue に書けば両方の variant で共有し、分けるときは親に書かずに各 variant に書きます（親と variant の両方に書くと取り込みでエラー）。今は `punch_body` と `guard_glove` の音が共有で、ほかは分けています。波形は `stream-clips/<clip>.wav`、音は `sounds/<音>.wav` です（既定の音は Kenney Impact Sounds の OGG を WAV にしたもの）。
+- ① `Scripts/record-haptic-clips.ps1 [-Ffmpeg <ffmpeg.exe>]`（Unity Editor を閉じて実行）: `BoxingHapticRecord` が10イベント（5 cue × 弱／強）を3回ずつPC上で再現し、プレイヤーの目線から固定30fpsで録画します（音なし・実機送信なし）。自分のパンチは台本の軌道（弱 ≈ 1m/s、強 ≈ 4m/s、引き戻しで準備）で相手のグローブ／頭・胴へ、相手の打撃は録画用の呼び口（`BoxingOpponent.ScriptedStrike`、AIは止める）で弱 ≈ 1.2m/s、強 ≈ 3.5〜4.5m/s です。ゲーム自身の判定で記録したイベント（cue 表の名前 `punch_glove:soft` など）・相対速度・ゲインをログ（`Saved/Logs/HapticRecord.log`）に残し、意図と違うイベントになった回があれば失敗します。続けて `Scripts/haptic_session.py` が `repos-tools/hapbeat-haptic-authoring/build_viewer.py` で `Saved/HapticViewer/`（git管理外）へ1回ずつのclipを切り出します。ffmpeg（libx264）と Python 3.8+ が必要です。
 - ② Studio の Scene タブ（`http://localhost:5173/?tab=scene`、`repos-tools/hapbeat-studio` で `npm run dev`）を Chrome / Edge で開き、このプロジェクトのフォルダーを選んで、イベントごとに波形と音を決めて保存します。
-- ③ `Scripts/import-haptic-kit.ps1`（Unity Editor を閉じて実行）: `build_haptic_import.py` が cue 表を検査し（route 1本・clip 1個。variants / `variation.pick` 以外の variation / clip のリスト / levelMap / ループは非対応でエラー）、`BoxingHapticImport` が波形・gain・intensity を手首イベントの左右2エントリー（首は1エントリー）へ、音（`sfx.sound` または `sfx.sounds`）と音ごとの音量（`sfx.volume` × 音の intensity）と選び方を `BoxingFeedback` へ書き込みます。音が複数のイベントは当たるたびに1つを選び、`variation.pick` が `random`（既定）なら直前と違う音をランダムに、`roundRobin` なら順番に鳴らします。差分だけを書くので、変更のない cue 表を取り込んでもファイルは変わりません。取込後は APK を再ビルド・再インストールしてください。
+- ③ `Scripts/import-haptic-kit.ps1`（Unity Editor を閉じて実行）: `build_haptic_import.py` が cue 表を検査して各 variant の引き継ぎを展開し（親の `sfx` / `haptics` / `variation` を、variant が書いた項目だけ置き換える。`sfxVolume` / `hapticsGain` は引き継いだ側に掛ける。route 1本、`clip` または `clips`。`variation.pick` 以外の variation / `rampTo` 等 / levelMap / ループは非対応でエラー）、`BoxingHapticImport` が波形（`clip` / `clips`）・gain・intensity を手首イベントの左右のエントリー（首は1組）へ、そのトリガーと音（`sfx.sound` または `sfx.sounds`）・音ごとの音量（`sfx.volume` × 音の intensity）・選び方を `BoxingFeedback` へ書き込みます。波形や音が複数のイベントは当たるたびに1つずつ選び、`variation.pick` が `random`（既定）なら直前と違うものをランダムに、`roundRobin` なら順番に鳴らします（波形の直前は左右で共通）。展開の検査は `python Scripts/test_build_haptic_import.py`。差分だけを書くので、変更のない cue 表を取り込んでもファイルは変わりません。取込後は APK を再ビルド・再インストールしてください。
 - 作業ツールのランチャーには `boxing-vr` として登録しています（`repos-tools/hapbeat-haptic-authoring/projects/boxing-vr.json`）。
-- EventMap とシーンのトリガーを既定状態から作り直すときは `./tools/run-unity.ps1 -Task HapticEvents`（`Hapbeat Boxing > Rebuild Haptic Events`）。cue 表の既定値（gain 0.8、intensity 1、上の表の音）で18エントリーを作ります。
+- EventMap とシーンのトリガーを既定状態から作り直すときは `./tools/run-unity.ps1 -Task HapticEvents`（`Hapbeat Boxing > Rebuild Haptic Events`）。既定値（波形1つ、gain 0.8、intensity 1、上の表の音）で18エントリーを作ります。続けて ③ を実行すると cue 表の内容になります。
 
 ## Demo Switch
 

@@ -19,7 +19,8 @@ namespace Hapbeat.Boxing.Editor
     /// opponent strikes through its recording hook (BoxingOpponent.ScriptedStrike; no AI meanwhile).
     /// A take that fires anything but its one intended cue (and hand / zone) fails the run.
     /// Writes Saved/HapticClips/Frames/f&lt;frame&gt;.png and Saved/HapticClips/record.json
-    /// (fps, events [[frame, cue, hand, note, gain]], no levels: every cue is a one-shot);
+    /// (fps, events [[frame, cue, hand, note, gain]], no levels: every cue is a one-shot). The log and record.json
+    /// name each cue as the cue table does (punch_glove:soft for the game cue punch_glove_soft, BoxingHapticImport.TableCue);
     /// Scripts/haptic_session.py turns them into the Studio Scene tab's data.
     ///
     /// Run: Unity -batchmode -quit -projectPath &lt;project&gt; -executeMethod Hapbeat.Boxing.Editor.BoxingHapticRecord.Run (with graphics).
@@ -178,7 +179,7 @@ namespace Hapbeat.Boxing.Editor
                 foreach (var (at, impact) in fired)
                     Debug.Log(string.Format(CultureInfo.InvariantCulture,
                         "HAPTIC_RECORD take={0} ({1}) intended={2} cue={3} hand={4} zone={5} speed={6:0.00} gain={7:0.000} frame={8} {9}",
-                        number, take.Label, take.cue, BoxingFeedback.CueName(impact), Hand(impact), impact.zone, impact.relativeSpeed, impact.gain, at, ok ? "OK" : "MISMATCH"));
+                        number, take.Label, BoxingHapticImport.TableCue(take.cue), BoxingHapticImport.TableCue(BoxingFeedback.CueName(impact)), Hand(impact), impact.zone, impact.relativeSpeed, impact.gain, at, ok ? "OK" : "MISMATCH"));
                 if (!ok)
                 {
                     failures.Add($"take {number} ({take.Label}): intended {take.cue}, fired [{string.Join(",", fired.Select(f => BoxingFeedback.CueName(f.impact) + "/" + f.impact.zone))}]");
@@ -188,7 +189,7 @@ namespace Hapbeat.Boxing.Editor
                 if (!byCue.TryGetValue(take.cue, out var list)) byCue[take.cue] = list = new List<BoxingImpact>();
                 list.Add(hit);
                 string note = string.Format(CultureInfo.InvariantCulture, "take {0}: {1}, {2:0.00} m/s, gain {3:0.00}", list.Count, take.Label, hit.relativeSpeed, hit.gain);
-                events.Add(string.Format(CultureInfo.InvariantCulture, "[{0},\"{1}\",\"{2}\",\"{3}\",{4:0.###}]", hitFrame, take.cue, Hand(hit), note, hit.gain));
+                events.Add(string.Format(CultureInfo.InvariantCulture, "[{0},\"{1}\",\"{2}\",\"{3}\",{4:0.###}]", hitFrame, BoxingHapticImport.TableCue(take.cue), Hand(hit), note, hit.gain));
             }
             target.Release();
             skin.enabled = true; UnityEngine.Object.DestroyImmediate(baked); UnityEngine.Object.DestroyImmediate(skinned);
@@ -197,7 +198,7 @@ namespace Hapbeat.Boxing.Editor
             {
                 var list = byCue[cue];
                 Debug.Log(string.Format(CultureInfo.InvariantCulture, "HAPTIC_RECORD_CUE {0} takes={1} speed={2:0.00}..{3:0.00} gain={4:0.000}..{5:0.000}",
-                    cue, list.Count, list.Min(i => i.relativeSpeed), list.Max(i => i.relativeSpeed), list.Min(i => i.gain), list.Max(i => i.gain)));
+                    BoxingHapticImport.TableCue(cue), list.Count, list.Min(i => i.relativeSpeed), list.Max(i => i.relativeSpeed), list.Min(i => i.gain), list.Max(i => i.gain)));
             }
             var json = new StringBuilder();
             json.Append("{\"fps\":").Append(Fps).Append(",\"level_columns\":[],\"events\":[")

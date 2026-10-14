@@ -272,10 +272,15 @@ namespace Hapbeat.Boxing.Editor
             }
             var hands = UnityEngine.Object.FindObjectsByType<BoxingHandModelResolver>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             if (hands.Length != 2 || hands.Any(h => h.fallbackPrefab == null || h.menuHand == null)) throw new InvalidOperationException("Menu hand resolvers incomplete");
-            foreach (var trigger in game.feedback.impactTriggers)
+            int cues = BoxingFeedback.Cues.Length, wrist = BoxingFeedback.WristCues;
+            var haptics = game.feedback.impactHaptics;
+            if (haptics.Length != wrist + cues || haptics.Any(set => set == null || set.triggers.Length == 0)) throw new InvalidOperationException("Unwired haptic cue");
+            // Both wrists of a cue play the same clips (one route at = hand).
+            for (int cue = 0; cue < wrist; cue++)
+                if (haptics[cue].triggers.Length != haptics[wrist + cue].triggers.Length) throw new InvalidOperationException("Wrist clips differ: " + BoxingFeedback.Cues[cue]);
+            foreach (var trigger in game.feedback.ImpactTriggers())
                 if (trigger == null || trigger.ResolveEntry() == null || trigger.ResolveEntry().streamClip == null) throw new InvalidOperationException("Unwired haptic trigger");
-            int cues = BoxingFeedback.Cues.Length;
-            if (game.feedback.impactTriggers.Length != BoxingFeedback.WristCues + cues || game.feedback.cueSounds.Length != cues || game.feedback.cueSounds.Any(sounds => sounds == null || sounds.clips.Length != sounds.volumes.Length) || game.feedback.bell == null || game.feedback.bellSource == null)
+            if (game.feedback.cueSounds.Length != cues || game.feedback.cueSounds.Any(sounds => sounds == null || sounds.clips.Length != sounds.volumes.Length) || game.feedback.bell == null || game.feedback.bellSource == null)
                 throw new InvalidOperationException("Incomplete surface feedback assets");
             if(game.feedback.voiceSource==null || game.feedback.winVoice==null || game.feedback.loseVoice==null || game.feedback.tieVoice==null ||
                 game.presentation.leftForearm==null || game.presentation.rightForearm==null)

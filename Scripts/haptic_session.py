@@ -8,9 +8,10 @@ Scripts/record-haptic-clips.ps1.
     haptic_session.py --tool <dir> --viewer-only     # rewrite Saved/HapticViewer/viewer-lib.json only
 
 The cue table (Assets/Boxing/Haptics/boxing-cues.json, cue table v2 of the workspace
-docs/haptic-authoring-cue-table.md) has one cue per contact kind and strength; the wrist cues play at the
-acting hand (left_<cue> / right_<cue> in the EventMap), hit_body at the neck. Scripts/import-haptic-kit.ps1
-applies it to BoxingEventMap and the scene's cue sounds.
+docs/haptic-authoring-cue-table.md) has one cue per contact kind with the variants soft and hard (DEC-091);
+the recording names the moments punch_glove:soft etc. The wrist cues play at the acting hand (left_<cue> /
+right_<cue> in the EventMap), hit_body at the neck. Scripts/import-haptic-kit.ps1 applies it to BoxingEventMap
+and the scene's cue sounds.
 """
 import argparse, json, subprocess, sys
 from pathlib import Path
@@ -20,9 +21,8 @@ RECORD = ROOT / 'Saved' / 'HapticClips'
 CUES_PATH = ROOT / 'Assets/Boxing/Haptics/boxing-cues.json'
 CLIPS_DIR = ROOT / 'Assets/Boxing/Haptics/stream-clips'
 SFX_DIR = ROOT / 'Assets/Boxing/Haptics/sounds'
-# BoxingFeedback.Cues: all one-shots.
-CUES = ['punch_glove_soft', 'punch_glove_hard', 'punch_body_soft', 'punch_body_hard', 'guard_glove_soft', 'guard_glove_hard',
-        'guard_arm_soft', 'guard_arm_hard', 'hit_body_soft', 'hit_body_hard']
+# The table's cues (variants soft / hard), all one-shots.
+CUES = ['punch_glove', 'punch_body', 'guard_glove', 'guard_arm', 'hit_body']
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--tool', default=str(ROOT.parents[2] / 'repos-tools' / 'hapbeat-haptic-authoring'),
@@ -55,16 +55,16 @@ lib = {
     'clip_name': r'^[a-z][a-z0-9_-]*$', 'sound_name': r'^[A-Za-z][A-Za-z0-9_]*$',
     'layers': [],
     'families': [
-        {'label': '自分のパンチ', 'color': '#ff8a3d', 'cues': ['punch_glove_soft', 'punch_glove_hard', 'punch_body_soft', 'punch_body_hard']},
-        {'label': 'ガード', 'color': '#4ea1ff', 'cues': ['guard_glove_soft', 'guard_glove_hard', 'guard_arm_soft', 'guard_arm_hard']},
-        {'label': '被弾', 'color': '#ff4d4d', 'cues': ['hit_body_soft', 'hit_body_hard']}],
+        {'label': '自分のパンチ', 'color': '#ff8a3d', 'cues': ['punch_glove', 'punch_body']},
+        {'label': 'ガード', 'color': '#4ea1ff', 'cues': ['guard_glove', 'guard_arm']},
+        {'label': '被弾', 'color': '#ff4d4d', 'cues': ['hit_body']}],
     'ticks': [],
     'import_command': f'powershell -ExecutionPolicy Bypass -File "{scripts / "import-haptic-kit.ps1"}"',
     'record_command': f'powershell -ExecutionPolicy Bypass -File "{scripts / "record-haptic-clips.ps1"}"',
 }
 session = {'project': ROOT.name, 'fps': record.get('fps', 30), 'frames': str(RECORD / 'Frames'),
            'events': record['events'], 'levels': record['levels'], 'level_columns': record['level_columns'],
-           # Every take gets a clip (10 cues x 3 takes).
+           # Every take gets a clip (5 cues x 2 variants x 3 takes).
            'clip_rules': {'max': {}, 'min_gap_s': {}, 'default_max': None},
            'lib': lib}
 path = ROOT / 'Saved' / 'HapticSession.json'

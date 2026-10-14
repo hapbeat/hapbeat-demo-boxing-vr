@@ -1,3 +1,4 @@
+using System.Linq;
 using Hapbeat.Boxing.Editor;
 using NUnit.Framework;
 using UnityEditor;
@@ -311,8 +312,8 @@ namespace Hapbeat.Boxing.Tests
                     : new BoxingImpact(zone, speed, false, Vector3.zero, game.tuning, ImpactSurface.Glove);
                 var other = attack ? new BoxingImpact(zone, speed, Vector3.zero, game.tuning, ImpactSurface.Body, 1)
                     : new BoxingImpact(zone, speed, false, Vector3.zero, game.tuning, ImpactSurface.Glove, ImpactPart.Forearm);
-                var g = game.feedback.impactTriggers[BoxingFeedback.TriggerIndex(glove)].ResolveEntry();
-                var o = game.feedback.impactTriggers[BoxingFeedback.TriggerIndex(other)].ResolveEntry();
+                var g = game.feedback.impactHaptics[BoxingFeedback.TriggerIndex(glove)].triggers[0].ResolveEntry();
+                var o = game.feedback.impactHaptics[BoxingFeedback.TriggerIndex(other)].triggers[0].ResolveEntry();
                 Assert.That(g.target, Is.EqualTo(zone == ImpactZone.LeftGlove ? "*/pos_l_wrist" : "*/pos_r_wrist")); Assert.That(o.target, Is.EqualTo(g.target));
                 Assert.That(g.eventName, Is.EqualTo((zone == ImpactZone.LeftGlove ? "left_" : "right_") + BoxingFeedback.CueName(glove)));
                 Assert.That(o.eventName, Is.EqualTo((zone == ImpactZone.LeftGlove ? "left_" : "right_") + BoxingFeedback.CueName(other)));
@@ -320,6 +321,13 @@ namespace Hapbeat.Boxing.Tests
                 // Every cue has its own sounds from the cue table, one volume per sound.
                 foreach (var sounds in new[] { game.feedback.cueSounds[BoxingFeedback.CueIndex(glove)], game.feedback.cueSounds[BoxingFeedback.CueIndex(other)] })
                 { Assert.That(sounds.clips, Is.Not.Empty.And.All.Not.Null); Assert.That(sounds.volumes.Length, Is.EqualTo(sounds.clips.Length)); }
+                // Every clip of the cue has its own entry at this wrist: <entry>, <entry>_2, ...
+                var clips = game.feedback.impactHaptics[BoxingFeedback.TriggerIndex(glove)].triggers;
+                for (int k = 0; k < clips.Length; k++)
+                {
+                    var entry = clips[k].ResolveEntry();
+                    Assert.That(entry.eventName, Is.EqualTo(BoxingHapticImport.EntryName(g.eventName, k))); Assert.That(entry.target, Is.EqualTo(g.target));
+                }
             }
             Assert.That(game.feedback.Sends, Is.Zero);
         }
@@ -343,6 +351,43 @@ namespace Hapbeat.Boxing.Tests
             }
             Assert.That(used, Is.EquivalentTo(several.clips));
             Assert.That(game.feedback.Sends, Is.Zero);
+        }
+        [Test] public void CueWithSeveralClipsUsesAllWithoutRepeatingAcrossBothWristsAndASingleClipCueKeepsIt()
+        {
+            Random.InitState(7);
+            // punch_glove_hard (a fast own punch on the opponent's glove) has several clips picked at random;
+            // punch_body_hard one.
+            var left = new BoxingImpact(ImpactZone.LeftGlove, 4, Vector3.zero, game.tuning, ImpactSurface.Glove, 1);
+            var right = new BoxingImpact(ImpactZone.RightGlove, 4, Vector3.zero, game.tuning, ImpactSurface.Glove, 1);
+            var body = new BoxingImpact(ImpactZone.LeftGlove, 4, Vector3.zero, game.tuning, ImpactSurface.Body, 1);
+            Assert.That(BoxingFeedback.CueName(left), Is.EqualTo("punch_glove_hard")); Assert.That(BoxingFeedback.CueName(body), Is.EqualTo("punch_body_hard"));
+            var several = game.feedback.impactHaptics[BoxingFeedback.TriggerIndex(left)];
+            var single = game.feedback.impactHaptics[BoxingFeedback.TriggerIndex(body)];
+            Assert.That(several.triggers.Length, Is.GreaterThan(1)); Assert.That(several.pick, Is.EqualTo(CueSoundPick.Random));
+            Assert.That(single.triggers.Length, Is.EqualTo(1));
+            AudioClip Played() => game.feedback.LastHaptic.ResolveEntry().streamClip;
+            var used = new System.Collections.Generic.HashSet<AudioClip>(); AudioClip previous = null;
+            for (int i = 0; i < 200; i++)
+            {
+                var impact = i % 3 == 0 ? right : left;
+                game.feedback.Impact(impact);
+                Assert.That(game.feedback.impactHaptics[BoxingFeedback.TriggerIndex(impact)].triggers, Does.Contain(game.feedback.LastHaptic));
+                Assert.That(Played(), Is.Not.Null.And.Not.SameAs(previous));
+                previous = Played(); used.Add(previous);
+                game.feedback.Impact(body); Assert.That(game.feedback.LastHaptic, Is.SameAs(single.triggers[0]));
+            }
+            Assert.That(used, Is.EquivalentTo(several.triggers.Select(t => t.ResolveEntry().streamClip)));
+            Assert.That(game.feedback.Sends, Is.Zero);
+        }
+        [Test] public void PickGoesInOrderForRoundRobinAndNeverRepeatsForRandom()
+        {
+            Assert.That(CuePick.Next(0, CueSoundPick.Random, -1), Is.EqualTo(-1));
+            Assert.That(CuePick.Next(1, CueSoundPick.Random, 0), Is.EqualTo(0));
+            int last = -1; var order = new int[5];
+            for (int i = 0; i < order.Length; i++) order[i] = last = CuePick.Next(3, CueSoundPick.RoundRobin, last);
+            Assert.That(order, Is.EqualTo(new[] { 0, 1, 2, 0, 1 }));
+            Random.InitState(3); last = -1;
+            for (int i = 0; i < 100; i++) { int next = CuePick.Next(2, CueSoundPick.Random, last); if (last >= 0) Assert.That(next, Is.Not.EqualTo(last)); last = next; }
         }
         [Test] public void RoundRobinSoundsGoInOrder()
         {
@@ -426,8 +471,8 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void OnlyReachableSurfaceAndStrengthHapticBindingsAreInstalled()
         {
-            Assert.That(game.feedback.impactTriggers.Length, Is.EqualTo(18));
-            foreach (var trigger in game.feedback.impactTriggers)
+            Assert.That(game.feedback.impactHaptics.Length, Is.EqualTo(18));
+            foreach (var trigger in game.feedback.ImpactTriggers())
             {
                 var entry = trigger.ResolveEntry(); Assert.That(entry, Is.Not.Null); Assert.That(entry.streamClip, Is.Not.Null);
                 Assert.That(entry.mode, Is.EqualTo(Hapbeat.HapticMode.StreamClip)); Assert.That(entry.streamClip.frequency, Is.EqualTo(16000));
@@ -479,7 +524,8 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(settings.TryResolveTarget("gloveball", out var target), Is.True);
             Assert.That(target.PackageName, Is.EqualTo("jp.hapbeat.gloveballdemo"));
             string[] targets = { "*/pos_l_wrist", "*/pos_r_wrist", "*/pos_neck" };
-            for (int i = 0; i < 18; i++) Assert.That(game.feedback.impactTriggers[i].ResolveEntry().target, Is.EqualTo(targets[i / 8]));
+            for (int i = 0; i < 18; i++)
+                foreach (var trigger in game.feedback.impactHaptics[i].triggers) Assert.That(trigger.ResolveEntry().target, Is.EqualTo(targets[i / 8]));
             Assert.That(settings.TryResolveTarget("handdemo", out target), Is.True);
             Assert.That(target.PackageName, Is.EqualTo("com.Hapbeat.HapticHandDemo_G2"));
         }

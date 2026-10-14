@@ -20,15 +20,15 @@ namespace Hapbeat.Boxing.Editor
             var feedback=UnityEngine.Object.FindFirstObjectByType<BoxingGame>().feedback;
             var map=AssetDatabase.LoadAssetAtPath<HapbeatEventMap>(Root+"Haptics/BoxingEventMap.asset");
             bool Unused(string name)=>name=="head_glove_soft" || name=="head_glove_hard";
-            var retained=new List<HapbeatUnityEventTrigger>();
-            foreach(var trigger in feedback.impactTriggers)
+            var retained=new List<CueHapticSet>();
+            foreach(var set in feedback.impactHaptics)
             {
-                var entry=trigger.ResolveEntry();
-                if(Unused(entry.eventName)) UnityEngine.Object.DestroyImmediate(trigger.gameObject);
-                else retained.Add(trigger);
+                var entry=set.triggers[0].ResolveEntry();
+                if(Unused(entry.eventName)) foreach(var trigger in set.triggers) UnityEngine.Object.DestroyImmediate(trigger.gameObject);
+                else retained.Add(set);
             }
             map.entries.RemoveAll(e=>Unused(e.eventName));
-            feedback.impactTriggers=retained.ToArray();
+            feedback.impactHaptics=retained.ToArray();
             EditorUtility.SetDirty(map); EditorUtility.SetDirty(feedback);
             EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene); AssetDatabase.SaveAssets();
             BoxingProject.Validate();
@@ -160,19 +160,19 @@ namespace Hapbeat.Boxing.Editor
         // Default cue sounds (Kenney Impact Sounds as WAV): glove contacts / body contacts x soft / hard (BoxingFeedback.Cues order).
         public static string DefaultSound(int cue) =>
             (cue < 2 || (cue >= 4 && cue < 8) ? "impactSoft_" : "impactPunch_") + (cue % 2 == 0 ? "medium" : "heavy") + "_000";
-        // Replaces the EventMap entries and the scene's impact triggers (BoxingFeedback.TriggerIndex order):
-        // stream clip stream-clips/<cue>.wav, gain 0.8, clip intensity 1, and the default cue sounds.
+        // Replaces the EventMap entries and the scene's impact triggers (BoxingFeedback.TriggerIndex order, one clip
+        // each): stream clip stream-clips/<cue>.wav, gain 0.8, clip intensity 1, and the default cue sounds.
         public static void ConfigureHapticEvents(BoxingGame game)
         {
             var f = game.feedback;
             int cues = BoxingFeedback.Cues.Length, wrist = BoxingFeedback.WristCues;
             f.cueSounds = new CueSoundSet[cues];
             for (int i = 0; i < cues; i++) f.cueSounds[i] = new CueSoundSet { clips = new[] { ImportAudio(CueSounds + DefaultSound(i) + ".wav") }, volumes = new[] { 1f } };
-            foreach (var trigger in f.impactTriggers) if (trigger != null) UnityEngine.Object.DestroyImmediate(trigger.gameObject);
+            foreach (var trigger in ImpactTriggerObjects(f)) UnityEngine.Object.DestroyImmediate(trigger.gameObject);
             var map = AssetDatabase.LoadAssetAtPath<HapbeatEventMap>(Root + "Haptics/BoxingEventMap.asset");
             if (map == null) { map = ScriptableObject.CreateInstance<HapbeatEventMap>(); AssetDatabase.CreateAsset(map, Root + "Haptics/BoxingEventMap.asset"); }
-            map.entries.Clear(); f.impactTriggers = new HapbeatUnityEventTrigger[2 * wrist + cues - wrist];
-            for (int i = 0; i < f.impactTriggers.Length; i++)
+            map.entries.Clear(); f.impactHaptics = new CueHapticSet[2 * wrist + cues - wrist];
+            for (int i = 0; i < f.impactHaptics.Length; i++)
             {
                 int cue = i < 2 * wrist ? i % wrist : i - wrist;
                 string name = (i < wrist ? "left_" : i < 2 * wrist ? "right_" : "") + BoxingFeedback.Cues[cue];
@@ -182,10 +182,24 @@ namespace Hapbeat.Boxing.Editor
                 // The clip intensity lives in the cue table, not in a Kit manifest (BoxingHapticImport).
                 entry.SetCachedManifestIntensity(1);
                 map.entries.Add(entry);
-                var go = new GameObject("Haptic " + name); go.transform.SetParent(f.transform, false);
-                f.impactTriggers[i] = go.AddComponent<HapbeatUnityEventTrigger>(); f.impactTriggers[i].EditorSetupEntry(map, entry.id);
+                f.impactHaptics[i] = new CueHapticSet { triggers = new[] { AddImpactTrigger(f, map, entry) } };
             }
             EditorUtility.SetDirty(map); EditorUtility.SetDirty(f);
+        }
+        // The impact trigger GameObjects (direct children of the feedback), referenced or not.
+        public static List<HapbeatUnityEventTrigger> ImpactTriggerObjects(BoxingFeedback f)
+        {
+            var triggers = new List<HapbeatUnityEventTrigger>();
+            foreach (Transform child in f.transform)
+                if (child.TryGetComponent<HapbeatUnityEventTrigger>(out var trigger)) triggers.Add(trigger);
+            return triggers;
+        }
+        // A trigger GameObject "Haptic <event>" under the feedback, playing the entry.
+        public static HapbeatUnityEventTrigger AddImpactTrigger(BoxingFeedback f, HapbeatEventMap map, HapbeatEventEntry entry)
+        {
+            var go = new GameObject("Haptic " + entry.eventName); go.transform.SetParent(f.transform, false);
+            var trigger = go.AddComponent<HapbeatUnityEventTrigger>(); trigger.EditorSetupEntry(map, entry.id);
+            return trigger;
         }
         public static AudioClip ImportAudio(string path)
         {
