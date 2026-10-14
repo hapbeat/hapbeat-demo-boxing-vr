@@ -242,7 +242,7 @@ MonoBehaviour:
     displayName: hit_body_soft
     category: boxing
     eventName: hit_body_soft
-    streamClip: {fileID: 8300000, guid: 06bae54c4b822bc4780b7f5e0a9832a0, type: 3}
+    streamClip: {fileID: 8300000, guid: 69423b7a512f1004e8494852d35f51a5, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -250,7 +250,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.4254271
   - _id: 63327898f7c44cd398acdc985ed6b379
     mode: 1
     displayName: hit_body_hard

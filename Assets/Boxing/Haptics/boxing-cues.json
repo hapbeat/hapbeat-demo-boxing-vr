@@ -130,6 +130,16 @@
       "intensity": 0.402482796674725,
       "loop": false,
       "description": "Decided in Studio for guard_arm_soft"
+    },
+    "hit_body_soft_t149_b": {
+      "intensity": 0.4254271087867967,
+      "loop": false,
+      "description": "Decided in Studio for hit_body:soft"
+    },
+    "hit_body_soft_t149_a": {
+      "intensity": 0.8610694533419707,
+      "loop": false,
+      "description": "Decided in Studio for hit_body:soft"
     }
   },
   "sounds": {
@@ -575,13 +585,17 @@
           },
           "haptics": [
             {
-              "clip": "hit_body_soft",
               "at": "pos_neck",
-              "gain": 0.8
+              "gain": 0.8,
+              "clip": "hit_body_soft_t149_b",
+              "alternates": [
+                "hit_body_soft_t149_a"
+              ]
             }
           ],
           "review": {
-            "sfx": "approved"
+            "sfx": "approved",
+            "haptics": "approved"
           }
         },
         "hard": {
@@ -608,7 +622,8 @@
             }
           ],
           "review": {
-            "sfx": "approved"
+            "sfx": "approved",
+            "haptics": "approved"
           }
         }
       }
