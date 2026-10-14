@@ -566,6 +566,16 @@ namespace Hapbeat.Boxing.Tests
             game.input.mode = BoxingInputMode.Controllers; var missing = Pose(); missing.valid = false; game.input.SetTestPose(missing);
             Assert.That(game.menu.UsesHandPointer, Is.False);
         }
+        [Test] public void WristHapticsNeverPlayBelowTheFloorButTheNeckKeepsTheSpeedGain()
+        {
+            var slowGuard = new BoxingImpact(ImpactZone.LeftGlove, 0.6f, false, Vector3.zero, game.tuning, ImpactSurface.Glove);
+            var slowHit = new BoxingImpact(ImpactZone.Body, 0.6f, false, Vector3.zero, game.tuning, ImpactSurface.Body);
+            var fastPunch = new BoxingImpact(ImpactZone.RightGlove, 4, Vector3.zero, game.tuning, ImpactSurface.Body, 1);
+            Assert.That(slowGuard.gain, Is.LessThan(game.feedback.wristMinimumGain));
+            Assert.That(game.feedback.HapticGain(slowGuard), Is.EqualTo(game.feedback.wristMinimumGain));
+            Assert.That(game.feedback.HapticGain(slowHit), Is.EqualTo(slowHit.gain));
+            Assert.That(game.feedback.HapticGain(fastPunch), Is.EqualTo(fastPunch.gain));
+        }
         [Test] public void GlovesBehindHeadCannotRetroactivelyBlock()
         {
             var pose = Pose(true); pose.left.z = pose.right.z = -0.3f;

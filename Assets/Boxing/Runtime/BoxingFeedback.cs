@@ -73,6 +73,9 @@ namespace Hapbeat.Boxing
         public AudioClip bell;
         public bool soundEnabled = true;
         public bool hapticsEnabled = true;
+        // The wrist cues never play below this share of the impact gain (the speed / punch-strength gain stays
+        // in the score and the sound); the neck keeps the plain gain.
+        [Range(0, 1)] public float wristMinimumGain = 0.8f;
         public bool forceSilent;
         public int Reports { get; private set; }
         public int Sends { get; private set; }
@@ -107,7 +110,7 @@ namespace Hapbeat.Boxing
             if (CanSend && LastHaptic != null)
             {
                 var trigger = LastHaptic;
-                trigger.GainMultiplier = impact.gain;
+                trigger.GainMultiplier = HapticGain(impact);
                 // Position addressing selects the wearable; do not silence one channel of a wrist unit.
                 trigger.Pan = 0;
                 trigger.Fire(); Sends++;
@@ -128,6 +131,8 @@ namespace Hapbeat.Boxing
             return (impact.part == ImpactPart.Forearm ? 6 : 4) + hard;
         }
         public static string CueName(BoxingImpact impact) => Cues[CueIndex(impact)];
+        public float HapticGain(BoxingImpact impact) =>
+            TriggerIndex(impact) < 2 * WristCues ? Mathf.Max(impact.gain, wristMinimumGain) : impact.gain;
         // This demo has wrist L/R and neck receivers, not a fourth torso device.
         // Both received body/head hits use the neck entries.
         public static int TriggerIndex(BoxingImpact impact)
