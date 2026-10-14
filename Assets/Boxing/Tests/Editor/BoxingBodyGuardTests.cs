@@ -49,7 +49,7 @@ namespace Hapbeat.Boxing.Tests
         private string Summary() { var b = new System.Text.StringBuilder(); foreach (var r in received) b.Append(r.attack).Append(r.left ? "L>" : "R>").Append(r.zone).Append('/').Append(r.part).Append(' '); return b.ToString(); }
         private static bool Guard((BoxingAttack attack, bool left, ImpactZone zone, ImpactPart part) r) => r.zone == ImpactZone.LeftGlove || r.zone == ImpactZone.RightGlove;
 
-        // The torso stays behind the vertical plane through the eyes, for any head orientation; body strikes aim at its front.
+        // The torso stays behind the vertical plane through the eyes, for any head orientation; body strikes aim at its axis.
         [Test] public void BodyFrontNeverPassesTheEyePlane()
         {
             var head = new Vector3(.1f, 1.65f, -.2f);
@@ -62,10 +62,34 @@ namespace Hapbeat.Boxing.Tests
                 for (int i = 0; i < BoxingPlayerBody.Samples; i++)
                     Assert.That(Vector3.Dot(BoxingPlayerBody.Center(head, rotation, i) - head, face) + BoxingPlayerBody.Radius, Is.LessThanOrEqualTo(0), euler.ToString());
                 Vector3 aim = BoxingPlayerBody.Aim(head, rotation);
-                Assert.That(Vector3.Dot(aim - head, face), Is.LessThanOrEqualTo(0).And.GreaterThan(-.02f), euler.ToString());
+                Assert.That(Vector3.Dot(aim - head, face), Is.EqualTo(-BoxingPlayerBody.Back).Within(1e-4f), euler.ToString());
                 Assert.That(aim.y, Is.InRange(head.y - BoxingPlayerBody.Bottom, head.y - BoxingPlayerBody.Top));
             }
             Assert.That(BoxingPlayerBody.Facing(default), Is.EqualTo(Vector3.forward), "An unknown head rotation faces the opponent's side.");
+        }
+        // A hard straight meets the front of the torso while still fast, as one on the head does (the recording's hard strikes).
+        [Test] public void HardBodyStraightsLandAsFastAsHardHeadStraights()
+        {
+            var speeds = new List<(ImpactZone zone, float speed)>();
+            game.feedback.Reported += impact => { if (!impact.attack) speeds.Add((impact.zone, impact.relativeSpeed)); };
+            game.Opponent.Scripted = true;
+            var pose = BoxingSceneTests.Pose();
+            for (int i = 0; i < 4 * 90; i++) game.Simulate(1f / 90, pose);
+            float Strike(BoxingAttack attack, bool left, ImpactZone zone)
+            {
+                speeds.Clear(); int completed = game.Opponent.CompletedAttacks;
+                game.Opponent.ScriptedStrike(attack, left, BoxingHapticRecord.HardStrikeScale);
+                for (int i = 0; i < 4 * 90 && game.Opponent.CompletedAttacks == completed; i++) game.Simulate(1f / 90, pose);
+                Assert.That(speeds.Count, Is.EqualTo(1), attack + (left ? " L" : " R")); Assert.That(speeds[0].zone, Is.EqualTo(zone));
+                return speeds[0].speed;
+            }
+            float head = Strike(BoxingAttack.HeadStraight, true, ImpactZone.Head);
+            foreach (bool left in new[] { true, false })
+            {
+                float body = Strike(BoxingAttack.BodyStraight, left, ImpactZone.Body);
+                Assert.That(body, Is.GreaterThanOrEqualTo(game.tuning.hardHitSpeed), "body " + body + " head " + head);
+                Assert.That(body, Is.GreaterThanOrEqualTo(.8f * head), "body " + body + " head " + head);
+            }
         }
         [Test] public void ForearmsBeforeTheBellyStopBodyStraights()
         {

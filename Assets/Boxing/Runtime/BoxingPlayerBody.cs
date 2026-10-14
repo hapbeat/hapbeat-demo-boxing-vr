@@ -25,9 +25,11 @@ namespace Hapbeat.Boxing
         }
         public static Vector3 Center(Vector3 head, Quaternion headRotation, int sample) =>
             head - Facing(headRotation) * Back + Vector3.down * Mathf.Lerp(Top, Bottom, sample / (float)(Samples - 1));
-        // Body strikes aim at the front of the torso at mid height: arms held against the body stop them, open arms do not.
+        // Body strikes aim at the axis of the torso at mid height, as head strikes aim at the centre of the head: the fist
+        // meets the front (Radius before the end of the strike) while still fast. Arms held against the body stop them,
+        // open arms do not.
         public static Vector3 Aim(Vector3 head, Quaternion headRotation) =>
-            head + Facing(headRotation) * (Radius - Back) + Vector3.down * ((Top + Bottom) * .5f);
+            head - Facing(headRotation) * Back + Vector3.down * ((Top + Bottom) * .5f);
 
         // Overlapping swept spheres approximate the capsule within 1 mm, as for BoxingForearm.
         public static bool Sweep(Vector3 from, Vector3 to, float radius,

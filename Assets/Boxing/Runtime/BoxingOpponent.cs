@@ -2,6 +2,7 @@ using UnityEngine;
 
 // The haptic recording (Editor BoxingHapticRecord) drives the opponent through its internal script hooks.
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Hapbeat.Boxing.Editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Hapbeat.Boxing.Tests")]
 
 namespace Hapbeat.Boxing
 {
