@@ -1,4 +1,5 @@
 {
+  "schema_version": 1,
   "kit": "boxing-kit",
   "clips": {
     "punch_glove_soft": {
