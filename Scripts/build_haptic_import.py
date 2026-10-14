@@ -6,9 +6,10 @@ picked.
 The table has one cue per contact kind (punch_glove, punch_body, guard_glove, guard_arm, hit_body) with the
 variants soft and hard (DEC-091). The game cue <cue>_<variant> (punch_glove_soft ...) plays the variant
 <cue>:<variant>: a variant inherits the cue's sfx / haptics / variation it does not write (shared) and
-replaces the ones it writes (separate); sfxVolume / hapticsGain scale what it inherits. The sfx and the haptics
-each live either on the cue (shared by both variants) or on every variant (separate), never on both. This
-expansion (and the name mapping) lives only here, the game keeps its cue names.
+replaces the ones it writes (separate); sfxVolume / hapticsGain scale what it inherits. By convention the sfx
+and the haptics each live either on the cue (shared by both variants) or on every variant (separate); a variant
+that writes a field the cue also has simply overrides it (DEC-091), and a field missing from the cue must be on
+every variant. This expansion (and the name mapping) lives only here, the game keeps its cue names.
 
 A game cue plays one route: a wrist cue at the acting hand (route at = hand; the import writes it into
 left_<cue> and right_<cue>), hit_body at the neck (at = pos_neck). The route names its clip (clip) or several
@@ -77,9 +78,7 @@ def plan(table, clips_dir=CLIPS_DIR, sfx_dir=SFX_DIR):
             continue
         for key in ('sfx', 'haptics'):
             own = [v for v in VARIANTS if key in entry['variants'][v]]
-            if key in entry and own:
-                err.append(f'{cue}: {key} is on the cue and on {", ".join(own)}; shared = on the cue only, separate = on every variant only')
-            elif key not in entry and len(own) != len(VARIANTS):
+            if key not in entry and len(own) != len(VARIANTS):
                 err.append(f'{cue}: {key} is on {", ".join(own) or "no variant"}; separate = on every variant')
         for variant in VARIANTS:
             name = f'{cue}:{variant}'

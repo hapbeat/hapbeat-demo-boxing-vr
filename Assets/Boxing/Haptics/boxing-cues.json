@@ -67,12 +67,12 @@
       "description": "Decided in Studio for hit_body_hard"
     },
     "punch_body_hard_t141_c": {
-      "intensity": 0.25,
+      "intensity": 1,
       "loop": false,
       "description": "Decided in Studio for punch_body_hard"
     },
     "punch_body_hard_t141_d": {
-      "intensity": 0.26,
+      "intensity": 1,
       "loop": false,
       "description": "Decided in Studio for punch_body_hard"
     },
@@ -140,6 +140,16 @@
       "intensity": 0.8610694533419707,
       "loop": false,
       "description": "Decided in Studio for hit_body:soft"
+    },
+    "punch_body_t150_b": {
+      "intensity": 1,
+      "loop": false,
+      "description": "Decided in Studio for punch_body"
+    },
+    "punch_body_t150_a": {
+      "intensity": 1,
+      "loop": false,
+      "description": "Decided in Studio for punch_body"
     }
   },
   "sounds": {
@@ -313,7 +323,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2.0,
+              "gain": 2,
               "clips": [
                 "punch_glove_hard_t142_e",
                 "punch_glove_hard_t142_b"
@@ -344,7 +354,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2.0,
+              "gain": 2,
               "clips": [
                 "punch_glove_hard_t145_a",
                 "punch_glove_hard_t145_b",
@@ -384,7 +394,8 @@
         "pick": "random"
       },
       "review": {
-        "sfx": "approved"
+        "sfx": "approved",
+        "haptics": "tentative"
       },
       "variants": {
         "soft": {
@@ -392,10 +403,10 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2.0,
-              "clip": "punch_body_hard_t141_d",
+              "gain": 2,
+              "clip": "punch_body_t150_a",
               "alternates": [
-                "punch_body_soft"
+                "punch_body_t150_b"
               ]
             }
           ],
@@ -408,11 +419,10 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2.0,
-              "clip": "punch_body_hard_t141_c",
-              "alternates": [
-                "punch_body_hard_t141_d",
-                "punch_body_hard"
+              "gain": 2,
+              "clips": [
+                "punch_body_t150_b",
+                "punch_body_t150_a"
               ]
             }
           ],
@@ -420,7 +430,8 @@
             "haptics": "approved"
           }
         }
-      }
+      },
+      "haptics": []
     },
     "guard_glove": {
       "description": "相手のパンチを自分のグローブで受ける（受けた側の手首）。弱: 接触の相対速度 2.5 m/s 未満。強: 接触の相対速度 2.5 m/s 以上。gain = 相対速度（0.25 m/s で 0.12 〜 6 m/s で 1）",
@@ -451,7 +462,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2.0,
+              "gain": 2,
               "clips": [
                 "guard_glove_hard_t146_d",
                 "guard_glove_hard_t146_a",
@@ -471,7 +482,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2.0,
+              "gain": 2,
               "clips": [
                 "guard_glove_hard_t146_d",
                 "guard_glove_hard_t146_b"
@@ -514,7 +525,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2.0,
+              "gain": 2,
               "clips": [
                 "guard_arm_soft_t147_a",
                 "guard_arm_soft_t147_c"
@@ -547,7 +558,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2.0,
+              "gain": 2,
               "clips": [
                 "guard_arm_hard_t138_c",
                 "guard_arm_hard_t138_e"

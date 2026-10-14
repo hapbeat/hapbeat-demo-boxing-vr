@@ -60,11 +60,20 @@ class PlanTests(unittest.TestCase):
         self.assertEqual((soft['sounds'], soft['volumes'], soft['clips'], soft['gain']), (['S1'], [0.5], ['c'], 1.0))
         self.assertEqual((hard['sounds'], hard['volumes'], hard['clips'], hard['gain']), (['S3'], [2.0], ['c'], 1.0))
 
+    def test_a_variant_overrides_the_cue(self):
+        # DEC-091: on the cue and on a variant is allowed; the variant's own field wins (Studio also leaves an
+        # empty haptics list on the cue once every variant has its own).
+        table = copy.deepcopy(self.table)
+        punch = table['cues']['punch_glove']
+        punch['variants']['hard']['sfx'] = {'sound': 'S3'}
+        punch['haptics'] = []
+        items, err = self.plan(table)
+        self.assertEqual(err, [])
+        self.assertEqual((items[0]['sounds'], items[1]['sounds']), (['S1', 'S2'], ['S3']))
+        self.assertEqual(items[1]['clips'], ['b', 'c'])
+
     def test_materials_live_on_the_cue_or_on_every_variant(self):
         for mutate, expected in [
-            # On the cue and on a variant.
-            (lambda c: c['variants']['hard'].update(sfx={'sound': 'S3'}), 'punch_glove: sfx is on the cue and on hard'),
-            (lambda c: c.update(haptics=[{'at': 'hand', 'clip': 'a'}]), 'punch_glove: haptics is on the cue and on soft, hard'),
             # On one variant only (the other would have nothing).
             (lambda c: c['variants']['soft'].pop('haptics'), 'punch_glove: haptics is on hard; separate = on every variant'),
         ]:
