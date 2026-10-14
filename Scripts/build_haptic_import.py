@@ -18,8 +18,10 @@ variation.pick (random, the default, never repeats the previous one; roundRobin 
 (other variation fields, rampTo / rampCurve / rampSteps, levelMap, distanceFalloff, emit) and loops have no
 counterpart in the game and are reported as errors rather than dropped silently. sfx null (or not decided yet)
 = no sound.
+The table's format is hapbeat-contracts specs/cue-table.md (schema_version 1), checked by
+`hapbeat-helper cues validate` (spec_problems) before the plan.
 """
-import json, sys
+import json, os, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,15 +65,44 @@ def expand(entry, variant):
     return resolved, err
 
 
+def helper():
+    """hapbeat-helper with cues validate / scene build: HAPBEAT_HELPER (its executable) or hapbeat-helper on PATH."""
+    exe = os.environ.get('HAPBEAT_HELPER') or shutil.which('hapbeat-helper')
+    if not exe:
+        raise RuntimeError('hapbeat-helper not found: put it on PATH or set HAPBEAT_HELPER to its executable')
+    return exe
+
+
+def spec_problems(table, clips_dir=CLIPS_DIR, sfx_dir=SFX_DIR):
+    """What `hapbeat-helper cues validate` finds in the table, the WAVs included."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / 'cues.json'
+        path.write_text(json.dumps(table, ensure_ascii=False), encoding='utf-8')
+        lib = Path(tmp) / 'viewer-lib.json'  # where the WAVs are (only paths is read)
+        lib.write_text(json.dumps({'paths': {'clips': str(clips_dir), 'sounds': str(sfx_dir)}}), encoding='utf-8')
+        proc = subprocess.run([helper(), 'cues', 'validate', str(path), '--viewer-lib', str(lib)],
+                              capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=tmp)
+    if proc.returncode == 0:
+        return []
+    if proc.returncode == 1:
+        return [line for line in proc.stdout.splitlines() if line.strip()]
+    raise RuntimeError(f'hapbeat-helper cues validate failed (exit {proc.returncode}): {proc.stderr.strip()}')
+
+
 def plan(table, clips_dir=CLIPS_DIR, sfx_dir=SFX_DIR):
     """(items in GAME_CUES order, errors)."""
     err, items = [], []
+    if table.get('schema_version') != 1:
+        err.append('schema_version must be 1 (an older table: hapbeat-haptic-authoring tools/migrate_scene_v1.py)')
     cues = table.get('cues', {})
     if sorted(cues) != sorted(CUES):
         err.append(f'cues must be exactly {list(CUES)}')
     for cue, at in CUES.items():
         entry = cues.get(cue)
         if entry is None:
+            continue
+        if entry.get('loop'):
+            err.append(f'{cue}: every Boxing cue is a one-shot (loop must be false)')
             continue
         if sorted(entry.get('variants') or {}) != sorted(VARIANTS):
             err.append(f'{cue}: variants must be exactly {list(VARIANTS)}')
@@ -140,7 +171,9 @@ def plan(table, clips_dir=CLIPS_DIR, sfx_dir=SFX_DIR):
 
 
 def main():
-    items, err = plan(json.loads(CUES_PATH.read_text(encoding='utf-8')))
+    table = json.loads(CUES_PATH.read_text(encoding='utf-8'))
+    items, err = plan(table)
+    err += spec_problems(table)
     if err:
         print('\n'.join(err), file=sys.stderr)
         raise SystemExit(1)

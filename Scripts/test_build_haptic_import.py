@@ -23,7 +23,7 @@ class PlanTests(unittest.TestCase):
         for name, at in bhi.CUES.items():
             cues[name] = {'description': name, 'sfx': {'sounds': ['S1', 'S2'], 'volume': 1}, 'variation': {'pick': 'random'},
                           'variants': {'soft': {'haptics': route(at, clip='a')}, 'hard': {'haptics': route(at, clips=['b', 'c'])}}}
-        self.table = {'clips': {'a': {'intensity': 0.5}, 'b': {'intensity': 1}, 'c': {'intensity': 0.25}},
+        self.table = {'schema_version': 1, 'clips': {'a': {'intensity': 0.5}, 'b': {'intensity': 1}, 'c': {'intensity': 0.25}},
                       'sounds': {'S1': {'intensity': 0.5}, 'S3': {}}, 'cues': cues}
 
     def tearDown(self):
@@ -121,6 +121,8 @@ class PlanTests(unittest.TestCase):
             (lambda t: t['cues']['punch_glove']['variants']['hard']['haptics'][0].update(clips=['b', 'z']), 'clip z is not in clips'),
             (lambda t: t['cues']['guard_glove']['variants']['soft'].update(rampTo=2), 'guard_glove:soft: rampTo'),
             (lambda t: t['cues']['guard_glove'].update(variation={'pick': 'random', 'paired': True}), 'variation.paired'),
+            (lambda t: t.pop('schema_version'), 'schema_version must be 1'),
+            (lambda t: t['cues']['hit_body'].update(loop=True), 'hit_body: every Boxing cue is a one-shot'),
         ]:
             table = copy.deepcopy(self.table)
             mutate(table)
