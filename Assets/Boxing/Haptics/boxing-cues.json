@@ -52,12 +52,12 @@
       "description": "相手のパンチが自分の頭・胴に当たる（首）・強（元 damage.wav）"
     },
     "guard_arm_hard_t138_c": {
-      "intensity": 1,
+      "intensity": 0.07,
       "loop": false,
       "description": "Decided in Studio for guard_arm_hard"
     },
     "guard_arm_hard_t138_e": {
-      "intensity": 1,
+      "intensity": 0.07,
       "loop": false,
       "description": "Decided in Studio for guard_arm_hard"
     },
@@ -67,12 +67,12 @@
       "description": "Decided in Studio for hit_body_hard"
     },
     "punch_body_hard_t141_c": {
-      "intensity": 1,
+      "intensity": 0.25,
       "loop": false,
       "description": "Decided in Studio for punch_body_hard"
     },
     "punch_body_hard_t141_d": {
-      "intensity": 1,
+      "intensity": 0.26,
       "loop": false,
       "description": "Decided in Studio for punch_body_hard"
     },
@@ -82,7 +82,7 @@
       "description": "Decided in Studio for punch_glove_hard"
     },
     "punch_glove_hard_t142_e": {
-      "intensity": 0.1314231666829664,
+      "intensity": 0.26,
       "loop": false,
       "description": "Decided in Studio for punch_glove_hard"
     },
@@ -112,7 +112,7 @@
       "description": "Decided in Studio for guard_glove_hard"
     },
     "guard_glove_hard_t146_b": {
-      "intensity": 0.27937182354035844,
+      "intensity": 0.24,
       "loop": false,
       "description": "Decided in Studio for guard_glove_hard"
     },
@@ -315,7 +315,7 @@
           ],
           "review": {
             "sfx": "approved",
-            "haptics": "tentative"
+            "haptics": "approved"
           }
         },
         "hard": {
@@ -348,7 +348,7 @@
           ],
           "review": {
             "sfx": "approved",
-            "haptics": "tentative"
+            "haptics": "approved"
           }
         }
       }
@@ -388,7 +388,10 @@
                 "punch_body_soft"
               ]
             }
-          ]
+          ],
+          "review": {
+            "haptics": "approved"
+          }
         },
         "hard": {
           "description": "強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）",
@@ -402,7 +405,10 @@
                 "punch_body_hard"
               ]
             }
-          ]
+          ],
+          "review": {
+            "haptics": "approved"
+          }
         }
       }
     },
@@ -427,7 +433,7 @@
         "pick": "random"
       },
       "review": {
-        "sfx": "tentative"
+        "sfx": "approved"
       },
       "variants": {
         "soft": {
@@ -445,7 +451,10 @@
                 "guard_glove_soft"
               ]
             }
-          ]
+          ],
+          "review": {
+            "haptics": "approved"
+          }
         },
         "hard": {
           "description": "強: 接触の相対速度 2.5 m/s 以上",
@@ -463,7 +472,10 @@
                 "guard_glove_hard"
               ]
             }
-          ]
+          ],
+          "review": {
+            "haptics": "approved"
+          }
         }
       }
     },
@@ -503,7 +515,8 @@
             }
           ],
           "review": {
-            "sfx": "approved"
+            "sfx": "approved",
+            "haptics": "approved"
           }
         },
         "hard": {
@@ -528,14 +541,12 @@
               "clips": [
                 "guard_arm_hard_t138_c",
                 "guard_arm_hard_t138_e"
-              ],
-              "alternates": [
-                "guard_arm_hard"
               ]
             }
           ],
           "review": {
-            "sfx": "approved"
+            "sfx": "approved",
+            "haptics": "approved"
           }
         }
       }

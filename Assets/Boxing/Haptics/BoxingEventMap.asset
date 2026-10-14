@@ -18,7 +18,7 @@ MonoBehaviour:
     displayName: left_punch_glove_soft
     category: boxing
     eventName: left_punch_glove_soft
-    streamClip: {fileID: 8300000, guid: f0d1e7cb28c7e0f4dbae951689856c19, type: 3}
+    streamClip: {fileID: 8300000, guid: 214ba687d99dcc44eb978066d182ea08, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -26,7 +26,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.09312394
+    _cachedManifestIntensity: 0.26
   - _id: daae9f12ccac49c9b8a38fd8dcd799e5
     mode: 1
     displayName: left_punch_glove_hard
@@ -54,7 +54,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.26
   - _id: 496fe196ca5a43eb94e192d626d8ff0b
     mode: 1
     displayName: left_punch_body_hard
@@ -68,7 +68,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.25
   - _id: 7a7e57641e7d42d7bb84fb5398c22469
     mode: 1
     displayName: left_guard_glove_soft
@@ -124,13 +124,13 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.07
   - _id: aafe7f6f73124c6b93dbc67635592804
     mode: 1
     displayName: right_punch_glove_soft
     category: boxing
     eventName: right_punch_glove_soft
-    streamClip: {fileID: 8300000, guid: f0d1e7cb28c7e0f4dbae951689856c19, type: 3}
+    streamClip: {fileID: 8300000, guid: 214ba687d99dcc44eb978066d182ea08, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -138,7 +138,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.09312394
+    _cachedManifestIntensity: 0.26
   - _id: 490f790c9b1d4541a28a4f9d91368f6a
     mode: 1
     displayName: right_punch_glove_hard
@@ -166,7 +166,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.26
   - _id: 872b9997d3b848b5803ea6791933b42f
     mode: 1
     displayName: right_punch_body_hard
@@ -180,7 +180,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.25
   - _id: ab734116385d4c76981c499de1a141d9
     mode: 1
     displayName: right_guard_glove_soft
@@ -236,7 +236,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.07
   - _id: 5a7432825fc54c378892cd99a16c4a4d
     mode: 1
     displayName: hit_body_soft
@@ -270,7 +270,7 @@ MonoBehaviour:
     displayName: left_punch_glove_soft_2
     category: boxing
     eventName: left_punch_glove_soft_2
-    streamClip: {fileID: 8300000, guid: 214ba687d99dcc44eb978066d182ea08, type: 3}
+    streamClip: {fileID: 8300000, guid: f0d1e7cb28c7e0f4dbae951689856c19, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -278,13 +278,13 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.13142316
+    _cachedManifestIntensity: 0.09312394
   - _id: ea0a78e4530041bca6e28b585fb8ed4f
     mode: 1
     displayName: right_punch_glove_soft_2
     category: boxing
     eventName: right_punch_glove_soft_2
-    streamClip: {fileID: 8300000, guid: 214ba687d99dcc44eb978066d182ea08, type: 3}
+    streamClip: {fileID: 8300000, guid: f0d1e7cb28c7e0f4dbae951689856c19, type: 3}
     loop: 0
     bindings: []
     gain: 0.8
@@ -292,7 +292,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.13142316
+    _cachedManifestIntensity: 0.09312394
   - _id: c357998efd024e07a5a41df146b4f1d2
     mode: 1
     displayName: left_punch_glove_hard_2
@@ -418,7 +418,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.27937183
+    _cachedManifestIntensity: 0.24
   - _id: 2e30e808c4744f00a29f6da81e02096d
     mode: 1
     displayName: right_guard_glove_hard_2
@@ -432,7 +432,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.27937183
+    _cachedManifestIntensity: 0.24
   - _id: 362c3996f5d343bdb78d2530fcff4de6
     mode: 1
     displayName: left_guard_arm_soft_2
@@ -474,7 +474,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.07
   - _id: 8fedbfd64e2b4e2eb1f4924b86079a63
     mode: 1
     displayName: right_guard_arm_hard_2
@@ -488,5 +488,5 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.07
   revertPlayModeChanges: 0
