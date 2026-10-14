@@ -42,7 +42,8 @@ namespace Hapbeat.Boxing.Tests
                 }
                 Assert.That(AssetDatabase.GetAssetPath(entry.streamClip),Does.StartWith("Assets/Boxing/Haptics/stream-clips/").And.EndWith(".wav"));
                 Assert.That(entry.loop,Is.False); Assert.That(entry.mode,Is.EqualTo(Hapbeat.HapticMode.StreamClip));
-                Assert.That(entry.gain,Is.EqualTo(0.8f)); Assert.That(entry.CachedManifestIntensity,Is.GreaterThan(0).And.LessThanOrEqualTo(1));
+                // Wrist routes are raised to 2.0 against the in-game gain; the neck keeps 0.8 (cue table).
+                Assert.That(entry.gain,Is.EqualTo(entry.target=="*/pos_neck" ? 0.8f : 2f)); Assert.That(entry.CachedManifestIntensity,Is.GreaterThan(0).And.LessThanOrEqualTo(1));
             }
             Assert.That(map.entries.Select(e=>e.eventName),Is.Unique);
         }
@@ -62,10 +63,14 @@ namespace Hapbeat.Boxing.Tests
                 foreach(var speed in new[]{1f,4f})
                 {
                     string level=speed<tuning.hardHitSpeed ? "_soft" : "_hard";
-                    // Own punches: the opponent's glove, or anything else (head / body / arms).
-                    Assert.That(Cue(new BoxingImpact(ImpactZone.LeftGlove,speed,Vector3.zero,tuning,ImpactSurface.Glove,1)),Is.EqualTo("punch_glove"+level));
-                    Assert.That(Cue(new BoxingImpact(ImpactZone.LeftGlove,speed,Vector3.zero,tuning,ImpactSurface.Glove,1,ImpactPart.Forearm)),Is.EqualTo("punch_body"+level));
-                    Assert.That(Cue(new BoxingImpact(ImpactZone.RightGlove,speed,Vector3.zero,tuning,ImpactSurface.Body,1)),Is.EqualTo("punch_body"+level));
+                    // Own punches: the opponent's glove, or anything else (head / body / arms). Soft / hard follows
+                    // the punch strength (like the damage), not the contact speed.
+                    float medium=tuning.punchHardStrength-.05f;
+                    Assert.That(Cue(new BoxingImpact(ImpactZone.LeftGlove,speed,Vector3.zero,tuning,ImpactSurface.Glove,1)),Is.EqualTo("punch_glove_hard"));
+                    Assert.That(Cue(new BoxingImpact(ImpactZone.LeftGlove,speed,Vector3.zero,tuning,ImpactSurface.Glove,medium)),Is.EqualTo("punch_glove_soft"));
+                    Assert.That(Cue(new BoxingImpact(ImpactZone.LeftGlove,speed,Vector3.zero,tuning,ImpactSurface.Glove,1,ImpactPart.Forearm)),Is.EqualTo("punch_body_hard"));
+                    Assert.That(Cue(new BoxingImpact(ImpactZone.RightGlove,speed,Vector3.zero,tuning,ImpactSurface.Body,1)),Is.EqualTo("punch_body_hard"));
+                    Assert.That(Cue(new BoxingImpact(ImpactZone.RightGlove,speed,Vector3.zero,tuning,ImpactSurface.Body,medium)),Is.EqualTo("punch_body_soft"));
                     // An unprepared punch is always soft.
                     Assert.That(Cue(new BoxingImpact(ImpactZone.RightGlove,speed,Vector3.zero,tuning,ImpactSurface.Body,0)),Is.EqualTo("punch_body_soft"));
                     // Received: glove, forearm, head / body.

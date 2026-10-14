@@ -21,7 +21,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 214ba687d99dcc44eb978066d182ea08, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -35,7 +35,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: b5f745a50e7da6a40b36b82cd452857b, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -49,7 +49,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 075fc1402d57bfa46ab10a630d9e6a9f, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -63,7 +63,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 17eac7f910ee2984ebf9426acf029b04, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -77,7 +77,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -91,7 +91,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -105,7 +105,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 504b99242478b2643a37d76d97ea1bd0, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -119,7 +119,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 799263803f1322041a3afbfb5677ccd3, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -133,7 +133,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 214ba687d99dcc44eb978066d182ea08, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -147,7 +147,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: b5f745a50e7da6a40b36b82cd452857b, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -161,7 +161,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 075fc1402d57bfa46ab10a630d9e6a9f, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -175,7 +175,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 17eac7f910ee2984ebf9426acf029b04, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -189,7 +189,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -203,7 +203,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -217,7 +217,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 504b99242478b2643a37d76d97ea1bd0, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -231,7 +231,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 799263803f1322041a3afbfb5677ccd3, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -273,7 +273,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: f0d1e7cb28c7e0f4dbae951689856c19, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -287,7 +287,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: f0d1e7cb28c7e0f4dbae951689856c19, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -301,7 +301,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: f7d138e5b241893429fa1216a718888f, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -315,7 +315,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: fa92c0d29783a384984a8dff7aecb773, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -329,7 +329,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: f7d138e5b241893429fa1216a718888f, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -343,7 +343,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: fa92c0d29783a384984a8dff7aecb773, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -357,7 +357,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: eb3164a319e3ffd428c6208cf6af85df, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -371,7 +371,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 2acbd42cf6b14e2478b48c27666d8133, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -385,7 +385,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: eb3164a319e3ffd428c6208cf6af85df, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -399,7 +399,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 2acbd42cf6b14e2478b48c27666d8133, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -413,7 +413,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: d5d940ff1c99f95479365a843fde7a2b, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -427,7 +427,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: d5d940ff1c99f95479365a843fde7a2b, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -441,7 +441,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 7d84ee30e494baf4cae863f1239ffab7, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -455,7 +455,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 7d84ee30e494baf4cae863f1239ffab7, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -469,7 +469,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 0211a1a0f239bab42b5d34c0d1387fc0, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -483,7 +483,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 0211a1a0f239bab42b5d34c0d1387fc0, type: 3}
     loop: 0
     bindings: []
-    gain: 0.8
+    gain: 2
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 

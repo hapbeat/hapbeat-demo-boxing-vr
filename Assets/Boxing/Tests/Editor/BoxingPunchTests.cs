@@ -19,7 +19,7 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void RepeatedFastWristTapsDoNotEachDealStrongDamage()
         {
-            Assert.That(Stroke(Vector3.forward*.65f,Vector3.forward*.7f,1),Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
+            Assert.That(Stroke(Vector3.forward*.65f,Vector3.forward*.7f,1),Is.GreaterThanOrEqualTo(tuning.punchReadyStrength));
             for(int i=0;i<4;i++) Assert.That(Stroke(Vector3.forward*.65f,Vector3.forward*.7f,1),Is.Zero);
         }
         [TestCase(false)] [TestCase(true)] public void ContinuousReturnAndPunchCanBeHardWithoutAStaticHold(bool pause)
@@ -28,17 +28,17 @@ namespace Hapbeat.Boxing.Tests
             for(int i=1;i<=20;i++) punch.Sample(new Vector3(0,-.3f,Mathf.Lerp(.65f,.30f,i/20f)),.01f,tuning);
             if(pause) for(int i=0;i<12;i++) punch.Sample(new Vector3(0,-.3f,.30f),.01f,tuning);
             for(int i=1;i<=20;i++) punch.Sample(new Vector3(0,-.3f,Mathf.Lerp(.30f,.60f,i/20f)),.01f,tuning);
-            Assert.That(punch.Consume(new Vector3(0,-.3f,.60f),tuning),Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
+            Assert.That(punch.Consume(new Vector3(0,-.3f,.60f),tuning),Is.GreaterThanOrEqualTo(tuning.punchReadyStrength));
         }
         [Test] public void FrontGuardQuarterMetrePunchIsHardWithoutRearWindup()
         {
-            Assert.That(Stroke(Vector3.forward*.38f,Vector3.forward*.63f),Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
+            Assert.That(Stroke(Vector3.forward*.38f,Vector3.forward*.63f),Is.GreaterThanOrEqualTo(tuning.punchReadyStrength));
         }
         [Test] public void FasterPreparedPunchDoesMoreDamageButBothAreHard()
         {
             float fast = Stroke(Vector3.forward * 0.1f, Vector3.forward * 0.4f, 5);
             punch.Reset(); float slow = Stroke(Vector3.forward * 0.1f, Vector3.forward * 0.4f, 40);
-            Assert.That(fast,Is.GreaterThan(slow)); Assert.That(slow,Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
+            Assert.That(fast,Is.GreaterThan(slow)); Assert.That(slow,Is.GreaterThanOrEqualTo(tuning.punchReadyStrength));
         }
         [Test] public void FullThreeDimensionalDisplacementSupportsHooks()
         {
@@ -57,7 +57,7 @@ namespace Hapbeat.Boxing.Tests
             for(int i=0;i<80;i++)
             {
                 var point=start+Vector3.right*(i%2==0 ? .04f : -.04f); punch.Sample(point,.01f,tuning);
-                if(i%10==9 && punch.Consume(point,tuning)>=tuning.punchHardStrength) strong++;
+                if(i%10==9 && punch.Consume(point,tuning)>=tuning.punchReadyStrength) strong++;
             }
             Assert.That(strong,Is.LessThanOrEqualTo(1));
         }
@@ -80,10 +80,12 @@ namespace Hapbeat.Boxing.Tests
             var tap = new BoxingImpact(ImpactZone.LeftGlove, 10, Vector3.zero, tuning, ImpactSurface.Body, 0);
             var full = new BoxingImpact(ImpactZone.LeftGlove, 4, Vector3.zero, tuning, ImpactSurface.Body, 1);
             var slow = new BoxingImpact(ImpactZone.LeftGlove, 1, Vector3.zero, tuning, ImpactSurface.Body, 1);
+            var medium = new BoxingImpact(ImpactZone.LeftGlove, 4, Vector3.zero, tuning, ImpactSurface.Body, tuning.punchHardStrength - .05f);
             Assert.That(tap.damage, Is.EqualTo(0.5f)); Assert.That(tap.hard, Is.False, "An unprepared tap stays soft at any speed.");
             Assert.That(full.damage, Is.EqualTo(20)); Assert.That(full.hard, Is.True); Assert.That(full.gain, Is.GreaterThan(tap.gain));
-            // Soft / hard follows the contact speed; damage and gain follow the punch strength.
-            Assert.That(slow.hard, Is.False); Assert.That(slow.damage, Is.EqualTo(full.damage)); Assert.That(slow.gain, Is.EqualTo(full.gain));
+            // Soft / hard follows the punch strength like the damage: full damage is always hard, whatever the contact speed.
+            Assert.That(slow.hard, Is.True); Assert.That(slow.damage, Is.EqualTo(full.damage)); Assert.That(slow.gain, Is.EqualTo(full.gain));
+            Assert.That(medium.hard, Is.False); Assert.That(medium.damage, Is.LessThan(full.damage));
         }
         [Test] public void AuthoredStartIsInComfortableReachAndRecenterResetsDebugOffset()
         {
@@ -117,10 +119,10 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void OneSecondRecoveryAllowsNextPunchWithoutDeepWithdrawal()
         {
-            Assert.That(Stroke(Vector3.forward*.8f,Vector3.forward*.9f,5),Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
+            Assert.That(Stroke(Vector3.forward*.8f,Vector3.forward*.9f,5),Is.GreaterThanOrEqualTo(tuning.punchReadyStrength));
             Assert.That(Stroke(Vector3.forward*.9f,Vector3.forward*.94f,2),Is.Zero);
             for(int i=0;i<110;i++) punch.Sample(Vector3.forward*.94f,.01f,tuning);
-            Assert.That(Stroke(Vector3.forward*.94f,Vector3.forward*1.0f,3),Is.GreaterThanOrEqualTo(tuning.punchHardStrength));
+            Assert.That(Stroke(Vector3.forward*.94f,Vector3.forward*1.0f,3),Is.GreaterThanOrEqualTo(tuning.punchReadyStrength));
         }
         [TestCase(-.3f)] [TestCase(0f)] [TestCase(.3f)]
         public void IdenticalHeadRelativeStrokeHasSameStrengthWhilePlayerMoves(float movement)

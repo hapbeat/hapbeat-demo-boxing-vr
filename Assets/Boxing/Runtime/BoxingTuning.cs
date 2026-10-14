@@ -78,7 +78,9 @@ namespace Hapbeat.Boxing
         [Min(.1f)] public float punchMinimumSpeed = .45f;
         [Min(.2f)] public float punchFullSpeed = 2.5f;
         [Range(0,1)] public float punchReadyStrength = .72f;
-        [Range(0, 1)] public float punchHardStrength = 0.65f;
+        // A prepared punch at or above this strength is hard (sound, haptics and the HARD label), so the
+        // near-full damage punches (0.9 -> 18 of 20) are always hard. 0.9 = a peak hand speed of about 1.8 m/s.
+        [Range(0, 1)] public float punchHardStrength = 0.9f;
         [Min(0)] public float tapDamage = 0.5f;
         [Min(1)] public float fullPunchDamage = 20;
         [Header("Impact response")]
@@ -129,8 +131,9 @@ namespace Hapbeat.Boxing
             this.zone = zone; relativeSpeed = speed; attack = true; this.point = point; this.surface = surface; this.part = part;
             float strength = Mathf.Clamp01(punchStrength);
             gain = Mathf.Lerp(tuning.minimumGain, tuning.maximumGain, strength);
-            // Soft / hard by the contact speed, as for the opponent's punches; an unprepared tap (strength 0) stays soft.
-            hard = tuning.IsHard(speed) && strength > 0;
+            // Soft / hard by the punch strength, like the damage: a full-damage punch is always hard and an
+            // unprepared tap (strength 0) stays soft. The opponent's punches still switch by the contact speed.
+            hard = tuning.impactMode == ImpactMode.WeakHard && strength >= tuning.punchHardStrength;
             damage = Mathf.Lerp(tuning.tapDamage, tuning.fullPunchDamage, strength);
         }
     }

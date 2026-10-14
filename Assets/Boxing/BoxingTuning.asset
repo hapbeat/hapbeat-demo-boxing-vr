@@ -56,7 +56,7 @@ MonoBehaviour:
   punchMinimumSpeed: 0.45
   punchFullSpeed: 2.5
   punchReadyStrength: 0.72
-  punchHardStrength: 0.65
+  punchHardStrength: 0.9
   tapDamage: 0.5
   fullPunchDamage: 20
   impactMode: 1

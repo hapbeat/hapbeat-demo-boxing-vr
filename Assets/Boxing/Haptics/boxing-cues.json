@@ -313,7 +313,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 0.8,
+              "gain": 2.0,
               "clips": [
                 "punch_glove_hard_t142_e",
                 "punch_glove_hard_t142_b"
@@ -344,7 +344,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 0.8,
+              "gain": 2.0,
               "clips": [
                 "punch_glove_hard_t145_a",
                 "punch_glove_hard_t145_b",
@@ -392,7 +392,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 0.8,
+              "gain": 2.0,
               "clip": "punch_body_hard_t141_d",
               "alternates": [
                 "punch_body_soft"
@@ -408,7 +408,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 0.8,
+              "gain": 2.0,
               "clip": "punch_body_hard_t141_c",
               "alternates": [
                 "punch_body_hard_t141_d",
@@ -451,7 +451,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 0.8,
+              "gain": 2.0,
               "clips": [
                 "guard_glove_hard_t146_d",
                 "guard_glove_hard_t146_a",
@@ -471,7 +471,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 0.8,
+              "gain": 2.0,
               "clips": [
                 "guard_glove_hard_t146_d",
                 "guard_glove_hard_t146_b"
@@ -514,7 +514,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 0.8,
+              "gain": 2.0,
               "clips": [
                 "guard_arm_soft_t147_a",
                 "guard_arm_soft_t147_c"
@@ -547,7 +547,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 0.8,
+              "gain": 2.0,
               "clips": [
                 "guard_arm_hard_t138_c",
                 "guard_arm_hard_t138_e"
