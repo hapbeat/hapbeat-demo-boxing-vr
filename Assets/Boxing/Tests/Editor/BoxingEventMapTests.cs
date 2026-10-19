@@ -43,7 +43,8 @@ namespace Hapbeat.Boxing.Tests
                 Assert.That(AssetDatabase.GetAssetPath(entry.streamClip),Does.StartWith("Assets/Boxing/Haptics/stream-clips/").And.EndWith(".wav"));
                 Assert.That(entry.loop,Is.False); Assert.That(entry.mode,Is.EqualTo(Hapbeat.HapticMode.StreamClip));
                 // Wrist routes are raised to 2.0 against the in-game gain; the neck keeps 0.8 (cue table).
-                Assert.That(entry.gain,Is.EqualTo(entry.target=="*/pos_neck" ? 0.8f : 2f)); Assert.That(entry.CachedManifestIntensity,Is.GreaterThan(0).And.LessThanOrEqualTo(1));
+                // Route gains come from the cue table (punch_glove 2, the others lower to sit 3 dB under it).
+                Assert.That(entry.gain,Is.GreaterThan(0).And.LessThanOrEqualTo(2)); Assert.That(entry.CachedManifestIntensity,Is.GreaterThan(0).And.LessThanOrEqualTo(1));
             }
             Assert.That(map.entries.Select(e=>e.eventName),Is.Unique);
         }

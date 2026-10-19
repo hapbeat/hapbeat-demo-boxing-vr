@@ -395,7 +395,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2,
+              "gain": 1.416,
               "clip": "punch_body_t150_a",
               "alternates": [
                 "punch_body_t150_b"
@@ -411,7 +411,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2,
+              "gain": 1.416,
               "alternates": [
                 "punch_body_hard_t151_a",
                 "punch_body_t150_b",
@@ -455,7 +455,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2,
+              "gain": 0.85,
               "clips": [
                 "guard_glove_hard_t146_d",
                 "guard_glove_hard_t146_b"
@@ -476,7 +476,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2,
+              "gain": 1.416,
               "clips": [
                 "punch_body_t150_a"
               ],
@@ -520,7 +520,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2,
+              "gain": 1.416,
               "clips": [
                 "guard_arm_hard_t138_c",
                 "guard_arm_hard_t138_e"
@@ -555,7 +555,7 @@
           "haptics": [
             {
               "at": "hand",
-              "gain": 2,
+              "gain": 1.416,
               "clips": [
                 "punch_body_t150_a"
               ],
@@ -597,7 +597,7 @@
           "haptics": [
             {
               "at": "pos_neck",
-              "gain": 0.8,
+              "gain": 0.566,
               "clip": "hit_body_soft_t149_b",
               "alternates": [
                 "hit_body_soft_t149_a"
@@ -625,7 +625,7 @@
           "haptics": [
             {
               "at": "pos_neck",
-              "gain": 0.8,
+              "gain": 0.566,
               "clip": "hit_body_hard_t140_a",
               "alternates": [
                 "hit_body_hard"

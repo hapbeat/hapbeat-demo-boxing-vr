@@ -72,7 +72,8 @@ namespace Hapbeat.Boxing.Tests
         }
 
         // punch_body (soft / hard), guard_glove hard and guard_arm hard (clips punch_body_t150_a / punch_body_hard_t151_b,
-        // intensity 0.18): were capped at full scale (intensity 1 x route gain 2), now about a third of it at 0 dB.
+        // intensity 0.18): were capped at full scale (intensity 1 x route gain 2), then a third of it, and since the user
+        // runs the trim at 0 dB with these routes at 1.416 (3 dB under punch_glove's 2), about 0.71 x a third at 0 dB.
         [Test] public void TheDamageWristCuesSendAboutAThirdOfTheFullScaleCap()
         {
             var impacts = new[]
@@ -87,11 +88,11 @@ namespace Hapbeat.Boxing.Tests
             {
                 var entry = Trigger(impact).ResolveEntry();
                 Assert.That(entry.streamClip.name, Does.StartWith("punch_body"), BoxingFeedback.CueName(impact));
-                Assert.That(entry.GetEffectiveGain(), Is.EqualTo(2 * 0.18f).Within(1e-4f), BoxingFeedback.CueName(impact));
+                Assert.That(entry.GetEffectiveGain(), Is.EqualTo(1.416f * 0.18f).Within(1e-4f), BoxingFeedback.CueName(impact));
                 float sent = Sent(impact, 0);
                 Debug.Log($"BOXING_DAMAGE_CUE {BoxingFeedback.CueName(impact)} clip={entry.streamClip.name} gain={game.feedback.HapticGain(impact):F2} sent0dB={sent:F3} FS");
-                // A third of the former full-scale cap (about -9.5 dB): 0.36 x the impact's share (0.8..1) x the clip's peak.
-                Assert.That(sent, Is.InRange(0.2f, 0.4f), BoxingFeedback.CueName(impact));
+                // About -12.5 dB under the former full-scale cap: 0.255 x the impact's share (0.8..1) x the clip's peak.
+                Assert.That(sent, Is.InRange(0.14f, 0.28f), BoxingFeedback.CueName(impact));
             }
             // The neck and the t146 clips keep their level.
             var neck = new BoxingImpact(ImpactZone.Head, 6, false, Vector3.zero, game.tuning, ImpactSurface.Body);
