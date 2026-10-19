@@ -21,12 +21,12 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
     loop: 0
     bindings: []
-    gain: 2
+    gain: 1
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.25
   - _id: daae9f12ccac49c9b8a38fd8dcd799e5
     mode: 1
     displayName: left_punch_glove_hard
@@ -35,12 +35,12 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
     loop: 0
     bindings: []
-    gain: 2
+    gain: 1
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.25
   - _id: 1b4ed2e4cfa349f39bb9d57687015bdd
     mode: 1
     displayName: left_punch_body_soft
@@ -82,7 +82,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.25
   - _id: 7053c9f6f2f9412b9a59ba3844dc5a9a
     mode: 1
     displayName: left_guard_glove_hard
@@ -133,12 +133,12 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
     loop: 0
     bindings: []
-    gain: 2
+    gain: 1
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.25
   - _id: 490f790c9b1d4541a28a4f9d91368f6a
     mode: 1
     displayName: right_punch_glove_hard
@@ -147,12 +147,12 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
     loop: 0
     bindings: []
-    gain: 2
+    gain: 1
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.25
   - _id: f1337ae4e31f4fbe805b53e0c8ddb163
     mode: 1
     displayName: right_punch_body_soft
@@ -194,7 +194,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.25
   - _id: 98982b96caeb42b08a440f37af71596c
     mode: 1
     displayName: right_guard_glove_hard
@@ -273,7 +273,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: d5d940ff1c99f95479365a843fde7a2b, type: 3}
     loop: 0
     bindings: []
-    gain: 2
+    gain: 1
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -287,7 +287,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: d5d940ff1c99f95479365a843fde7a2b, type: 3}
     loop: 0
     bindings: []
-    gain: 2
+    gain: 1
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -301,7 +301,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: d5d940ff1c99f95479365a843fde7a2b, type: 3}
     loop: 0
     bindings: []
-    gain: 2
+    gain: 1
     target: '*/pos_l_wrist'
     delayOffsetSeconds: 0
     notes: 
@@ -315,7 +315,7 @@ MonoBehaviour:
     streamClip: {fileID: 8300000, guid: d5d940ff1c99f95479365a843fde7a2b, type: 3}
     loop: 0
     bindings: []
-    gain: 2
+    gain: 1
     target: '*/pos_r_wrist'
     delayOffsetSeconds: 0
     notes: 

@@ -103,7 +103,7 @@
       "description": "Decided in Studio for punch_glove_hard"
     },
     "guard_glove_hard_t146_d": {
-      "intensity": 1,
+      "intensity": 0.25,
       "loop": false,
       "description": "Decided in Studio for guard_glove_hard"
     },
@@ -349,7 +349,7 @@
       "haptics": [
         {
           "at": "hand",
-          "gain": 2,
+          "gain": 1,
           "clips": [
             "guard_glove_hard_t146_d",
             "guard_glove_hard_t146_b"
