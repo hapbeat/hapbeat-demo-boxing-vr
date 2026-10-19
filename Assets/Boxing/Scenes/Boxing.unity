@@ -2460,6 +2460,20 @@ MonoBehaviour:
   winVoice: {fileID: 8300000, guid: c8317e9e69d731244b75ac977ef4db6c, type: 3}
   loseVoice: {fileID: 8300000, guid: 43419f364e5815043992b9343ac9a688, type: 3}
   tieVoice: {fileID: 8300000, guid: e938aa3c768cdc04da2470470c27da10, type: 3}
+  tutorialStepVoice:
+  - {fileID: 8300000, guid: b30cb3845d8b48008d08d14c493e5359, type: 3}
+  - {fileID: 8300000, guid: b98b9a89af864e97a1b6569624435caa, type: 3}
+  - {fileID: 8300000, guid: dc8c93bc3a594f89b0e5b0de5f6f28df, type: 3}
+  - {fileID: 8300000, guid: fbfaa8449c184eb58aabe29528ab439c, type: 3}
+  tutorialResultVoice:
+  - {fileID: 8300000, guid: fd3f521a6ced4028a1173c0746f92fe5, type: 3}
+  - {fileID: 8300000, guid: fafb5f76be5d420780950faa922b2e42, type: 3}
+  - {fileID: 8300000, guid: 474c5dda71f347ae9b703af845ed6742, type: 3}
+  - {fileID: 8300000, guid: d5de70516c8544d99eaea46d1d63753d, type: 3}
+  tutorialHintVoice:
+  - {fileID: 8300000, guid: 3f4caeab05244819b4dd8918e2ee7a54, type: 3}
+  - {fileID: 8300000, guid: 0c4c56614c1a4b9a90e269fde57fcdc4, type: 3}
+  tutorialStartVoice: {fileID: 8300000, guid: 9556b3808f144d9886765e8104592c95, type: 3}
   cueSounds:
   - clips:
     - {fileID: 8300000, guid: d0f91314cf30c0f4197dca36529a2812, type: 3}

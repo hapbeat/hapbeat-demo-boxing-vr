@@ -285,6 +285,10 @@ namespace Hapbeat.Boxing.Editor
             if(game.feedback.voiceSource==null || game.feedback.winVoice==null || game.feedback.loseVoice==null || game.feedback.tieVoice==null ||
                 game.presentation.leftForearm==null || game.presentation.rightForearm==null)
                 throw new InvalidOperationException("Missing result voice or player forearms");
+            var f = game.feedback;
+            if (f.tutorialStepVoice.Length != 4 || f.tutorialResultVoice.Length != 4 || f.tutorialHintVoice.Length != 2 || f.tutorialStartVoice == null ||
+                f.tutorialStepVoice.Concat(f.tutorialResultVoice).Concat(f.tutorialHintVoice).Any(clip => clip == null))
+                throw new InvalidOperationException("Missing tutorial voice");
             Debug.Log("BOXING_SCENE_VALID: XR rig, menu, opponent, menu hand resolvers, eighteen cue haptic bindings, no missing scripts or prefabs");
         }
         private static void ValidateLayerSettings(string path, string property)

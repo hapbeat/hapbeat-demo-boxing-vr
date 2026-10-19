@@ -62,7 +62,25 @@ namespace Hapbeat.Boxing.Editor
             feedback.winVoice=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Boxing/Audio/Voice/you_win.ogg");
             feedback.loseVoice=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Boxing/Audio/Voice/you_lose.ogg");
             feedback.tieVoice=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Boxing/Audio/Voice/its_a_tie.ogg");
+            InstallTutorialVoice(feedback);
             BoxingForearmSetup.Install(game.presentation);
+            EditorUtility.SetDirty(feedback);
+        }
+
+        // Tutorial narration generated from Voice/voice-lines.json (hapbeat-demos tools/tts/generate-voice.py).
+        public const string TutorialVoicePath="Assets/Boxing/Audio/Tutorial/";
+        public static void InstallTutorialVoice(BoxingFeedback feedback)
+        {
+            AudioClip Load(string id)
+            {
+                var clip=AssetDatabase.LoadAssetAtPath<AudioClip>(TutorialVoicePath+id+".wav");
+                if(clip==null) throw new System.InvalidOperationException("Tutorial voice missing: "+TutorialVoicePath+id+".wav");
+                return clip;
+            }
+            feedback.tutorialStepVoice=new AudioClip[4]; feedback.tutorialResultVoice=new AudioClip[4];
+            for(int i=0;i<4;i++) { feedback.tutorialStepVoice[i]=Load($"step{i+1}"); feedback.tutorialResultVoice[i]=Load($"step{i+1}_ok"); }
+            feedback.tutorialHintVoice=new[]{ Load("step3_retry"), Load("step4_retry") };
+            feedback.tutorialStartVoice=Load("start");
             EditorUtility.SetDirty(feedback);
         }
     }

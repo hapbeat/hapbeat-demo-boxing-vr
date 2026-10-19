@@ -72,6 +72,8 @@ namespace Hapbeat.Boxing
         private const float TutorialFaceMarkerDepth = .31f, TutorialBellyDrop = .1f;
         private string tutorialMessage = "";
         private float tutorialStepTime, tutorialMessageTime, tutorialStrikeWait;
+        // The tutorial line still speaking (seconds): steps 3-4 hold the next strike until it ends.
+        private float tutorialLineTime;
         private bool tutorialAdvance, tutorialGuarded, tutorialBody, tutorialStriking;
         private int tutorialStrikes, tutorialTaken, tutorialBlocks;
 
@@ -293,7 +295,9 @@ namespace Hapbeat.Boxing
             TutorialStep++; tutorialStepTime = 0; tutorialAdvance = tutorialGuarded = tutorialBody = tutorialStriking = false;
             tutorialMessageTime = 0; tutorialStrikes = 0; tutorialStrikeWait = TutorialStrikeGap;
             if (TutorialStep == 3) Opponent.ScriptedRelease();
+            Narrate(feedback.tutorialStepVoice[TutorialStep - 1]);
         }
+        private float Narrate(AudioClip clip) => tutorialLineTime = feedback.SpeakTutorial(clip);
         // The marker for steps 1-2 (BoxingPresentation): before the guarded face, then on the belly below the guarding
         // elbows, where a straight reaches the body past the head guard. Hidden during the step's result message.
         public bool TutorialTarget(out Vector3 position)
@@ -308,17 +312,19 @@ namespace Hapbeat.Boxing
         private void NextTutorialStep()
         {
             if (TutorialStep == 5) { StartRound(); return; }
-            if (TutorialStep == 4) { TutorialStep = 5; TutorialMessage(TutorialStartText, true); return; }
+            if (TutorialStep == 4) { TutorialStep = 5; TutorialMessage(TutorialStartText, true, feedback.tutorialStartVoice); return; }
             EnterTutorialStep();
         }
         // advance: a step's result message, then the next step; otherwise a hint while the step goes on.
-        private void TutorialMessage(string text, bool advance)
+        // The message stays until its spoken line has ended.
+        private void TutorialMessage(string text, bool advance, AudioClip voice)
         {
-            tutorialMessage = text; tutorialMessageTime = tuning.tutorialMessageSeconds; tutorialAdvance = advance;
+            tutorialMessage = text; tutorialMessageTime = Mathf.Max(tuning.tutorialMessageSeconds, Narrate(voice) + .2f); tutorialAdvance = advance;
         }
         private void TickTutorial(float dt)
         {
             if (tutorialMessageTime > 0) tutorialMessageTime -= dt;
+            if (tutorialLineTime > 0) tutorialLineTime -= dt;
             if (tutorialAdvance)
             {
                 if (tutorialMessageTime > 0) return;
@@ -329,7 +335,7 @@ namespace Hapbeat.Boxing
             {
                 // Set every step: a recenter (Opponent.Reset) drops it.
                 Opponent.ScriptedGuard(BoxingGuard.HeadStraight);
-                if (TutorialStep == 1 ? tutorialGuarded : tutorialBody) TutorialMessage(TutorialResults[TutorialStep - 1], true);
+                if (TutorialStep == 1 ? tutorialGuarded : tutorialBody) TutorialMessage(TutorialResults[TutorialStep - 1], true, feedback.tutorialResultVoice[TutorialStep - 1]);
                 else if (tutorialStepTime >= tuning.tutorialStepTimeoutSeconds) NextTutorialStep();
                 return;
             }
@@ -339,12 +345,13 @@ namespace Hapbeat.Boxing
                 if (Opponent.State == BoxingOpponentState.Attack) return;
                 tutorialStriking = false; tutorialStrikes++; tutorialStrikeWait = TutorialStrikeGap;
                 bool hit = Round.Taken > tutorialTaken, blocked = Round.Blocks > tutorialBlocks;
-                if (TutorialStep == 3 ? hit : blocked) TutorialMessage(TutorialResults[TutorialStep - 1], true);
+                if (TutorialStep == 3 ? hit : blocked) TutorialMessage(TutorialResults[TutorialStep - 1], true, feedback.tutorialResultVoice[TutorialStep - 1]);
                 else if (tutorialStrikes >= tuning.tutorialStrikes) NextTutorialStep();
-                else if (TutorialStep == 3 ? blocked : hit) TutorialMessage(TutorialHints[TutorialStep - 3], false);
+                else if (TutorialStep == 3 ? blocked : hit) TutorialMessage(TutorialHints[TutorialStep - 3], false, feedback.tutorialHintVoice[TutorialStep - 3]);
                 return;
             }
-            if ((tutorialStrikeWait -= dt) > 0) return;
+            // The next strike waits for the gap and for the instruction / retry line to end.
+            if ((tutorialStrikeWait -= dt) > 0 || tutorialLineTime > 0) return;
             tutorialTaken = Round.Taken; tutorialBlocks = Round.Blocks; tutorialStriking = true;
             Opponent.ScriptedStrike(BoxingAttack.HeadStraight, false, TutorialStep == 4 ? TutorialBlockStrikeScale : 1);
         }

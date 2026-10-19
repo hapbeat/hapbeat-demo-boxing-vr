@@ -1,0 +1,16 @@
+{
+ "voice": {"speaker": "まお", "style": "ノーマル", "speed": 1.0, "volume": 0.85},
+ "lines": [
+  {"id": "step1", "text": "相手の顔を打ってみよう"},
+  {"id": "step1_ok", "text": "ガードの上からはダメージが入らない"},
+  {"id": "step2", "text": "お腹を打とう"},
+  {"id": "step2_ok", "text": "ダメージが入った！"},
+  {"id": "step3", "text": "相手のパンチを受けてみよう"},
+  {"id": "step3_retry", "text": "ガードしないで受けてみよう"},
+  {"id": "step3_ok", "text": "ガードしないとダメージを受ける"},
+  {"id": "step4", "text": "顔の前で構えてパンチを防ごう"},
+  {"id": "step4_retry", "text": "グローブを顔の前に構えよう"},
+  {"id": "step4_ok", "text": "ガード成功！"},
+  {"id": "start", "text": "試合開始"}
+ ]
+}

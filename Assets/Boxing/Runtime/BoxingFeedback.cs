@@ -68,6 +68,12 @@ namespace Hapbeat.Boxing
         public BoxingOutcome LastSpokenOutcome { get; private set; }
         public int LastSpokenNumber { get; private set; }
         public int VoiceCues { get; private set; }
+        // Tutorial narration (Voice/voice-lines.json, AivisSpeech at -20 LUFS, tools/tts): per step (BoxingGame.TutorialSteps
+        // order) its instruction and success lines, the retry lines of steps 3-4, and 試合開始.
+        public AudioClip[] tutorialStepVoice = new AudioClip[4], tutorialResultVoice = new AudioClip[4], tutorialHintVoice = new AudioClip[2];
+        public AudioClip tutorialStartVoice;
+        public int TutorialVoiceCues { get; private set; }
+        public AudioClip LastTutorialVoice { get; private set; }
         public float ImpactTailSeconds { get; private set; }
         // Per cue (Cues order): its sounds (none = no sound), from the cue table.
         public CueSoundSet[] cueSounds = new CueSoundSet[10];
@@ -170,6 +176,14 @@ namespace Hapbeat.Boxing
             LastSpokenNumber=number; VoiceCues++;
             if(!Application.isBatchMode && !forceSilent && soundEnabled && voiceSource!=null && countdownVoice[number-1]!=null)
             { voiceSource.Stop(); voiceSource.PlayOneShot(countdownVoice[number-1],DemoNarration.Gain); }
+        }
+        // Starts a tutorial line (a new one stops the previous) and returns its length in seconds (0 = no clip), also when silent.
+        public float SpeakTutorial(AudioClip clip)
+        {
+            LastTutorialVoice=clip; TutorialVoiceCues++;
+            if(!Application.isBatchMode && !forceSilent && soundEnabled && voiceSource!=null)
+            { voiceSource.Stop(); if(clip!=null) voiceSource.PlayOneShot(clip,DemoNarration.Gain); }
+            return clip!=null ? clip.length : 0;
         }
         public AudioClip ResultClip(BoxingOutcome outcome) => outcome==BoxingOutcome.Win ? winVoice : outcome==BoxingOutcome.Lose ? loseVoice : tieVoice;
         public void SpeakResult(BoxingOutcome outcome)
