@@ -399,56 +399,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 412601333}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &60409812
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 60409814}
-  - component: {fileID: 60409813}
-  m_Layer: 0
-  m_Name: Haptic right_punch_body_hard_2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &60409813
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 60409812}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf86876cf7f5a4749a8d3693f9a68bbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Hapbeat.Runtime::Hapbeat.HapbeatUnityEventTrigger
-  _eventMap: {fileID: 11400000, guid: fd70f47f0a96f4145af527a1d1146e8c, type: 2}
-  _entryId: 188b0daea4ad401a9b9ae25d911b5b95
-  _triggerEnabled: 1
-  _cooldown: 0
-  _gainMultiplier: 1
-  _verboseLog: 0
---- !u!4 &60409814
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 60409812}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 412601333}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &66560276
 GameObject:
   m_ObjectHideFlags: 0
@@ -2447,74 +2397,124 @@ MonoBehaviour:
   - triggers:
     - {fileID: 55005413}
     - {fileID: 363961749}
+    syncMs:
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 769973120}
     - {fileID: 439367343}
     - {fileID: 487709204}
+    syncMs:
+    - 0
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 1171415900}
+    syncMs:
+    - 0
     pick: 0
   - triggers:
     - {fileID: 41709749}
-    - {fileID: 951181151}
+    syncMs:
+    - 0
     pick: 0
   - triggers:
     - {fileID: 722510757}
     - {fileID: 767821287}
     - {fileID: 1748825691}
+    syncMs:
+    - 0
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 589922017}
     - {fileID: 1693215047}
+    syncMs:
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 440121931}
     - {fileID: 1092501347}
+    syncMs:
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 1495145314}
     - {fileID: 1428296681}
+    syncMs:
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 355709018}
     - {fileID: 430092255}
+    syncMs:
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 1653306386}
     - {fileID: 2124114335}
     - {fileID: 2027785889}
+    syncMs:
+    - 0
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 1619291205}
+    syncMs:
+    - 0
     pick: 0
   - triggers:
     - {fileID: 1470330967}
-    - {fileID: 60409813}
+    syncMs:
+    - 0
     pick: 0
   - triggers:
     - {fileID: 1215821599}
     - {fileID: 1930951538}
     - {fileID: 1927456661}
+    syncMs:
+    - 0
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 499378637}
     - {fileID: 79708174}
+    syncMs:
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 702795369}
     - {fileID: 609608346}
+    syncMs:
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 661063068}
     - {fileID: 663014928}
+    syncMs:
+    - 0
+    - 0
     pick: 0
   - triggers:
     - {fileID: 2063981703}
+    syncMs:
+    - 0
     pick: 0
   - triggers:
     - {fileID: 983684799}
+    syncMs:
+    - 0
     pick: 0
   audioSource: {fileID: 412601328}
   bellSource: {fileID: 412601334}
@@ -2533,11 +2533,16 @@ MonoBehaviour:
     volumes:
     - 0.94404083
     - 0.9440085
+    syncMs:
+    - 0
+    - 0
     pick: 0
   - clips:
     - {fileID: 8300000, guid: 274a7920efd445d419e04fbfb81bc4fc, type: 3}
     volumes:
     - 0.94404083
+    syncMs:
+    - 0
     pick: 0
   - clips:
     - {fileID: 8300000, guid: 124a7bb5e033cff4cbd2cf94b98ed390, type: 3}
@@ -2547,6 +2552,10 @@ MonoBehaviour:
     - 0.9440767
     - 0.9440767
     - 0.94404083
+    syncMs:
+    - 0
+    - 0
+    - 0
     pick: 0
   - clips:
     - {fileID: 8300000, guid: 124a7bb5e033cff4cbd2cf94b98ed390, type: 3}
@@ -2556,16 +2565,24 @@ MonoBehaviour:
     - 0.9440767
     - 0.9440767
     - 0.94404083
+    syncMs:
+    - 0
+    - 0
+    - 0
     pick: 0
   - clips:
     - {fileID: 8300000, guid: 7c9643793afda2a4e8ae1ef326819eea, type: 3}
     volumes:
     - 0.56
+    syncMs:
+    - 0
     pick: 0
   - clips:
     - {fileID: 8300000, guid: 7c9643793afda2a4e8ae1ef326819eea, type: 3}
     volumes:
     - 0.56
+    syncMs:
+    - 0
     pick: 0
   - clips:
     - {fileID: 8300000, guid: 0bbdc1a0c4e033b4ea95a5b4a8bd32f2, type: 3}
@@ -2573,11 +2590,16 @@ MonoBehaviour:
     volumes:
     - 0.94404083
     - 0.94404083
+    syncMs:
+    - 0
+    - 0
     pick: 0
   - clips:
     - {fileID: 8300000, guid: 7acf2e8890da30f4eb9f9b6f9044a11b, type: 3}
     volumes:
     - 1
+    syncMs:
+    - 0
     pick: 0
   - clips:
     - {fileID: 8300000, guid: d31d96486903f6242896cee88a895893, type: 3}
@@ -2591,6 +2613,12 @@ MonoBehaviour:
     - 0.9440767
     - 0.9440767
     - 0.94404083
+    syncMs:
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
     pick: 0
   - clips:
     - {fileID: 8300000, guid: c3e964817038ff0418ed9917e4b1f439, type: 3}
@@ -2598,10 +2626,14 @@ MonoBehaviour:
     volumes:
     - 0.94404083
     - 0.94404083
+    syncMs:
+    - 0
+    - 0
     pick: 0
   bell: {fileID: 8300000, guid: 8f348c78e42f99841b49203eabafe55b, type: 3}
   soundEnabled: 1
   hapticsEnabled: 1
+  wristMinimumGain: 0.8
   forceSilent: 0
 --- !u!114 &412601330
 MonoBehaviour:
@@ -2719,8 +2751,6 @@ Transform:
   - {fileID: 609608347}
   - {fileID: 1428296682}
   - {fileID: 663014929}
-  - {fileID: 951181152}
-  - {fileID: 60409814}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!82 &412601334
@@ -5267,56 +5297,6 @@ MonoBehaviour:
     m_Interactions: 
     m_SingletonActionBindings: []
     m_Flags: 0
---- !u!1 &951181150
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 951181152}
-  - component: {fileID: 951181151}
-  m_Layer: 0
-  m_Name: Haptic left_punch_body_hard_2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &951181151
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 951181150}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf86876cf7f5a4749a8d3693f9a68bbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Hapbeat.Runtime::Hapbeat.HapbeatUnityEventTrigger
-  _eventMap: {fileID: 11400000, guid: fd70f47f0a96f4145af527a1d1146e8c, type: 2}
-  _entryId: 1f01a004510843c997e11166c19f0054
-  _triggerEnabled: 1
-  _cooldown: 0
-  _gainMultiplier: 1
-  _verboseLog: 0
---- !u!4 &951181152
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 951181150}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 412601333}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &958018212
 GameObject:
   m_ObjectHideFlags: 0

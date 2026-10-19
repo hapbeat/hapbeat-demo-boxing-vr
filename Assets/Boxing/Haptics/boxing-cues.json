@@ -151,6 +151,16 @@
       "intensity": 1,
       "loop": false,
       "description": "Decided in Studio for punch_body"
+    },
+    "punch_body_hard_t151_b": {
+      "intensity": 1,
+      "loop": false,
+      "description": "Decided in Studio for punch_body:hard"
+    },
+    "punch_body_hard_t151_a": {
+      "intensity": 1,
+      "loop": false,
+      "description": "Decided in Studio for punch_body:hard"
     }
   },
   "sounds": {
@@ -421,18 +431,19 @@
             {
               "at": "hand",
               "gain": 2,
-              "clips": [
+              "alternates": [
+                "punch_body_hard_t151_a",
                 "punch_body_t150_b",
                 "punch_body_t150_a"
-              ]
+              ],
+              "clip": "punch_body_hard_t151_b"
             }
           ],
           "review": {
             "haptics": "approved"
           }
         }
-      },
-      "haptics": []
+      }
     },
     "guard_glove": {
       "description": "相手のパンチを自分のグローブで受ける（受けた側の手首）。弱: 接触の相対速度 2.5 m/s 未満。強: 接触の相対速度 2.5 m/s 以上。gain = 相対速度（0.25 m/s で 0.12 〜 6 m/s で 1）",
