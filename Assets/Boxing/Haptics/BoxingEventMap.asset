@@ -18,7 +18,7 @@ MonoBehaviour:
     displayName: left_punch_glove_soft
     category: boxing
     eventName: left_punch_glove_soft
-    streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
+    streamClip: {fileID: 8300000, guid: f7d138e5b241893429fa1216a718888f, type: 3}
     loop: 0
     bindings: []
     gain: 1
@@ -26,13 +26,13 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.25
+    _cachedManifestIntensity: 1
   - _id: daae9f12ccac49c9b8a38fd8dcd799e5
     mode: 1
     displayName: left_punch_glove_hard
     category: boxing
     eventName: left_punch_glove_hard
-    streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
+    streamClip: {fileID: 8300000, guid: f7d138e5b241893429fa1216a718888f, type: 3}
     loop: 0
     bindings: []
     gain: 1
@@ -40,7 +40,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.25
+    _cachedManifestIntensity: 1
   - _id: 1b4ed2e4cfa349f39bb9d57687015bdd
     mode: 1
     displayName: left_punch_body_soft
@@ -82,7 +82,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.25
+    _cachedManifestIntensity: 0.3
   - _id: 7053c9f6f2f9412b9a59ba3844dc5a9a
     mode: 1
     displayName: left_guard_glove_hard
@@ -130,7 +130,7 @@ MonoBehaviour:
     displayName: right_punch_glove_soft
     category: boxing
     eventName: right_punch_glove_soft
-    streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
+    streamClip: {fileID: 8300000, guid: f7d138e5b241893429fa1216a718888f, type: 3}
     loop: 0
     bindings: []
     gain: 1
@@ -138,13 +138,13 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.25
+    _cachedManifestIntensity: 1
   - _id: 490f790c9b1d4541a28a4f9d91368f6a
     mode: 1
     displayName: right_punch_glove_hard
     category: boxing
     eventName: right_punch_glove_hard
-    streamClip: {fileID: 8300000, guid: 00202776a900ff54e94d6587eae0b6f9, type: 3}
+    streamClip: {fileID: 8300000, guid: f7d138e5b241893429fa1216a718888f, type: 3}
     loop: 0
     bindings: []
     gain: 1
@@ -152,7 +152,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.25
+    _cachedManifestIntensity: 1
   - _id: f1337ae4e31f4fbe805b53e0c8ddb163
     mode: 1
     displayName: right_punch_body_soft
@@ -194,7 +194,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.25
+    _cachedManifestIntensity: 0.3
   - _id: 98982b96caeb42b08a440f37af71596c
     mode: 1
     displayName: right_guard_glove_hard
@@ -265,62 +265,6 @@ MonoBehaviour:
     notes: 
     manifestOverride: {fileID: 0}
     _cachedManifestIntensity: 1
-  - _id: f896c7f37e214cb1b8c3cdd13c827215
-    mode: 1
-    displayName: left_punch_glove_soft_2
-    category: boxing
-    eventName: left_punch_glove_soft_2
-    streamClip: {fileID: 8300000, guid: d5d940ff1c99f95479365a843fde7a2b, type: 3}
-    loop: 0
-    bindings: []
-    gain: 1
-    target: '*/pos_l_wrist'
-    delayOffsetSeconds: 0
-    notes: 
-    manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.5
-  - _id: ea0a78e4530041bca6e28b585fb8ed4f
-    mode: 1
-    displayName: right_punch_glove_soft_2
-    category: boxing
-    eventName: right_punch_glove_soft_2
-    streamClip: {fileID: 8300000, guid: d5d940ff1c99f95479365a843fde7a2b, type: 3}
-    loop: 0
-    bindings: []
-    gain: 1
-    target: '*/pos_r_wrist'
-    delayOffsetSeconds: 0
-    notes: 
-    manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.5
-  - _id: c357998efd024e07a5a41df146b4f1d2
-    mode: 1
-    displayName: left_punch_glove_hard_2
-    category: boxing
-    eventName: left_punch_glove_hard_2
-    streamClip: {fileID: 8300000, guid: d5d940ff1c99f95479365a843fde7a2b, type: 3}
-    loop: 0
-    bindings: []
-    gain: 1
-    target: '*/pos_l_wrist'
-    delayOffsetSeconds: 0
-    notes: 
-    manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.5
-  - _id: f60dfffb107c46b5b140902ec7b55905
-    mode: 1
-    displayName: right_punch_glove_hard_2
-    category: boxing
-    eventName: right_punch_glove_hard_2
-    streamClip: {fileID: 8300000, guid: d5d940ff1c99f95479365a843fde7a2b, type: 3}
-    loop: 0
-    bindings: []
-    gain: 1
-    target: '*/pos_r_wrist'
-    delayOffsetSeconds: 0
-    notes: 
-    manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.5
   - _id: 5d1887209d4349a3a20663c8b99e4bf0
     mode: 1
     displayName: left_guard_glove_soft_2

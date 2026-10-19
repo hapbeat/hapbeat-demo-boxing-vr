@@ -373,12 +373,12 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void CueWithSeveralClipsUsesAllWithoutRepeatingAcrossBothWristsAndASingleClipCueKeepsIt()
         {
             Random.InitState(7);
-            // punch_glove_hard (a fast own punch on the opponent's glove) has several clips picked at random;
+            // guard_glove_soft (a slow opponent punch caught on the glove) has several clips picked at random;
             // punch_body_soft (a lighter own punch on the body) one.
-            var left = new BoxingImpact(ImpactZone.LeftGlove, 4, Vector3.zero, game.tuning, ImpactSurface.Glove, 1);
-            var right = new BoxingImpact(ImpactZone.RightGlove, 4, Vector3.zero, game.tuning, ImpactSurface.Glove, 1);
+            var left = new BoxingImpact(ImpactZone.LeftGlove, 1, false, Vector3.zero, game.tuning, ImpactSurface.Glove);
+            var right = new BoxingImpact(ImpactZone.RightGlove, 1, false, Vector3.zero, game.tuning, ImpactSurface.Glove);
             var body = new BoxingImpact(ImpactZone.LeftGlove, 4, Vector3.zero, game.tuning, ImpactSurface.Body, game.tuning.punchHardStrength - .05f);
-            Assert.That(BoxingFeedback.CueName(left), Is.EqualTo("punch_glove_hard")); Assert.That(BoxingFeedback.CueName(body), Is.EqualTo("punch_body_soft"));
+            Assert.That(BoxingFeedback.CueName(left), Is.EqualTo("guard_glove_soft")); Assert.That(BoxingFeedback.CueName(body), Is.EqualTo("punch_body_soft"));
             var several = game.feedback.impactHaptics[BoxingFeedback.TriggerIndex(left)];
             var single = game.feedback.impactHaptics[BoxingFeedback.TriggerIndex(body)];
             Assert.That(several.triggers.Length, Is.GreaterThan(1)); Assert.That(several.pick, Is.EqualTo(CueSoundPick.Random));

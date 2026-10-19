@@ -93,17 +93,17 @@
       "description": "Decided in Studio for punch_glove_hard"
     },
     "punch_glove_hard_t145_b": {
-      "intensity": 0.15395660387723606,
+      "intensity": 1,
       "loop": false,
       "description": "Decided in Studio for punch_glove_hard"
     },
     "punch_glove_hard_t145_d": {
-      "intensity": 0.18845903420524202,
+      "intensity": 0.83,
       "loop": false,
       "description": "Decided in Studio for punch_glove_hard"
     },
     "guard_glove_hard_t146_d": {
-      "intensity": 0.25,
+      "intensity": 0.3,
       "loop": false,
       "description": "Decided in Studio for guard_glove_hard"
     },
@@ -344,22 +344,21 @@
       },
       "review": {
         "sfx": "approved",
-        "haptics": "approved"
+        "haptics": "tentative"
       },
       "haptics": [
         {
           "at": "hand",
           "gain": 1,
           "clips": [
-            "guard_glove_hard_t146_d",
-            "guard_glove_hard_t146_b"
+            "punch_glove_hard_t145_b"
           ],
           "alternates": [
+            "guard_glove_hard_t146_d",
             "punch_glove_hard_t142_e",
             "punch_glove_hard_t142_b",
             "punch_glove_soft",
             "punch_glove_hard_t145_a",
-            "punch_glove_hard_t145_b",
             "punch_glove_hard_t145_d"
           ]
         }
