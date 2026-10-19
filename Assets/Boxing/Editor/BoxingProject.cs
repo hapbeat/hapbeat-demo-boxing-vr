@@ -116,9 +116,9 @@ namespace Hapbeat.Boxing.Editor
             var background = new GameObject("Panel background", typeof(RectTransform), typeof(Image)); background.transform.SetParent(panel, false);
             background.GetComponent<RectTransform>().sizeDelta = new Vector2(780, 900); background.GetComponent<Image>().color = new Color(0.015f, 0.027f, 0.045f, 1);
             menu.title = Text("Title", panel, new Vector2(0, 325), new Vector2(700, 160), 60, "HAPBEAT\nBOXING");
-            menu.rows = new Text[7];
-            for (int i = 0; i < 7; i++) menu.rows[i] = Text("Option " + i, panel, new Vector2(0, 185 - i * 65), new Vector2(680, 58), 30, "");
-            menu.hint = Text("Controls", panel, new Vector2(0, -340), new Vector2(730, 125), 20, "");
+            menu.rows = new Text[MenuRows];
+            for (int i = 0; i < MenuRows; i++) menu.rows[i] = Text("Option " + i, panel, MenuRowPosition(i), new Vector2(680, 58), 30, "");
+            menu.hint = Text("Controls", panel, MenuHintPosition, new Vector2(730, 125), 20, "");
             BuildHaptics(game);
             BoxingContent.ConfigureModels(game);
             BoxingContent.ConfigureImpactVisuals(game.presentation);
@@ -212,6 +212,34 @@ namespace Hapbeat.Boxing.Editor
             input.headDriver = driver;
         }
 
+        // The developer menu: seven rows, then HAPTIC TEST; the controls hint under them.
+        public const int MenuRows = 8;
+        private static Vector2 MenuRowPosition(int row) => new Vector2(0, 185 - row * 65);
+        private static readonly Vector2 MenuHintPosition = new Vector2(0, -370);
+
+        [MenuItem("Hapbeat Boxing/Install Haptic Test Menu Row")]
+        public static void InstallMenuRows()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath);
+            var menu = UnityEngine.Object.FindAnyObjectByType<BoxingGame>().menu;
+            int count = menu.rows.Length;
+            if (count < MenuRows)
+            {
+                var rows = new Text[MenuRows];
+                Array.Copy(menu.rows, rows, count);
+                for (int i = count; i < MenuRows; i++)
+                {
+                    rows[i] = UnityEngine.Object.Instantiate(menu.rows[count - 1], menu.panel, false);
+                    rows[i].name = "Option " + i; rows[i].text = "";
+                    rows[i].rectTransform.anchoredPosition = MenuRowPosition(i);
+                }
+                menu.rows = rows;
+            }
+            menu.hint.rectTransform.anchoredPosition = MenuHintPosition;
+            EditorUtility.SetDirty(menu); EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene);
+            Debug.Log("BOXING_MENU_ROWS " + count + " -> " + menu.rows.Length);
+        }
+
         [MenuItem("Hapbeat Boxing/Polish Existing Protective Gear")]
         public static void Polish()
         {
@@ -260,6 +288,7 @@ namespace Hapbeat.Boxing.Editor
             var scene = EditorSceneManager.OpenScene(ScenePath);
             var game = UnityEngine.Object.FindAnyObjectByType<BoxingGame>();
             if (game == null || game.input == null || game.tuning == null || game.feedback == null || game.menu == null) throw new InvalidOperationException("Incomplete boxing scene");
+            if (game.menu.rows == null || game.menu.rows.Length != MenuRows || game.menu.rows.Any(row => row == null)) throw new InvalidOperationException("Menu rows missing (run Install Haptic Test Menu Row)");
             if (game.input.headDriver == null || game.input.headDriver.GetComponent<Camera>() != game.input.headCamera) throw new InvalidOperationException("Head tracked pose driver missing");
             if (game.input.startPoint == null) throw new InvalidOperationException("Scene start position marker missing");
             if (game.presentation.enemyAvatar == null || game.presentation.enemyAvatar.skin == null || game.presentation.enemyAvatar.bones.Length != 20)

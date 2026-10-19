@@ -99,6 +99,46 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(Trigger(neck).ResolveEntry().GetEffectiveGain(), Is.GreaterThan(.36f));
         }
 
+        // Developer menu HAPTIC TEST: every clip of every cue once, at the left or the right wrist (the neck's at the neck),
+        // sent at a full impact's share; computed only here (forceSilent), nothing is sent.
+        [Test] public void HapticTestPageSendsEachCueClipAsAFullImpact()
+        {
+            var feedback = game.feedback;
+            var clips = feedback.HapticTestClips();
+            int expected = 0;
+            for (int cue = 0; cue < BoxingFeedback.Cues.Length; cue++)
+                expected += feedback.impactHaptics[cue < BoxingFeedback.WristCues ? cue : BoxingFeedback.WristCues + cue].triggers.Length;
+            Assert.That(clips.Length, Is.EqualTo(expected));
+            feedback.HapticsTrimDb = 0;
+            foreach (var item in clips)
+            {
+                var left = feedback.TestTrigger(item, false); var right = feedback.TestTrigger(item, true);
+                string name = BoxingFeedback.Cues[item.cue];
+                Assert.That(right.ResolveEntry().streamClip, Is.EqualTo(left.ResolveEntry().streamClip), name);
+                Assert.That(right.ResolveEntry().target, Does.EndWith(item.cue < BoxingFeedback.WristCues ? "pos_r_wrist" : "pos_neck"), name);
+                float sent = feedback.TestHaptic(left, false, BoxingFeedback.GameHapticLead());
+                Assert.That(sent, Is.EqualTo(feedback.SentPeak(1, left)).Within(1e-5f), name);
+                Assert.That(sent, Is.LessThanOrEqualTo(1 + 1e-4f), name);
+                Assert.That(feedback.TestHaptic(left, true, 0), Is.EqualTo(sent).Within(1e-5f), name + " kit");
+            }
+            // A full-speed punch on the guard sends what the test sends for its clip.
+            var punch = new BoxingImpact(ImpactZone.LeftGlove, 4, Vector3.zero, game.tuning, ImpactSurface.Glove, 1);
+            var trigger = Trigger(punch);
+            Assert.That(feedback.SentPeak(punch, trigger), Is.EqualTo(feedback.TestHaptic(trigger, false, 0)).Within(1e-5f));
+            Assert.That(feedback.Sends, Is.Zero); Assert.That(feedback.TestSends, Is.Zero);
+            var menu = game.menu;
+            menu.Activate(7); Assert.That(menu.TestPage, Is.True);
+            menu.Activate(1); Assert.That(menu.TestClip, Is.EqualTo(1));
+            menu.Activate(3); Assert.That(menu.TestKit, Is.True);
+            menu.Activate(4); Assert.That(menu.TestLeadSeconds, Is.Zero);
+            float configured = menu.SendAheadSeconds;
+            menu.Activate(5); Assert.That(menu.SendAheadSeconds, Is.EqualTo(BoxingMenu.ShortSendAhead));
+            menu.Activate(5); Assert.That(menu.SendAheadSeconds, Is.EqualTo(configured), "the config asset gets its own value back");
+            menu.Activate(6); Assert.That(menu.LastTestPeak, Is.GreaterThan(0));
+            menu.Activate(0); Assert.That(menu.TestPage, Is.False); Assert.That(menu.Selection, Is.EqualTo(7));
+            Assert.That(feedback.TestSends, Is.Zero);
+        }
+
         [Test] public void AStoredTrimThatIsNoLongerAStepFallsBackToTheDefaultWithAWarning()
         {
             var store = new MemoryDemoDeviceOptionStore();

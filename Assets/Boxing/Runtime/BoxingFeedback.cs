@@ -146,10 +146,7 @@ namespace Hapbeat.Boxing
             if (CanSend && LastHaptic != null)
             {
                 var trigger = LastHaptic;
-                trigger.GainMultiplier = HapticMultiplier(impact, trigger);
-                // Position addressing selects the wearable; do not silence one channel of a wrist unit.
-                trigger.Pan = 0;
-                trigger.FireAfter((float)LastHapticDelay); Sends++;
+                SendHaptic(trigger, HapticMultiplier(impact, trigger), LastHapticDelay); Sends++;
                 // TODO(diagnostic, 2026-10-19): remove once the "guarded punch feels nothing at -9 dB" report is settled.
                 var entry = trigger.ResolveEntry();
                 Debug.Log("[Boxing Haptic] " + Cues[cue] + " " + impact.zone + " clip=" + (entry != null && entry.streamClip != null ? entry.streamClip.name : "none") +
@@ -157,6 +154,65 @@ namespace Hapbeat.Boxing
                     " trim=" + HapticsTrimDb.ToString("F0") + "dB delay=" + (LastHapticDelay * 1000).ToString("F0") + "ms");
             }
             if (clip != null) PlaySound(clip, Mathf.Clamp01(impact.gain) * sounds.volumes[sound], LastSoundDelay);
+        }
+        // The stream an impact sends: its gain, both channels, delaySeconds later on the stream timeline.
+        private static void SendHaptic(HapbeatUnityEventTrigger trigger, float multiplier, double delaySeconds)
+        {
+            trigger.GainMultiplier = multiplier;
+            // Position addressing selects the wearable; do not silence one channel of a wrist unit.
+            trigger.Pan = 0;
+            trigger.FireAfter((float)delaySeconds);
+        }
+        // Developer menu HAPTIC TEST (no punch): every clip of every cue, the wrist cues at the left wrist.
+        public readonly struct HapticTestClip
+        {
+            public readonly int cue, set, clip;
+            public HapticTestClip(int cue, int set, int clip) { this.cue = cue; this.set = set; this.clip = clip; }
+        }
+        public HapticTestClip[] HapticTestClips()
+        {
+            var list = new List<HapticTestClip>();
+            for (int cue = 0; cue < Cues.Length; cue++)
+            {
+                int set = cue < WristCues ? cue : 2 * WristCues + cue - WristCues;
+                var haptics = set < impactHaptics.Length ? impactHaptics[set] : null;
+                if (haptics == null || haptics.triggers == null) continue;
+                for (int k = 0; k < haptics.triggers.Length; k++) if (haptics.triggers[k] != null) list.Add(new HapticTestClip(cue, set, k));
+            }
+            return list.ToArray();
+        }
+        // The test clip's trigger: a wrist cue at right_<cue> when rightWrist, the neck's as it is.
+        public HapbeatUnityEventTrigger TestTrigger(HapticTestClip item, bool rightWrist) =>
+            impactHaptics[item.cue < WristCues && rightWrist ? item.set + WristCues : item.set].triggers[item.clip];
+        // The cue table's Kit (boxing-cues.json "kit"): a clip installed on the device plays as the PLAY of <kit>.<clip>.
+        public const string KitName = "boxing-kit";
+        // An impact's haptic lead without a sound (DEC-093): one audio buffer, then this device's offset.
+        public static double GameHapticLead()
+        {
+            HapbeatAvSync.Split(0, 0, out _, out var hapticDelay);
+            return DemoTimedSound.Lead + hapticDelay;
+        }
+        public int TestSends { get; private set; }
+        // One test clip at a full impact's share (1), no sound: streamed as an impact streams it, leadSeconds later on the
+        // stream timeline, or (kit) as the PLAY of the device's own copy KitName.<clip> at the same gain. Returns the peak
+        // sent (1 = full scale; Studio's audition sends the clip's peak x its intensity).
+        public float TestHaptic(HapbeatUnityEventTrigger trigger, bool kit, double leadSeconds)
+        {
+            var entry = trigger != null ? trigger.ResolveEntry() : null;
+            if (entry == null || entry.streamClip == null) return 0;
+            float multiplier = HapticMultiplier(1, trigger), peak = SentPeak(1, trigger);
+            if (!CanSend) return peak;
+            TestSends++;
+            if (kit)
+            {
+                if (HapbeatManager.Instance != null)
+                    HapbeatManager.Instance.Play(KitName + "." + entry.streamClip.name, entry.GetEffectiveGain() * multiplier,
+                        "Boxing haptic test", entry.HasTarget ? entry.target : null, 0);
+            }
+            else SendHaptic(trigger, multiplier, leadSeconds);
+            Debug.Log("[Boxing Haptic Test] " + entry.eventName + " clip=" + entry.streamClip.name + " " + (kit ? "kit" : "stream lead=" + (leadSeconds * 1000).ToString("F0") + "ms") +
+                " peak=" + peak.ToString("F3") + " trim=" + HapticsTrimDb.ToString("F0") + "dB");
+            return peak;
         }
         // Own punch: on the opponent's guard (glove or arm), or on its head / body. Received: on the glove,
         // the forearm, or the head / body. Scoring counts arm contacts as glove surfaces too.
@@ -182,21 +238,24 @@ namespace Hapbeat.Boxing
         // GainMultiplier for this impact: the wanted level is entry gain x intensity x the impact's share, capped at full
         // scale for the clip (1 / its peak; above it the SDK limiter only squashed it, so a trim did nothing), times
         // 10^(trim/20), divided back by entry gain x intensity. Nothing is sent above full scale and the trim acts in dB.
-        public float HapticMultiplier(BoxingImpact impact, HapbeatUnityEventTrigger trigger)
+        public float HapticMultiplier(BoxingImpact impact, HapbeatUnityEventTrigger trigger) => HapticMultiplier(HapticGain(impact), trigger);
+        // The same for an impact's share of the cue (HapticGain).
+        public float HapticMultiplier(float share, HapbeatUnityEventTrigger trigger)
         {
             var entry = trigger != null ? trigger.ResolveEntry() : null;
             float effective = entry != null ? entry.GetEffectiveGain() : 1;
             if (effective <= 0) return 0;
             float peak = entry != null ? ClipPeak(entry.streamClip) : 0;
-            float wanted = effective * HapticGain(impact);
+            float wanted = effective * share;
             if (peak > 0) wanted = Mathf.Min(wanted, 1 / peak);
             return wanted * Mathf.Pow(10, HapticsTrimDb / 20) / effective;
         }
         // The peak this impact sends relative to full scale (1 = full scale), for the tests and the README's mapping.
-        public float SentPeak(BoxingImpact impact, HapbeatUnityEventTrigger trigger)
+        public float SentPeak(BoxingImpact impact, HapbeatUnityEventTrigger trigger) => SentPeak(HapticGain(impact), trigger);
+        public float SentPeak(float share, HapbeatUnityEventTrigger trigger)
         {
             var entry = trigger.ResolveEntry();
-            return entry.GetEffectiveGain() * Mathf.Clamp(HapticMultiplier(impact, trigger), 0, 2) * ClipPeak(entry.streamClip);
+            return entry.GetEffectiveGain() * Mathf.Clamp(HapticMultiplier(share, trigger), 0, 2) * ClipPeak(entry.streamClip);
         }
         // Each stream clip's peak |sample|, read once (no allocation per impact afterwards).
         private readonly Dictionary<AudioClip, float> clipPeaks = new Dictionary<AudioClip, float>();
