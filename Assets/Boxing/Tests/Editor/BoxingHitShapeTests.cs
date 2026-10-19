@@ -17,8 +17,7 @@ namespace Hapbeat.Boxing.Tests
         {
             EditorSceneManager.OpenScene(Editor.BoxingProject.ScenePath);
             game = Object.FindFirstObjectByType<BoxingGame>();
-            // The shapes and guards are fitted at size 1; the size probe (BoxingTuning.opponentSizeScale) is checked elsewhere.
-            original = game.tuning; game.tuning = Object.Instantiate(original); game.tuning.opponentSizeScale = 1;
+            original = game.tuning; game.tuning = Object.Instantiate(original);
             game.feedback.forceSilent = true; game.feedback.sdkRoot.SetActive(false); game.Initialize();
             game.input.SetTestPose(BoxingSceneTests.Pose());
         }
@@ -30,7 +29,7 @@ namespace Hapbeat.Boxing.Tests
         private BoxingTuning original;
 
         // The skinned mesh as rendered now (linear blend skinning, as the GPU does), triangles of the given bones only.
-        private static List<Vector3> Triangles(BoxingOpponentAvatar avatar, params Transform[] parts)
+        internal static List<Vector3> Triangles(BoxingOpponentAvatar avatar, params Transform[] parts)
         {
             var mesh = avatar.skin.sharedMesh; var source = mesh.vertices; var weights = mesh.boneWeights; var bones = avatar.skin.bones; var binds = mesh.bindposes;
             var matrices = new Matrix4x4[bones.Length];
@@ -52,7 +51,7 @@ namespace Hapbeat.Boxing.Tests
             }
             return result;
         }
-        private static float MeshDistance(List<Vector3> triangles, Vector3 point)
+        internal static float MeshDistance(List<Vector3> triangles, Vector3 point)
         {
             float best = float.PositiveInfinity;
             for (int i = 0; i < triangles.Count; i += 3) best = Mathf.Min(best, Vector3.Distance(point, Closest(point, triangles[i], triangles[i + 1], triangles[i + 2])));

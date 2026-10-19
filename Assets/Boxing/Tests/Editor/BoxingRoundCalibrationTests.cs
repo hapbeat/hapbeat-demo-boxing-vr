@@ -18,6 +18,7 @@ namespace Hapbeat.Boxing.Tests
         {
             game.input.origin.transform.position=Vector3.up*.4f;
             game.input.headCamera.transform.position=new Vector3(0,2.1f,.2f);
+            for(int i=0;i<40;i++) game.input.ObserveHead(true,1.7f,.01f);
             for(int i=0;i<3;i++)
             {
                 game.StartRound();
@@ -30,9 +31,11 @@ namespace Hapbeat.Boxing.Tests
         }
         [Test] public void StartRoundRecapturesHeightEvenBeforeBothHandsAreReady()
         {
-            foreach(float height in new[]{1.3f,1.85f,1.5f})
+            // The standing height never shrinks during a run: rising heights.
+            foreach(float height in new[]{1.3f,1.5f,1.85f})
             {
                 game.input.headCamera.transform.position=new Vector3(0,height,.2f);
+                for(int i=0;i<40;i++) game.input.ObserveHead(true,height,.01f);
                 game.StartRound();
                 Assert.That(game.Opponent.Head.y,Is.EqualTo(height*game.tuning.opponentSizeScale).Within(.001f));
             }
@@ -41,8 +44,11 @@ namespace Hapbeat.Boxing.Tests
         // hit shapes with it, the gloves stay 15 cm wide, and the status line shows the readings.
         [Test] public void SizeProbeScalesTheWholeOpponentAndShowsTheReadings()
         {
-            Assert.That(game.tuning.opponentSizeScale,Is.EqualTo(1.3f));
+            Assert.That(game.tuning.opponentSizeScale,Is.EqualTo(1),"Back to the original size.");
+            var original=game.tuning; game.tuning=Object.Instantiate(original); game.tuning.opponentSizeScale=1.3f; game.Initialize();
+            try {
             game.input.headCamera.transform.position=new Vector3(0,1.65f,.2f);
+            for(int i=0;i<40;i++) game.input.ObserveHead(true,1.65f,.01f);
             game.StartRound();
             var avatar=game.presentation.enemyAvatar; avatar.Render(game.Opponent,0);
             Assert.That(game.SizeEyeHeight,Is.EqualTo(1.65f).Within(.001f));
@@ -52,7 +58,9 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.SizeOpponentStature,Is.GreaterThan(2.2f),"1.81 m at scale 1, 1.3 times that here.");
             Assert.That(avatar.leftGloveLocalWidth*avatar.leftHand.lossyScale.x,Is.EqualTo(.15f).Within(.001f));
             game.presentation.Render(game,BoxingSceneTests.Pose(),true,.01f);
-            StringAssert.Contains("EYE 1.65m  OPP "+game.SizeOpponentStature.ToString("0.00")+"m",game.presentation.statusText.text);
+            StringAssert.Contains("EYE 1.65m (now ",game.presentation.statusText.text);
+            StringAssert.Contains("OPP "+game.SizeOpponentStature.ToString("0.00")+"m",game.presentation.statusText.text);
+            } finally { Object.DestroyImmediate(game.tuning); game.tuning=original; }
         }
     }
 }

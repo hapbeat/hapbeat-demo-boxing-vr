@@ -18,8 +18,7 @@ namespace Hapbeat.Boxing.Tests
         {
             EditorSceneManager.OpenScene(Editor.BoxingProject.ScenePath);
             game = Object.FindFirstObjectByType<BoxingGame>();
-            // The shapes and guards are fitted at size 1; the size probe (BoxingTuning.opponentSizeScale) is checked elsewhere.
-            original = game.tuning; game.tuning = Object.Instantiate(original); game.tuning.opponentSizeScale = 1;
+            original = game.tuning; game.tuning = Object.Instantiate(original);
             game.feedback.forceSilent = true; game.feedback.sdkRoot.SetActive(false); game.Initialize();
             game.input.SetTestPose(BoxingSceneTests.Pose());
             Opponent.Reset(1.65f); Opponent.Scripted = true;

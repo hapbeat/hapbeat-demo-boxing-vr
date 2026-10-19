@@ -82,7 +82,7 @@ namespace Hapbeat.Boxing
             statusText.text = game.input.ActiveMode + "  |  " + (game.feedback.CanSend ? "HAPBEAT " + (Hapbeat.HapbeatManager.Instance != null ? Hapbeat.HapbeatManager.Instance.AliveDeviceCount : 0) + " DEVICE(S)" : "HAPTICS OFF") +
                 "  |  " + (game.Round.Phase == BoxingPhase.Results ? result : game.Paused ? game.PauseReason : game.tuning.impactMode.ToString()) +
                 // Size probe (TODO with tuning.opponentSizeScale).
-                "  |  EYE " + game.SizeEyeHeight.ToString("0.00") + "m  OPP " + game.SizeOpponentStature.ToString("0.00") + "m";
+                "  |  EYE " + game.SizeEyeHeight.ToString("0.00") + "m (now " + game.input.HeadAboveFloor.ToString("0.00") + "m)  OPP " + game.SizeOpponentStature.ToString("0.00") + "m";
             flashTime = Mathf.Max(0, flashTime - Time.unscaledDeltaTime);
             impactText.text = flashTime > 0 ? lastImpact : "";
             if (hitBurst != null)

@@ -50,7 +50,7 @@ namespace Hapbeat.Boxing
         // TODO(size probe): remove, or set to 1, once the Quest readings ([Boxing Size] log, EYE / OPP on the status line)
         // show why the opponent looks like a miniature in the headset. Multiplies the eye height the opponent is sized from
         // (Opponent.Reset), so the whole opponent and its avatar scale together; its gloves stay at the player's 15 cm.
-        [Min(.1f)] public float opponentSizeScale = 1.3f;
+        [Min(.1f)] public float opponentSizeScale = 1f;
         [Header("Opponent AI")]
         [Range(0, 1)] public float opponentSkill = 0.6f;
         // Perception delay and the chance to act on a read punch, at skill 0 and at skill 1.

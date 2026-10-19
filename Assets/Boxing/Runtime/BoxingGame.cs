@@ -75,6 +75,8 @@ namespace Hapbeat.Boxing
         // Face marker just before the guarding gloves (0.2 m before the head); belly marker this far below the body centre
         // (the head guard's elbows hang before the upper body, BoxingTutorialTests).
         private const float TutorialFaceMarkerDepth = .31f, TutorialBellyDrop = .1f;
+        // The markers sit this far before the surface they mark (towards the player).
+        private const float TutorialMarkerLead = .005f;
         private string tutorialMessage = "";
         private float tutorialStepTime, tutorialMessageTime, tutorialStrikeWait;
         // The tutorial line still speaking (seconds): steps 3-4 hold the next strike until it ends.
@@ -117,13 +119,19 @@ namespace Hapbeat.Boxing
         private void OnApplicationPause(bool value) { appPaused = value; if (value) PauseForExternalTransition(); }
         public void ResetHistory() { haveHistory = false; validTime = 0; leftContact = rightContact = false; leftCooldown = rightCooldown = 0; ResetPunches(); }
         public void ResetPunches() { leftPunch.Reset(); rightPunch.Reset(); }
-        // Size probe (TODO with tuning.opponentSizeScale): the eye height and the opponent's stature at the last recenter.
-        public float SizeEyeHeight { get; private set; }
+        // The eye height the opponent is sized from: the player's standing eye height (BoxingInput.StandingEyeHeight), read
+        // when the tutorial or a round starts, so the posture at a recenter (a crouched stance) does not shrink the
+        // opponent and a round keeps one size. Before the first start it follows the estimate.
+        public float SizeEyeHeight => sizeEyeRead ? sizeEye : input.StandingEyeHeight;
+        private float sizeEye;
+        private bool sizeEyeRead;
         public float SizeOpponentStature { get; private set; }
+        private void ReadStandingHeight() { sizeEye = input.StandingEyeHeight; sizeEyeRead = true; }
         private void OnRecentered()
         {
-            Initialize(); Opponent.Reset(input.ReferenceEyeHeight * tuning.opponentSizeScale,input.ReferenceFloorHeight,tuning.opponentSizeScale);
-            presentation.CalibrateEnvironment(input.ReferenceFloorHeight,input.ReferenceEyeHeight);
+            // Recentering sets position, yaw and floor; the size comes from the standing height.
+            Initialize(); Opponent.Reset(SizeEyeHeight * tuning.opponentSizeScale,input.ReferenceFloorHeight,tuning.opponentSizeScale);
+            presentation.CalibrateEnvironment(input.ReferenceFloorHeight,SizeEyeHeight);
             resolvedAttack=lastCompleted=0; ResetHistory();
             LogSize();
         }
@@ -131,11 +139,11 @@ namespace Hapbeat.Boxing
         {
             var avatar = presentation != null ? presentation.enemyAvatar : null;
             float scale = avatar != null ? avatar.ScaleFor(Opponent) : 0;
-            SizeEyeHeight = input.ReferenceEyeHeight;
             SizeOpponentStature = avatar != null ? avatar.StatureFor(Opponent) : Opponent.StandingHeadHeight;
             float cameraY = input.HasOverride ? input.Current.head.y : input.headCamera != null ? input.headCamera.transform.position.y : 0;
             float originY = input.origin != null ? input.origin.transform.position.y : 0;
-            Debug.Log($"[Boxing Size] eye={SizeEyeHeight:F3} floor={input.ReferenceFloorHeight:F3} cameraY={cameraY:F3} originY={originY:F3} " +
+            Debug.Log($"[Boxing Size] eye={SizeEyeHeight:F3} standing={input.StandingEyeHeight:F3} recenterHead={input.ReferenceEyeHeight:F3} " +
+                $"floor={input.ReferenceFloorHeight:F3} cameraY={cameraY:F3} originY={originY:F3} " +
                 $"opponentHead={Opponent.Head.y:F3} avatarScale={scale:F3} stature={SizeOpponentStature:F3} sizeScale={tuning.opponentSizeScale:F2}");
         }
         // Local operations for a future authenticated M5 command adapter. No new wire protocol here.
@@ -162,7 +170,7 @@ namespace Hapbeat.Boxing
         {
             if (presentation != null && presentation.enemyAvatar != null) presentation.enemyAvatar.ResetReaction();
             // Head height must not depend on controllers/both hands already being tracked.
-            input.Recenter(); OnRecentered();
+            ReadStandingHeight(); input.Recenter(); OnRecentered();
             calibrationPending=!input.HeadTracked && !input.HasOverride;
             ResultPresentationTime=0;
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); feedback.StopMusic(); menu.Close();
@@ -179,8 +187,10 @@ namespace Hapbeat.Boxing
         }
         public void Simulate(float dt, BoxerPose pose)
         {
+            float floorY = input.origin != null ? input.origin.transform.position.y : input.ReferenceFloorHeight;
+            input.ObserveHead(pose.valid || pose.headTracked, pose.head.y - floorY, dt > 0 && dt <= .1f ? dt : 0);
             if(calibrationPending && input.HeadTracked)
-            { input.Recenter(); OnRecentered(); calibrationPending=false; return; }
+            { ReadStandingHeight(); input.Recenter(); OnRecentered(); calibrationPending=false; return; }
             if(Round.Phase==BoxingPhase.Results && previousPhase==BoxingPhase.Results && !menu.IsOpen)
             {
                 // End the action before the next step. No combat runs here; a pause holds the result.
@@ -326,23 +336,33 @@ namespace Hapbeat.Boxing
         {
             position = default;
             if (Round.Phase != BoxingPhase.Tutorial || TutorialStep < 1 || TutorialStep > 2 || tutorialAdvance) return false;
-            position = TutorialStep == 1 ? Opponent.Head + Vector3.back * (TutorialFaceMarkerDepth * Opponent.Size) : BellyFront(Opponent.Body.y - TutorialBellyDrop * Opponent.Size) + Vector3.back * .01f;
+            if (TutorialStep == 1)
+            {
+                // On the guarding gloves where a straight to the face meets them (before they are up: before the face).
+                enemyGloves[0] = new BoxingHitSphere(Opponent.Left, tuning.enemyGloveRadius); enemyGloves[1] = new BoxingHitSphere(Opponent.Right, tuning.enemyGloveRadius);
+                if (!StraightMeets(enemyGloves, 2, Opponent.Head.x, Opponent.Head.y, out position)) position = Opponent.Head + Vector3.back * (TutorialFaceMarkerDepth * Opponent.Size);
+            }
+            else
+            {
+                UpdateEnemyShapes();
+                float y = Opponent.Body.y - TutorialBellyDrop * Opponent.Size;
+                if (!StraightMeets(enemyTorso, enemyTorsoCount, Opponent.Body.x, y, out position)) position = Opponent.Body + Vector3.back * tuning.enemyBodyRadius;
+            }
+            position += Vector3.back * TutorialMarkerLead;
             return true;
         }
-        // The front of the torso hit shape at this height (the most forward torso sphere surface on the centre line).
-        private Vector3 BellyFront(float y)
+        private readonly BoxingHitSphere[] enemyGloves = new BoxingHitSphere[2];
+        // Where a straight punch along +Z at (x, y) first meets these spheres' surfaces.
+        internal static bool StraightMeets(BoxingHitSphere[] spheres, int count, float x, float y, out Vector3 point)
         {
-            UpdateEnemyShapes();
-            Vector3 best = Opponent.Body + Vector3.back * tuning.enemyBodyRadius; float score = float.PositiveInfinity;
-            for (int i = 0; i < enemyTorsoCount; i++)
+            float z = float.PositiveInfinity;
+            for (int i = 0; i < count; i++)
             {
-                var s = enemyTorso[i];
-                float off = Mathf.Abs(s.center.x - Opponent.Body.x), dy = Mathf.Abs(s.center.y - y);
-                if (off > .02f || dy > s.radius) continue;
-                Vector3 front = new Vector3(s.center.x, y, s.center.z - Mathf.Sqrt(s.radius * s.radius - dy * dy));
-                if (front.z < score) { score = front.z; best = front; }
+                var s = spheres[i]; float dx = s.center.x - x, dy = s.center.y - y, h = s.radius * s.radius - dx * dx - dy * dy;
+                if (h > 0) z = Mathf.Min(z, s.center.z - Mathf.Sqrt(h));
             }
-            return best;
+            point = new Vector3(x, y, z);
+            return !float.IsPositiveInfinity(z);
         }
         // Where a glove (centre g, at the contact time) meets a target sphere (centre c, radius r): on the target's surface.
         private static Vector3 SurfacePoint(Vector3 g, Vector3 c, float r)

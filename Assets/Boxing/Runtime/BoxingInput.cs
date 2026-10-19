@@ -18,7 +18,19 @@ namespace Hapbeat.Boxing
         public Transform startPoint;
         public Vector3 StartPosition => startPoint != null ? new Vector3(startPoint.position.x, 0, startPoint.position.z) : Vector3.zero;
         public float StartYaw => startPoint != null ? startPoint.eulerAngles.y : 0;
+        // Head height above the floor at the last recenter (the posture of that moment: often a crouched boxing stance).
         public float ReferenceEyeHeight { get; private set; } = 1.65f;
+        // Standing eye height: the highest head height above the floor held for StandingWindow seconds while the head is
+        // tracked since the app started (a shorter rise does not count), clamped to the standing range. It never shrinks
+        // during the run; StandingDefault until the head has been tracked that long. The opponent is sized from it.
+        public float StandingEyeHeight { get; private set; } = StandingDefault;
+        // The head height above the floor last observed (ObserveHead).
+        public float HeadAboveFloor { get; private set; }
+        public const float StandingDefault = 1.65f, StandingMin = 1.2f, StandingMax = 2f, StandingWindow = .3f;
+        private readonly float[] standingValues = new float[128], standingTimes = new float[128];
+        private int standingNext, standingCount;
+        private float standingClock, standingTracked;
+        private bool standingSeen;
         public float ReferenceFloorHeight { get; private set; }
         public bool HeadTracked { get; private set; }
         public event System.Action Recentered;
@@ -53,6 +65,27 @@ namespace Hapbeat.Boxing
         private void OnEnable() { xrControls = new BoxingXrControls(); aligned = false; }
         private void OnDisable() { xrControls?.Dispose(); xrControls = null; HasTracking = HeadTracked = false; LeftPointer.Reset(); RightPointer.Reset(); }
 
+        // Each simulated frame (BoxingGame.Simulate): the head height above the floor while tracked. The lowest height of
+        // the last StandingWindow seconds is what the head has held; the standing height is the most of that seen.
+        public void ObserveHead(bool tracked, float headAboveFloor, float dt)
+        {
+            HeadAboveFloor = headAboveFloor;
+            if (!tracked || dt <= 0) { if (!tracked) { standingCount = 0; standingTracked = 0; } return; }
+            standingClock += dt; standingTracked += dt;
+            standingValues[standingNext] = headAboveFloor; standingTimes[standingNext] = standingClock;
+            standingNext = (standingNext + 1) % standingValues.Length; standingCount = Mathf.Min(standingCount + 1, standingValues.Length);
+            // Only once tracked for a whole window without a gap; the first such window replaces the default.
+            if (standingTracked < StandingWindow) return;
+            float held = float.PositiveInfinity;
+            for (int i = 1; i <= standingCount; i++)
+            {
+                int k = (standingNext - i + standingValues.Length) % standingValues.Length;
+                if (standingClock - standingTimes[k] > StandingWindow) break;
+                held = Mathf.Min(held, standingValues[k]);
+            }
+            float value = Mathf.Clamp(held, StandingMin, StandingMax);
+            StandingEyeHeight = standingSeen ? Mathf.Max(StandingEyeHeight, value) : value; standingSeen = true;
+        }
         public void SetTestPose(BoxerPose pose) { HasOverride = true; testPose = Current = pose; HasTracking = pose.valid; HeadTracked=pose.valid; }
         public void ClearTestPose() => HasOverride = false;
         public void SelectMode(BoxingInputMode next)

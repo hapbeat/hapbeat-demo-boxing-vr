@@ -13,8 +13,6 @@ namespace Hapbeat.Boxing.Tests
             EditorSceneManager.OpenScene(Editor.BoxingProject.ScenePath);
             game=Object.FindFirstObjectByType<BoxingGame>();
             original=game.tuning; game.tuning=Object.Instantiate(original); game.tuning.maximumHealth=10000;
-            // The player's forearm guard against the opponent's usual size, not the temporary size probe (opponentSizeScale).
-            game.tuning.opponentSizeScale=1;
             game.feedback.forceSilent=true; game.feedback.sdkRoot.SetActive(false); game.Initialize();
             game.input.SetTestPose(BoxingSceneTests.Pose()); game.StartRound();
         }

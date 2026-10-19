@@ -17,8 +17,9 @@ namespace Hapbeat.Boxing.Tests
         [TestCase(1.4f)] [TestCase(1.85f)] public void RecenterCalibratesOpponentButDuckingDoesNotResizeIt(float height)
         {
             game.input.headCamera.transform.position=new Vector3(0,height,0);
+            // The opponent is sized from the standing eye height the head has held (BoxingInput.StandingEyeHeight).
+            for(int i=0;i<40;i++) game.input.ObserveHead(true,height,.01f);
             game.RecenterPlayer();
-            // Eye height x the size probe (BoxingTuning.opponentSizeScale).
             float head=height*game.tuning.opponentSizeScale;
             Assert.That(game.Opponent.Head.y,Is.EqualTo(head).Within(.001f));
             game.input.headCamera.transform.position=Vector3.up*(height-.3f);
