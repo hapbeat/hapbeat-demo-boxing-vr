@@ -2417,7 +2417,6 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 3f4caeab05244819b4dd8918e2ee7a54, type: 3}
   - {fileID: 8300000, guid: 0c4c56614c1a4b9a90e269fde57fcdc4, type: 3}
   tutorialStartVoice: {fileID: 8300000, guid: 9556b3808f144d9886765e8104592c95, type: 3}
-  tutorialOtherHandVoice: {fileID: 8300000, guid: cda6931a41684959b7529303a8b0a274, type: 3}
   music: {fileID: 8300000, guid: 4aa9e9107335424f84fcc780d6ca9962, type: 3}
   cueSounds:
   - clips:

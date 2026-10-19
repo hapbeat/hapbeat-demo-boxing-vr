@@ -133,14 +133,8 @@ namespace Hapbeat.Boxing.Tests
             Run(.1f, BoxingSceneTests.Pose(true));
             Assert.That(Board, Is.EqualTo(BoxingGame.TutorialSteps[3]));
 
-            // 4: gloves before the face block the slower straight at one cheek, ガード成功！, then 反対の手でも防ごう and the second
-            // straight at the other cheek, ガード成功！; then 試合開始 and the countdown.
+            // 4: the held guard blocks the one-two (both punches), ガード成功！; then 試合開始 and the countdown.
             int taken = game.Round.Taken;
-            Assert.That(RunUntil(() => game.Round.Blocks > 0, 7, BoxingSceneTests.Pose(true)), Is.True);
-            Assert.That(game.Round.Taken, Is.EqualTo(taken));
-            Assert.That(RunUntil(() => Board == BoxingGame.TutorialResults[3], 2, BoxingSceneTests.Pose(true)), Is.True);
-            Assert.That(RunUntil(() => Board == BoxingGame.TutorialOtherHand, 4, BoxingSceneTests.Pose(true)), Is.True);
-            Assert.That(game.TutorialStep, Is.EqualTo(4)); Assert.That(game.TutorialPart, Is.EqualTo(1));
             Assert.That(RunUntil(() => game.Round.Blocks > 1, 8, BoxingSceneTests.Pose(true)), Is.True);
             Assert.That(game.Round.Taken, Is.EqualTo(taken));
             Assert.That(RunUntil(() => Board == BoxingGame.TutorialResults[3], 2, BoxingSceneTests.Pose(true)), Is.True);
@@ -151,8 +145,7 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.Opponent.Scripted, Is.False, "The round's AI is back.");
             // Each step's instruction and success line once, in order, then 試合開始; the countdown waits for it.
             Assert.That(spoken, Is.EqualTo(new[] { Voice.tutorialStepVoice[0], Voice.tutorialResultVoice[0], Voice.tutorialStepVoice[1], Voice.tutorialResultVoice[1],
-                Voice.tutorialStepVoice[2], Voice.tutorialResultVoice[2], Voice.tutorialStepVoice[3], Voice.tutorialResultVoice[3],
-                Voice.tutorialOtherHandVoice, Voice.tutorialResultVoice[3], Voice.tutorialStartVoice }));
+                Voice.tutorialStepVoice[2], Voice.tutorialResultVoice[2], Voice.tutorialStepVoice[3], Voice.tutorialResultVoice[3], Voice.tutorialStartVoice }));
             Assert.That(clock - spokenAt[spokenAt.Count - 1], Is.GreaterThanOrEqualTo(Voice.tutorialStartVoice.length), "The countdown starts after 試合開始.");
             Assert.That(game.feedback.voiceSource.isPlaying, Is.False, "Nothing is audible in the tests.");
             Assert.That(game.Round.Taken + game.Round.Hits + game.Round.Blocks + game.Round.EnemyBlocks, Is.Zero, "The round starts from zero.");
@@ -221,8 +214,8 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void TutorialVoiceClipsAreAssignedLoadedAndShort()
         {
             Assert.That(Voice.voiceSource, Is.Not.Null);
-            var clips = new List<AudioClip>(Voice.tutorialStepVoice); clips.AddRange(Voice.tutorialResultVoice); clips.AddRange(Voice.tutorialHintVoice); clips.Add(Voice.tutorialStartVoice); clips.Add(Voice.tutorialOtherHandVoice);
-            Assert.That(clips.Count, Is.EqualTo(12));
+            var clips = new List<AudioClip>(Voice.tutorialStepVoice); clips.AddRange(Voice.tutorialResultVoice); clips.AddRange(Voice.tutorialHintVoice); clips.Add(Voice.tutorialStartVoice);
+            Assert.That(clips.Count, Is.EqualTo(11));
             foreach (var clip in clips)
             {
                 Assert.That(clip, Is.Not.Null);
@@ -255,8 +248,9 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.feedback.Sends, Is.Zero);
         }
 
-        // Step 4 with a normal high guard: the first straight meets the right glove, the second the left glove.
-        [Test] public void StepFourStraightsMeetEachGloveOfAHighGuard()
+        // Step 4 with a normal high guard held: the one-two's first punch meets the right glove, the second the left glove about
+        // half a second later, then ガード成功！ and 試合開始.
+        [Test] public void StepFourOneTwoMeetsEachGloveOfAHeldHighGuard()
         {
             game.tuning.tutorialStepTimeoutSeconds = 1;
             Begin();
@@ -264,11 +258,33 @@ namespace Hapbeat.Boxing.Tests
             var open = BoxingSceneTests.Pose();
             Assert.That(RunUntil(() => game.TutorialStep == 3, 6, open), Is.True);
             Assert.That(RunUntil(() => game.TutorialStep == 4, 15, open), Is.True);
-            var blocks = new List<ImpactZone>(); int taken = game.Round.Taken;
-            game.feedback.Reported += impact => { if (!impact.attack && impact.surface == ImpactSurface.Glove) blocks.Add(impact.zone); };
-            Assert.That(RunUntil(() => game.TutorialStep == 5, 25, guard), Is.True);
-            Assert.That(blocks, Is.EqualTo(new[] { ImpactZone.RightGlove, ImpactZone.LeftGlove }), "One straight at each glove, right then left.");
-            Assert.That(game.Round.Taken, Is.EqualTo(taken), "Neither straight lands.");
+            var blocks = new List<ImpactZone>(); var blockTimes = new List<float>(); int taken = game.Round.Taken, attacks = game.Opponent.AttackId;
+            game.feedback.Reported += impact => { if (!impact.attack && impact.surface == ImpactSurface.Glove) { blocks.Add(impact.zone); blockTimes.Add(clock); } };
+            bool result = false;
+            Assert.That(RunUntil(() => { result |= Board == BoxingGame.TutorialResults[3]; return game.TutorialStep == 5; }, 15, guard), Is.True);
+            Assert.That(blocks, Is.EqualTo(new[] { ImpactZone.RightGlove, ImpactZone.LeftGlove }), "One punch at each glove, right then left.");
+            Assert.That(blockTimes[1] - blockTimes[0], Is.InRange(.4f, .6f), "A quick one-two.");
+            Assert.That(game.Opponent.AttackId - attacks, Is.EqualTo(2), "One combo.");
+            Assert.That(result, Is.True, "ガード成功！");
+            Assert.That(game.Round.Taken, Is.EqualTo(taken), "Neither punch lands.");
+            Assert.That(RunUntil(() => game.Round.Phase == BoxingPhase.Countdown, 4, guard), Is.True, "Then the round.");
+            Assert.That(game.feedback.Sends, Is.Zero);
+        }
+
+        // One landed punch of the one-two (the right glove down) brings the retry line and the one-two again.
+        [Test] public void ALandedPunchOfTheOneTwoRepeatsIt()
+        {
+            game.tuning.tutorialStepTimeoutSeconds = 1;
+            Begin();
+            var open = BoxingSceneTests.Pose();
+            Assert.That(RunUntil(() => game.TutorialStep == 4, 21, open), Is.True);
+            var half = BoxingSceneTests.Pose(true); half.right = open.right;
+            int attacks = game.Opponent.AttackId; bool hint = false, result = false;
+            Assert.That(RunUntil(() => { hint |= Board == BoxingGame.TutorialHints[1]; result |= Board == BoxingGame.TutorialResults[3]; return game.Opponent.AttackId - attacks >= 3; }, 15, half), Is.True);
+            Assert.That(hint, Is.True, "グローブを顔の前に構えよう");
+            Assert.That(result, Is.False, "No success with a punch landed.");
+            Assert.That(spoken, Does.Contain(Voice.tutorialHintVoice[1]));
+            Assert.That(game.TutorialStep, Is.EqualTo(4), "The one-two again.");
             Assert.That(game.feedback.Sends, Is.Zero);
         }
 
@@ -309,11 +325,11 @@ namespace Hapbeat.Boxing.Tests
             Begin(); Run(.3f, BoxingSceneTests.Pose());
             Assert.That(text.font.name, Does.Contain("Noto"));
             Assert.That(text.fontSize, Is.LessThan(size));
-            var all = string.Join("", BoxingGame.TutorialSteps) + string.Join("", BoxingGame.TutorialResults) + string.Join("", BoxingGame.TutorialHints) + BoxingGame.TutorialStartText + BoxingGame.TutorialOtherHand;
+            var all = string.Join("", BoxingGame.TutorialSteps) + string.Join("", BoxingGame.TutorialResults) + string.Join("", BoxingGame.TutorialHints) + BoxingGame.TutorialStartText;
             foreach (var character in all)
                 if (character != ' ') Assert.That(text.font.HasCharacter(character), Is.True, character.ToString());
             var box = text.rectTransform.rect;
-            foreach (var line in new[] { BoxingGame.TutorialSteps, BoxingGame.TutorialResults, BoxingGame.TutorialHints, new[] { BoxingGame.TutorialStartText, BoxingGame.TutorialOtherHand } })
+            foreach (var line in new[] { BoxingGame.TutorialSteps, BoxingGame.TutorialResults, BoxingGame.TutorialHints, new[] { BoxingGame.TutorialStartText } })
             foreach (var value in line)
             {
                 text.text = value;

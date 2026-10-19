@@ -62,16 +62,12 @@ namespace Hapbeat.Boxing
         public float TrackingLostSeconds { get; private set; }
         private BoxerPose held;
         private bool haveHeld, leftWasActive = true, rightWasActive = true, headWasTracked = true;
-        // Tutorial (BoxingPhase.Tutorial): 1-2 punch the head-guarding opponent, 3 take its body straight, 4 block two head
-        // straights (one at each glove: TutorialPart 0, 1), 5 = 試合開始.
+        // Tutorial (BoxingPhase.Tutorial): 1-2 punch the head-guarding opponent, 3 take its body straight, 4 block its one-two
+        // with a held guard, 5 = 試合開始.
         public int TutorialStep { get; private set; }
-        public int TutorialPart { get; private set; }
-        public string TutorialText => tutorialMessageTime > 0 ? tutorialMessage : TutorialStep == 4 && TutorialPart == 1 ? TutorialOtherHand :
-            TutorialSteps[Mathf.Clamp(TutorialStep - 1, 0, TutorialSteps.Length - 1)];
-        // Step 4's second straight, for the other glove.
-        internal const string TutorialOtherHand = "4/4  反対の手でも防ごう";
-        // Step 4's straights: the opponent's Right glove (its lead, world +X) at the player's right cheek, then its Left glove at
-        // the left cheek, so the player's right then left glove meets one (world offsets from the player's head).
+        public string TutorialText => tutorialMessageTime > 0 ? tutorialMessage : TutorialSteps[Mathf.Clamp(TutorialStep - 1, 0, TutorialSteps.Length - 1)];
+        // Step 4's one-two: the opponent's Right glove (its lead, world +X) at the player's right cheek, then at once its Left
+        // glove at the left cheek, so the player's right then left glove meets one (world offsets from the player's head).
         internal static readonly Vector3 TutorialRightCheek = new Vector3(.07f, -.04f, 0), TutorialLeftCheek = new Vector3(-.07f, -.04f, 0);
         internal static readonly string[] TutorialSteps = { "1/4  相手の顔を打ってみよう", "2/4  お腹を打とう", "3/4  相手のパンチを受けてみよう", "4/4  顔の前で構えてパンチを防ごう" };
         internal static readonly string[] TutorialResults = { "ガードの上からはダメージが入らない", "ダメージが入った！", "ガードしないとダメージを受ける", "ガード成功！" };
@@ -79,7 +75,9 @@ namespace Hapbeat.Boxing
         internal static readonly string[] TutorialHints = { "ガードしないで受けてみよう", "グローブを顔の前に構えよう" };
         internal const string TutorialStartText = "試合開始";
         // Pause after a tutorial strike before the next; the blocking step's straight is this much slower than usual.
-        private const float TutorialStrikeGap = 1.5f, TutorialBlockStrikeScale = 1.5f;
+        // Pause after a tutorial strike (or step 4's one-two) before the next; the one-two's strikes keep their usual
+        // speed (about 0.5 s between the two).
+        private const float TutorialStrikeGap = 1.5f, TutorialComboStrikeScale = 1f;
         // Face marker just before the guarding gloves (0.2 m before the head); belly marker this far below the body centre
         // (the head guard's elbows hang before the upper body, BoxingTutorialTests).
         private const float TutorialFaceMarkerDepth = .31f, TutorialBellyDrop = .1f;
@@ -352,7 +350,7 @@ namespace Hapbeat.Boxing
         private bool Combat => Round.Phase == BoxingPhase.Fighting || Round.Phase == BoxingPhase.Tutorial;
         private void EnterTutorialStep()
         {
-            TutorialStep++; TutorialPart = 0; tutorialStepTime = 0; tutorialAdvance = tutorialGuarded = tutorialBody = tutorialStriking = false;
+            TutorialStep++; tutorialStepTime = 0; tutorialAdvance = tutorialGuarded = tutorialBody = tutorialStriking = false;
             tutorialMessageTime = 0; tutorialStrikes = 0; tutorialStrikeWait = TutorialStrikeGap;
             if (TutorialStep == 3) Opponent.ScriptedRelease();
             Narrate(feedback.tutorialStepVoice[TutorialStep - 1]);
@@ -424,12 +422,6 @@ namespace Hapbeat.Boxing
         private void NextTutorialStep()
         {
             if (TutorialStep == 5) { StartRound(); return; }
-            // After step 4's first straight (blocked or not): the second, for the other glove.
-            if (TutorialStep == 4 && TutorialPart == 0)
-            {
-                TutorialPart = 1; tutorialAdvance = tutorialStriking = false; tutorialMessageTime = 0; tutorialStrikes = 0; tutorialStrikeWait = TutorialStrikeGap;
-                Narrate(feedback.tutorialOtherHandVoice); return;
-            }
             if (TutorialStep == 4) { TutorialStep = 5; TutorialMessage(TutorialStartText, true, feedback.tutorialStartVoice); return; }
             EnterTutorialStep();
         }
@@ -459,10 +451,11 @@ namespace Hapbeat.Boxing
             }
             if (tutorialStriking)
             {
-                // A strike ends when the opponent leaves its attack (retracted, or cut short by a recenter).
+                // A strike (step 4: the whole one-two) ends when the opponent leaves its attack (retracted, or cut short by a recenter).
                 if (Opponent.State == BoxingOpponentState.Attack) return;
                 tutorialStriking = false; tutorialStrikes++; tutorialStrikeWait = TutorialStrikeGap;
-                bool hit = Round.Taken > tutorialTaken, blocked = Round.Blocks > tutorialBlocks;
+                // Step 4 succeeds only when both punches are blocked; any landed one is a hit.
+                bool hit = Round.Taken > tutorialTaken, blocked = Round.Blocks >= tutorialBlocks + (TutorialStep == 4 ? 2 : 1);
                 if (TutorialStep == 3 ? hit : blocked) TutorialMessage(TutorialResults[TutorialStep - 1], true, feedback.tutorialResultVoice[TutorialStep - 1]);
                 else if (tutorialStrikes >= tuning.tutorialStrikes) NextTutorialStep();
                 else if (TutorialStep == 3 ? blocked : hit) TutorialMessage(TutorialHints[TutorialStep - 3], false, feedback.tutorialHintVoice[TutorialStep - 3]);
@@ -471,9 +464,9 @@ namespace Hapbeat.Boxing
             // The next strike waits for the gap and for the instruction / retry line to end.
             if ((tutorialStrikeWait -= dt) > 0 || tutorialLineTime > 0) return;
             tutorialTaken = Round.Taken; tutorialBlocks = Round.Blocks; tutorialStriking = true;
-            // 3: a body straight to take; 4: a slower head straight at one cheek, then the other.
+            // 3: a body straight to take; 4: a one-two at the right cheek, then the left.
             if (TutorialStep == 3) Opponent.ScriptedStrike(BoxingAttack.BodyStraight, false, 1);
-            else Opponent.ScriptedStrike(BoxingAttack.HeadStraight, TutorialPart == 1, TutorialBlockStrikeScale, TutorialPart == 0 ? TutorialRightCheek : TutorialLeftCheek);
+            else Opponent.ScriptedCombo(BoxingAttack.HeadStraight, false, TutorialComboStrikeScale, TutorialRightCheek, TutorialLeftCheek);
         }
         private void ResolveEnemy(BoxerPose p, float dt)
         {
