@@ -11,6 +11,7 @@
   {"id": "step4", "text": "顔の前で構えてパンチを防ごう"},
   {"id": "step4_retry", "text": "グローブを顔の前に構えよう"},
   {"id": "step4_ok", "text": "ガード成功！"},
+  {"id": "step4_other", "text": "反対の手でも防ごう"},
   {"id": "start", "text": "試合開始"}
  ]
 }

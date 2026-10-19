@@ -89,6 +89,7 @@ namespace Hapbeat.Boxing.Editor
             for(int i=0;i<4;i++) { feedback.tutorialStepVoice[i]=Load($"step{i+1}"); feedback.tutorialResultVoice[i]=Load($"step{i+1}_ok"); }
             feedback.tutorialHintVoice=new[]{ Load("step3_retry"), Load("step4_retry") };
             feedback.tutorialStartVoice=Load("start");
+            feedback.tutorialOtherHandVoice=Load("step4_other");
             EditorUtility.SetDirty(feedback);
         }
     }

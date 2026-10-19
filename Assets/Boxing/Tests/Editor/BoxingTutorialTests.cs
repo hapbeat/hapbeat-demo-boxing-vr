@@ -47,6 +47,8 @@ namespace Hapbeat.Boxing.Tests
             return done();
         }
         private BoxingFeedback Voice => game.feedback;
+        // Gloves before the belly: step 3's body straight meets them.
+        private static BoxerPose BodyCover() { var pose = BoxingSceneTests.Pose(); pose.left = new Vector3(-.08f, 1.25f, .25f); pose.right = new Vector3(.08f, 1.25f, .25f); return pose; }
         private LineRenderer Marker => game.presentation.TutorialMarker;
         private bool MarkerShown => Marker != null && Marker.gameObject.activeSelf;
         private void Begin()
@@ -120,18 +122,26 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.Opponent.Guarding, Is.False, "Steps 3-4 drop the guard.");
             Assert.That(MarkerShown, Is.False, "No marker for the strike steps.");
 
-            // 3: the open player takes one straight.
+            // 3: the open player takes one body straight.
+            int bodyHits = 0; game.feedback.Reported += impact => { if (!impact.attack && impact.zone == ImpactZone.Body) bodyHits++; };
             Assert.That(RunUntil(() => game.Round.Taken > 0, 6, BoxingSceneTests.Pose()), Is.True);
-            Assert.That(game.Opponent.Attack, Is.EqualTo(BoxingAttack.HeadStraight));
+            Assert.That(game.Opponent.Attack, Is.EqualTo(BoxingAttack.BodyStraight));
+            Assert.That(bodyHits, Is.EqualTo(1), "Taken on the body.");
             Assert.That(RunUntil(() => Board == BoxingGame.TutorialResults[2], 2, BoxingSceneTests.Pose()), Is.True);
             Assert.That(game.Opponent.AttackId, Is.EqualTo(1));
             Assert.That(RunUntil(() => game.TutorialStep == 4, 4, BoxingSceneTests.Pose()), Is.True);
             Run(.1f, BoxingSceneTests.Pose(true));
             Assert.That(Board, Is.EqualTo(BoxingGame.TutorialSteps[3]));
 
-            // 4: gloves before the face block the slower straight; then 試合開始 and the countdown.
+            // 4: gloves before the face block the slower straight at one cheek, ガード成功！, then 反対の手でも防ごう and the second
+            // straight at the other cheek, ガード成功！; then 試合開始 and the countdown.
             int taken = game.Round.Taken;
             Assert.That(RunUntil(() => game.Round.Blocks > 0, 7, BoxingSceneTests.Pose(true)), Is.True);
+            Assert.That(game.Round.Taken, Is.EqualTo(taken));
+            Assert.That(RunUntil(() => Board == BoxingGame.TutorialResults[3], 2, BoxingSceneTests.Pose(true)), Is.True);
+            Assert.That(RunUntil(() => Board == BoxingGame.TutorialOtherHand, 4, BoxingSceneTests.Pose(true)), Is.True);
+            Assert.That(game.TutorialStep, Is.EqualTo(4)); Assert.That(game.TutorialPart, Is.EqualTo(1));
+            Assert.That(RunUntil(() => game.Round.Blocks > 1, 8, BoxingSceneTests.Pose(true)), Is.True);
             Assert.That(game.Round.Taken, Is.EqualTo(taken));
             Assert.That(RunUntil(() => Board == BoxingGame.TutorialResults[3], 2, BoxingSceneTests.Pose(true)), Is.True);
             Assert.That(RunUntil(() => Board == BoxingGame.TutorialStartText, 4, BoxingSceneTests.Pose(true)), Is.True);
@@ -141,7 +151,8 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.Opponent.Scripted, Is.False, "The round's AI is back.");
             // Each step's instruction and success line once, in order, then 試合開始; the countdown waits for it.
             Assert.That(spoken, Is.EqualTo(new[] { Voice.tutorialStepVoice[0], Voice.tutorialResultVoice[0], Voice.tutorialStepVoice[1], Voice.tutorialResultVoice[1],
-                Voice.tutorialStepVoice[2], Voice.tutorialResultVoice[2], Voice.tutorialStepVoice[3], Voice.tutorialResultVoice[3], Voice.tutorialStartVoice }));
+                Voice.tutorialStepVoice[2], Voice.tutorialResultVoice[2], Voice.tutorialStepVoice[3], Voice.tutorialResultVoice[3],
+                Voice.tutorialOtherHandVoice, Voice.tutorialResultVoice[3], Voice.tutorialStartVoice }));
             Assert.That(clock - spokenAt[spokenAt.Count - 1], Is.GreaterThanOrEqualTo(Voice.tutorialStartVoice.length), "The countdown starts after 試合開始.");
             Assert.That(game.feedback.voiceSource.isPlaying, Is.False, "Nothing is audible in the tests.");
             Assert.That(game.Round.Taken + game.Round.Hits + game.Round.Blocks + game.Round.EnemyBlocks, Is.Zero, "The round starts from zero.");
@@ -182,8 +193,8 @@ namespace Hapbeat.Boxing.Tests
             Begin();
             Assert.That(RunUntil(() => game.TutorialStep == 3, 6, BoxingSceneTests.Pose()), Is.True);
 
-            // 3 asks to take the punch: blocking repeats it with the hint, three strikes move on anyway.
-            var guard = BoxingSceneTests.Pose(true);
+            // 3 asks to take the body straight: blocking it (gloves before the belly) repeats it with the hint, three strikes move on anyway.
+            var guard = BodyCover();
             bool hint = false, result = false;
             Assert.That(RunUntil(() => { hint |= Board == BoxingGame.TutorialHints[0]; result |= Board == BoxingGame.TutorialResults[2]; return game.TutorialStep == 4; }, 15, guard), Is.True);
             Assert.That(hint, Is.True, "A block shows the hint.");
@@ -195,7 +206,7 @@ namespace Hapbeat.Boxing.Tests
             var open = BoxingSceneTests.Pose();
             hint = false; bool start = false;
             Assert.That(RunUntil(() => { hint |= Board == BoxingGame.TutorialHints[1]; result |= Board == BoxingGame.TutorialResults[3]; start |= Board == BoxingGame.TutorialStartText;
-                return game.Round.Phase == BoxingPhase.Countdown; }, 20, open), Is.True);
+                return game.Round.Phase == BoxingPhase.Countdown; }, 40, open), Is.True);
             Assert.That(hint, Is.True, "A hit shows the hint.");
             Assert.That(result, Is.False, "No ガード成功！ without a block.");
             Assert.That(start, Is.True, "試合開始 still announces the round.");
@@ -210,8 +221,8 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void TutorialVoiceClipsAreAssignedLoadedAndShort()
         {
             Assert.That(Voice.voiceSource, Is.Not.Null);
-            var clips = new List<AudioClip>(Voice.tutorialStepVoice); clips.AddRange(Voice.tutorialResultVoice); clips.AddRange(Voice.tutorialHintVoice); clips.Add(Voice.tutorialStartVoice);
-            Assert.That(clips.Count, Is.EqualTo(11));
+            var clips = new List<AudioClip>(Voice.tutorialStepVoice); clips.AddRange(Voice.tutorialResultVoice); clips.AddRange(Voice.tutorialHintVoice); clips.Add(Voice.tutorialStartVoice); clips.Add(Voice.tutorialOtherHandVoice);
+            Assert.That(clips.Count, Is.EqualTo(12));
             foreach (var clip in clips)
             {
                 Assert.That(clip, Is.Not.Null);
@@ -231,16 +242,33 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(RunUntil(() => game.TutorialStep == 3, 6, BoxingSceneTests.Pose()), Is.True);
             Assert.That(spoken[spoken.Count - 1], Is.SameAs(Voice.tutorialStepVoice[2]));
             float instruction = spokenAt[spokenAt.Count - 1];
-            Assert.That(RunUntil(() => game.Opponent.AttackId > 0, 6, BoxingSceneTests.Pose(true)), Is.True);
+            Assert.That(RunUntil(() => game.Opponent.AttackId > 0, 6, BodyCover()), Is.True);
             Assert.That(clock - instruction, Is.GreaterThanOrEqualTo(Voice.tutorialStepVoice[2].length), "The first strike waits for the instruction.");
             // A block brings the retry line: its message stays until the line ends, and the next strike waits for it.
-            Assert.That(RunUntil(() => spoken[spoken.Count - 1] == Voice.tutorialHintVoice[0], 6, BoxingSceneTests.Pose(true)), Is.True);
+            Assert.That(RunUntil(() => spoken[spoken.Count - 1] == Voice.tutorialHintVoice[0], 6, BodyCover()), Is.True);
             float hint = spokenAt[spokenAt.Count - 1];
             Assert.That(Board, Is.EqualTo(BoxingGame.TutorialHints[0]));
-            Assert.That(RunUntil(() => Board != BoxingGame.TutorialHints[0], 6, BoxingSceneTests.Pose(true)), Is.True);
+            Assert.That(RunUntil(() => Board != BoxingGame.TutorialHints[0], 6, BodyCover()), Is.True);
             Assert.That(clock - hint, Is.GreaterThanOrEqualTo(Mathf.Max(game.tuning.tutorialMessageSeconds, Voice.tutorialHintVoice[0].length + .2f) - .02f));
-            Assert.That(RunUntil(() => game.Opponent.AttackId > 1, 6, BoxingSceneTests.Pose(true)), Is.True);
+            Assert.That(RunUntil(() => game.Opponent.AttackId > 1, 6, BodyCover()), Is.True);
             Assert.That(clock - hint, Is.GreaterThanOrEqualTo(Voice.tutorialHintVoice[0].length), "The repeated strike waits for the retry line.");
+            Assert.That(game.feedback.Sends, Is.Zero);
+        }
+
+        // Step 4 with a normal high guard: the first straight meets the right glove, the second the left glove.
+        [Test] public void StepFourStraightsMeetEachGloveOfAHighGuard()
+        {
+            game.tuning.tutorialStepTimeoutSeconds = 1;
+            Begin();
+            var guard = BoxingSceneTests.Pose(true);
+            var open = BoxingSceneTests.Pose();
+            Assert.That(RunUntil(() => game.TutorialStep == 3, 6, open), Is.True);
+            Assert.That(RunUntil(() => game.TutorialStep == 4, 15, open), Is.True);
+            var blocks = new List<ImpactZone>(); int taken = game.Round.Taken;
+            game.feedback.Reported += impact => { if (!impact.attack && impact.surface == ImpactSurface.Glove) blocks.Add(impact.zone); };
+            Assert.That(RunUntil(() => game.TutorialStep == 5, 25, guard), Is.True);
+            Assert.That(blocks, Is.EqualTo(new[] { ImpactZone.RightGlove, ImpactZone.LeftGlove }), "One straight at each glove, right then left.");
+            Assert.That(game.Round.Taken, Is.EqualTo(taken), "Neither straight lands.");
             Assert.That(game.feedback.Sends, Is.Zero);
         }
 
@@ -281,11 +309,11 @@ namespace Hapbeat.Boxing.Tests
             Begin(); Run(.3f, BoxingSceneTests.Pose());
             Assert.That(text.font.name, Does.Contain("Noto"));
             Assert.That(text.fontSize, Is.LessThan(size));
-            var all = string.Join("", BoxingGame.TutorialSteps) + string.Join("", BoxingGame.TutorialResults) + string.Join("", BoxingGame.TutorialHints) + BoxingGame.TutorialStartText;
+            var all = string.Join("", BoxingGame.TutorialSteps) + string.Join("", BoxingGame.TutorialResults) + string.Join("", BoxingGame.TutorialHints) + BoxingGame.TutorialStartText + BoxingGame.TutorialOtherHand;
             foreach (var character in all)
                 if (character != ' ') Assert.That(text.font.HasCharacter(character), Is.True, character.ToString());
             var box = text.rectTransform.rect;
-            foreach (var line in new[] { BoxingGame.TutorialSteps, BoxingGame.TutorialResults, BoxingGame.TutorialHints, new[] { BoxingGame.TutorialStartText } })
+            foreach (var line in new[] { BoxingGame.TutorialSteps, BoxingGame.TutorialResults, BoxingGame.TutorialHints, new[] { BoxingGame.TutorialStartText, BoxingGame.TutorialOtherHand } })
             foreach (var value in line)
             {
                 text.text = value;

@@ -74,6 +74,8 @@ namespace Hapbeat.Boxing
         // order) its instruction and success lines, the retry lines of steps 3-4, and 試合開始.
         public AudioClip[] tutorialStepVoice = new AudioClip[4], tutorialResultVoice = new AudioClip[4], tutorialHintVoice = new AudioClip[2];
         public AudioClip tutorialStartVoice;
+        // Step 4's second straight: 反対の手でも防ごう.
+        public AudioClip tutorialOtherHandVoice;
         // Umplix "Boxing Ring" (CC0, Assets/Boxing/Audio/Music/License.txt).
         public AudioClip music;
         public const float MusicFadeSeconds = 1;

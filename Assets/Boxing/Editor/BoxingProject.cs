@@ -286,7 +286,7 @@ namespace Hapbeat.Boxing.Editor
                 game.presentation.leftForearm==null || game.presentation.rightForearm==null)
                 throw new InvalidOperationException("Missing result voice or player forearms");
             var f = game.feedback;
-            if (f.tutorialStepVoice.Length != 4 || f.tutorialResultVoice.Length != 4 || f.tutorialHintVoice.Length != 2 || f.tutorialStartVoice == null ||
+            if (f.tutorialStepVoice.Length != 4 || f.tutorialResultVoice.Length != 4 || f.tutorialHintVoice.Length != 2 || f.tutorialStartVoice == null || f.tutorialOtherHandVoice == null ||
                 f.tutorialStepVoice.Concat(f.tutorialResultVoice).Concat(f.tutorialHintVoice).Any(clip => clip == null))
                 throw new InvalidOperationException("Missing tutorial voice");
             if (f.musicSource == null || f.musicSource == f.voiceSource || f.musicSource.playOnAwake || f.musicSource.spatialBlend != 0 || f.music == null)

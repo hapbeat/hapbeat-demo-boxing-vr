@@ -95,6 +95,8 @@ namespace Hapbeat.Boxing
         private int comboIndex;
         private float telegraphScale = 1, strikeScale = 1, phaseTime, phaseDuration, retractFrom;
         private Vector3 aim, strikeStart, strikeVelocity, bulge, evadeOffset;
+        // Tutorial: where a scripted strike aims, from the player's head (or body aim point); zero for every other strike.
+        private Vector3 aimOffset;
         private float staggerPush;
         private BoxingGuard coverGuard;
         private float coverSide = 1;
@@ -415,13 +417,14 @@ namespace Hapbeat.Boxing
         {
             State = counter ? BoxingOpponentState.Counter : BoxingOpponentState.Attack;
             combo = Combos[(int)action]; comboIndex = 0; telegraphScale = counter ? .6f : 1;
-            Guarding = false; attacking = pendingStrike = true; retracting = false; strikeScale = 1;
+            Guarding = false; attacking = pendingStrike = true; retracting = false; strikeScale = 1; aimOffset = Vector3.zero;
         }
         // Haptic recording: one strike of this kind, its strike phase strikeScale times the usual length (> 1 = slower).
-        internal void ScriptedStrike(BoxingAttack attack, bool left, float strikeScale)
+        // aimOffset (world): shifts the aim from the player's head (or body aim point), e.g. to one cheek.
+        internal void ScriptedStrike(BoxingAttack attack, bool left, float strikeScale, Vector3 aimOffset = default)
         {
             State = BoxingOpponentState.Attack; combo = new[] { new Strike(attack, left) }; comboIndex = 0; telegraphScale = 1;
-            Guarding = false; attacking = pendingStrike = true; retracting = false; this.strikeScale = strikeScale;
+            Guarding = false; attacking = pendingStrike = true; retracting = false; this.strikeScale = strikeScale; this.aimOffset = aimOffset;
         }
         // Tutorial: the scripted opponent holds this guard (no timeout) until ScriptedRelease or a strike.
         internal void ScriptedGuard(BoxingGuard guard, float side = 1) { Guarding = true; Guard = guard; GuardSide = side; }
@@ -444,7 +447,7 @@ namespace Hapbeat.Boxing
             Telegraphing = true; Striking = retracting = false; phaseTime = 0;
             phaseDuration = tuning.telegraphSeconds * TelegraphFactor(s) * telegraphScale * (comboIndex > 0 ? .55f : 1);
             // Aim is committed at the start of the wind-up, so moving the head afterwards dodges.
-            aim = BodyAttack ? BoxingPlayerBody.Aim(playerHead, playerHeadRotation) : playerHead;
+            aim = (BodyAttack ? BoxingPlayerBody.Aim(playerHead, playerHeadRotation) : playerHead) + aimOffset;
         }
         private void AttackTick(float dt, Vector3 playerHead, Quaternion playerHeadRotation)
         {
