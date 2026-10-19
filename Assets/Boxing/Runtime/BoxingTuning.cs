@@ -77,6 +77,7 @@ namespace Hapbeat.Boxing
         [Min(0.01f)] public float gloveRadius = 0.07f;
         [Min(0.01f)] public float enemyGloveRadius = 0.075f;
         [Min(0.01f)] public float headRadius = 0.14f;
+        // Without the rendered avatar only: the opponent's head / body spheres (the avatar's hit shapes follow its mesh).
         [Min(0.01f)] public float enemyHeadRadius = 0.145f;
         [Min(0.01f)] public float enemyBodyRadius = 0.21f;
         [Min(0)] public float minimumImpactSpeed = 0.25f;

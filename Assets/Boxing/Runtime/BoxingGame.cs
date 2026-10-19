@@ -24,8 +24,13 @@ namespace Hapbeat.Boxing
         private bool haveHistory, leftContact, rightContact;
         private bool leftBlockedThisFrame, rightBlockedThisFrame;
         private BoxerPose previous;
-        private Vector3 oldEnemyLeft, oldEnemyRight, oldEnemyHead, oldEnemyBody;
+        private Vector3 oldEnemyLeft, oldEnemyRight;
         private readonly BoxingGuardArm[] enemyArms = new BoxingGuardArm[4], oldEnemyArms = new BoxingGuardArm[4];
+        // The opponent's head / torso hit shapes from the rendered avatar (BoxingOpponentAvatar.GetHitShapes); without an
+        // avatar one sphere each at Opponent.Head / Body (tuning.enemyHeadRadius / enemyBodyRadius).
+        private readonly BoxingHitSphere[] enemyHead = new BoxingHitSphere[BoxingOpponentAvatar.HeadSpheres], oldEnemyHeadShape = new BoxingHitSphere[BoxingOpponentAvatar.HeadSpheres];
+        private readonly BoxingHitSphere[] enemyTorso = new BoxingHitSphere[BoxingOpponentAvatar.TorsoSpheres], oldEnemyTorso = new BoxingHitSphere[BoxingOpponentAvatar.TorsoSpheres];
+        private int enemyHeadCount, enemyTorsoCount;
         private int resolvedAttack, lastCompleted;
         private BoxingPhase previousPhase;
         private readonly BoxingPunch leftPunch = new BoxingPunch(), rightPunch = new BoxingPunch();
@@ -306,9 +311,29 @@ namespace Hapbeat.Boxing
         {
             position = default;
             if (Round.Phase != BoxingPhase.Tutorial || TutorialStep < 1 || TutorialStep > 2 || tutorialAdvance) return false;
-            position = TutorialStep == 1 ? Opponent.Head + Vector3.back * TutorialFaceMarkerDepth
-                : Opponent.Body + Vector3.down * TutorialBellyDrop + Vector3.back * (tuning.enemyBodyRadius + .01f);
+            position = TutorialStep == 1 ? Opponent.Head + Vector3.back * TutorialFaceMarkerDepth : BellyFront(Opponent.Body.y - TutorialBellyDrop) + Vector3.back * .01f;
             return true;
+        }
+        // The front of the torso hit shape at this height (the most forward torso sphere surface on the centre line).
+        private Vector3 BellyFront(float y)
+        {
+            UpdateEnemyShapes();
+            Vector3 best = Opponent.Body + Vector3.back * tuning.enemyBodyRadius; float score = float.PositiveInfinity;
+            for (int i = 0; i < enemyTorsoCount; i++)
+            {
+                var s = enemyTorso[i];
+                float off = Mathf.Abs(s.center.x - Opponent.Body.x), dy = Mathf.Abs(s.center.y - y);
+                if (off > .02f || dy > s.radius) continue;
+                Vector3 front = new Vector3(s.center.x, y, s.center.z - Mathf.Sqrt(s.radius * s.radius - dy * dy));
+                if (front.z < score) { score = front.z; best = front; }
+            }
+            return best;
+        }
+        // Where a glove (centre g, at the contact time) meets a target sphere (centre c, radius r): on the target's surface.
+        private static Vector3 SurfacePoint(Vector3 g, Vector3 c, float r)
+        {
+            Vector3 d = g - c; float m = d.magnitude;
+            return m > 1e-6f ? c + d * (r / m) : g;
         }
         // The fallback (timeout, last strike) moves on without the step's result message.
         private void NextTutorialStep()
@@ -366,10 +391,11 @@ namespace Hapbeat.Boxing
             ImpactZone zone = ImpactZone.Head;
             var part = ImpactPart.Glove;
             Vector3 targetFrom = Vector3.zero, targetTo = Vector3.zero;
+            float targetRadius = 0;
             void Candidate(ImpactZone z, Vector3 a, Vector3 b, float radius)
             {
                 if (BoxingCollision.Sweep(from, to, tuning.enemyGloveRadius, a, b, radius, out float t) && t < earliest)
-                { earliest = t; zone = z; targetFrom = a; targetTo = b; part = ImpactPart.Glove; }
+                { earliest = t; zone = z; targetFrom = a; targetTo = b; targetRadius = radius; part = ImpactPart.Glove; }
             }
             // A hand lost within the tracking grace cannot guard.
             if (LeftHandActive) Candidate(ImpactZone.LeftGlove, previous.left, p.left, tuning.gloveRadius);
@@ -377,13 +403,13 @@ namespace Hapbeat.Boxing
             void Forearm(ImpactZone side, Vector3 a, Quaternion ar, Vector3 b, Quaternion br)
             {
                 if(BoxingForearm.Sweep(from,to,tuning.enemyGloveRadius,a,ar,b,br,out float t,out var af,out var bf) && t<earliest)
-                { earliest=t; zone=side; targetFrom=af; targetTo=bf; part=ImpactPart.Forearm; }
+                { earliest=t; zone=side; targetFrom=af; targetTo=bf; targetRadius=BoxingForearm.Radius; part=ImpactPart.Forearm; }
             }
             if (LeftHandActive) Forearm(ImpactZone.LeftGlove,previous.left,previous.leftRotation,p.left,p.leftRotation);
             if (RightHandActive) Forearm(ImpactZone.RightGlove,previous.right,previous.rightRotation,p.right,p.rightRotation);
             Candidate(ImpactZone.Head, previous.head, p.head, tuning.headRadius);
             if (BoxingPlayerBody.Sweep(from, to, tuning.enemyGloveRadius, previous.head, previous.headRotation, p.head, p.headRotation, out float bodyTime, out var bodyFrom, out var bodyTo) && bodyTime < earliest)
-            { earliest = bodyTime; zone = ImpactZone.Body; targetFrom = bodyFrom; targetTo = bodyTo; part = ImpactPart.Glove; }
+            { earliest = bodyTime; zone = ImpactZone.Body; targetFrom = bodyFrom; targetTo = bodyTo; targetRadius = BoxingPlayerBody.Radius; part = ImpactPart.Glove; }
             if (float.IsPositiveInfinity(earliest)) return;
             resolvedAttack = Opponent.AttackId;
             float speed = BoxingCollision.RelativeSpeed(from, to, targetFrom, targetTo, dt);
@@ -395,7 +421,8 @@ namespace Hapbeat.Boxing
                 Vector3 hand = zone == ImpactZone.LeftGlove ? Vector3.Lerp(previous.left, p.left, earliest) : Vector3.Lerp(previous.right, p.right, earliest);
                 (zone == ImpactZone.LeftGlove ? leftPunch : rightPunch).Consume(hand - Vector3.Lerp(previous.head, p.head, earliest), tuning);
             }
-            if (speed >= tuning.minimumImpactSpeed) Report(new BoxingImpact(zone, speed, false, Vector3.Lerp(from, to, earliest), tuning,
+            Vector3 contactPoint = SurfacePoint(Vector3.Lerp(from, to, earliest), Vector3.Lerp(targetFrom, targetTo, earliest), targetRadius);
+            if (speed >= tuning.minimumImpactSpeed) Report(new BoxingImpact(zone, speed, false, contactPoint, tuning,
                 zone == ImpactZone.Head || zone == ImpactZone.Body ? ImpactSurface.Body : ImpactSurface.Glove, part));
         }
         private void ResolvePlayer(Vector3 to, Vector3 from, bool closed, ImpactZone side, ref bool contact, ref float cooldown, float dt)
@@ -406,19 +433,20 @@ namespace Hapbeat.Boxing
             var surface = ImpactSurface.Body;
             var part = ImpactPart.Glove;
             bool hitHead = false;
+            float targetRadius = 0;
             void Candidate(Vector3 a, Vector3 b, float radius, ImpactSurface material, bool head = false)
             {
                 if (BoxingCollision.Sweep(from, to, tuning.gloveRadius, a, b, radius, out float t) && t < earliest)
-                { earliest = t; targetFrom = a; targetTo = b; surface = material; hitHead = head; part = ImpactPart.Glove; }
+                { earliest = t; targetFrom = a; targetTo = b; targetRadius = radius; surface = material; hitHead = head; part = ImpactPart.Glove; }
             }
             // Earliest surface wins; a glove interception cannot also damage the body behind it.
             Candidate(oldEnemyLeft, Opponent.Left, tuning.enemyGloveRadius, ImpactSurface.Glove);
             Candidate(oldEnemyRight, Opponent.Right, tuning.enemyGloveRadius, ImpactSurface.Glove);
             for(int i=0;i<enemyArms.Length;i++)
                 if(BoxingGuardArm.Sweep(from,to,tuning.gloveRadius,oldEnemyArms[i],enemyArms[i],out float t,out var a,out var b) && t<earliest)
-                { earliest=t; targetFrom=a; targetTo=b; surface=ImpactSurface.Glove; hitHead=false; part=ImpactPart.Forearm; }
-            Candidate(oldEnemyHead, Opponent.Head, tuning.enemyHeadRadius, ImpactSurface.Body, true);
-            Candidate(oldEnemyBody, Opponent.Body, tuning.enemyBodyRadius, ImpactSurface.Body);
+                { earliest=t; targetFrom=a; targetTo=b; targetRadius=Mathf.Max(oldEnemyArms[i].radius,enemyArms[i].radius); surface=ImpactSurface.Glove; hitHead=false; part=ImpactPart.Forearm; }
+            for (int i = 0; i < enemyHeadCount; i++) Candidate(oldEnemyHeadShape[i].center, enemyHead[i].center, enemyHead[i].radius, ImpactSurface.Body, true);
+            for (int i = 0; i < enemyTorsoCount; i++) Candidate(oldEnemyTorso[i].center, enemyTorso[i].center, enemyTorso[i].radius, ImpactSurface.Body);
             bool hit = !float.IsPositiveInfinity(earliest);
             bool overlap = TouchingEnemy(to);
             // Hysteresis releases an existing contact; it must never create an early one.
@@ -431,7 +459,8 @@ namespace Hapbeat.Boxing
             Vector3 point = Vector3.Lerp(from, to, earliest);
             Vector3 headAtContact = Vector3.Lerp(previous.head, sampledHead, earliest);
             float strength = (side == ImpactZone.LeftGlove ? leftPunch : rightPunch).Consume(point - headAtContact, tuning);
-            var impact = new BoxingImpact(side, speed, point, tuning, surface, strength, part);
+            // The punch strength reads the glove centre; the impact (burst, sound, haptics) sits where the glove meets the surface.
+            var impact = new BoxingImpact(side, speed, SurfacePoint(point, Vector3.Lerp(targetFrom, targetTo, earliest), targetRadius), tuning, surface, strength, part);
             if (Round.Phase == BoxingPhase.Tutorial) { if (surface == ImpactSurface.Glove) tutorialGuarded = true; else if (!hitHead) tutorialBody = true; }
             if (surface == ImpactSurface.Body)
             {
@@ -444,15 +473,28 @@ namespace Hapbeat.Boxing
         {
             foreach(var arm in enemyArms)
                 if(arm.radius>0 && arm.Distance(position)<=tuning.gloveRadius+arm.radius+.03f) return true;
-            return Vector3.Distance(position, Opponent.Head) <= tuning.gloveRadius + tuning.enemyHeadRadius + 0.03f ||
-            Vector3.Distance(position, Opponent.Body) <= tuning.gloveRadius + tuning.enemyBodyRadius + 0.03f ||
-            Vector3.Distance(position, Opponent.Left) <= tuning.gloveRadius+tuning.enemyGloveRadius + 0.03f || Vector3.Distance(position, Opponent.Right) <= tuning.gloveRadius+tuning.enemyGloveRadius + 0.03f;
+            for (int i = 0; i < enemyHeadCount; i++) if (Vector3.Distance(position, enemyHead[i].center) <= tuning.gloveRadius + enemyHead[i].radius + .03f) return true;
+            for (int i = 0; i < enemyTorsoCount; i++) if (Vector3.Distance(position, enemyTorso[i].center) <= tuning.gloveRadius + enemyTorso[i].radius + .03f) return true;
+            return Vector3.Distance(position, Opponent.Left) <= tuning.gloveRadius+tuning.enemyGloveRadius + 0.03f || Vector3.Distance(position, Opponent.Right) <= tuning.gloveRadius+tuning.enemyGloveRadius + 0.03f;
         }
         private void UpdateEnemyArms()
         {
-            if(presentation == null || presentation.enemyAvatar == null) return;
+            if(presentation == null || presentation.enemyAvatar == null) { UpdateEnemyShapes(); return; }
             presentation.enemyAvatar.Render(Opponent,0);
             presentation.enemyAvatar.GetGuardArms(enemyArms);
+            UpdateEnemyShapes();
+        }
+        // From the avatar as last rendered (UpdateEnemyArms renders it first).
+        private void UpdateEnemyShapes()
+        {
+            if (presentation != null && presentation.enemyAvatar != null)
+            {
+                presentation.enemyAvatar.GetHitShapes(enemyHead, enemyTorso);
+                enemyHeadCount = enemyHead.Length; enemyTorsoCount = enemyTorso.Length;
+                return;
+            }
+            enemyHead[0] = new BoxingHitSphere(Opponent.Head, tuning.enemyHeadRadius); enemyTorso[0] = new BoxingHitSphere(Opponent.Body, tuning.enemyBodyRadius);
+            enemyHeadCount = enemyTorsoCount = 1;
         }
         private void Report(BoxingImpact impact)
         {
@@ -463,8 +505,8 @@ namespace Hapbeat.Boxing
         private void SaveHistory(BoxerPose pose)
         {
             UpdateEnemyArms(); Array.Copy(enemyArms,oldEnemyArms,enemyArms.Length);
-            previous = pose; oldEnemyLeft = Opponent.Left; oldEnemyRight = Opponent.Right;
-            oldEnemyHead = Opponent.Head; oldEnemyBody = Opponent.Body; haveHistory = true;
+            Array.Copy(enemyHead, oldEnemyHeadShape, enemyHead.Length); Array.Copy(enemyTorso, oldEnemyTorso, enemyTorso.Length);
+            previous = pose; oldEnemyLeft = Opponent.Left; oldEnemyRight = Opponent.Right; haveHistory = true;
         }
     }
 }

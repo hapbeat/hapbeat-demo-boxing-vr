@@ -147,6 +147,19 @@ namespace Hapbeat.Boxing.Tests
             var temp = game.tuning; game.tuning = originalTuning; Object.DestroyImmediate(temp);
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
         }
+        // The most forward point of the opponent's rendered hit shape (head or torso) on its centre line at height y.
+        public static Vector3 OpponentFront(BoxingGame game, bool head, float y)
+        {
+            var heads = new BoxingHitSphere[BoxingOpponentAvatar.HeadSpheres]; var torso = new BoxingHitSphere[BoxingOpponentAvatar.TorsoSpheres];
+            game.presentation.enemyAvatar.GetHitShapes(heads, torso);
+            float x = head ? game.Opponent.Head.x : game.Opponent.Body.x, z = float.PositiveInfinity;
+            foreach (var s in head ? heads : torso)
+            {
+                float dx = s.center.x - x, dy = s.center.y - y, h = s.radius * s.radius - dx * dx - dy * dy;
+                if (h > 0) z = Mathf.Min(z, s.center.z - Mathf.Sqrt(h));
+            }
+            return new Vector3(x, y, z);
+        }
         public static BoxerPose Pose(bool guard = false) => new BoxerPose {
             valid = true, head = new Vector3(0, 1.65f, 0), left = new Vector3(guard ? -0.12f : -0.45f, guard ? 1.65f : 1.1f, 0.3f),
             right = new Vector3(guard ? 0.12f : 0.45f, guard ? 1.65f : 1.1f, 0.3f),
@@ -265,7 +278,7 @@ namespace Hapbeat.Boxing.Tests
             game.Round.Tick(3, false);
             typeof(BoxingGame).GetMethod("SaveHistory", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(game, new object[] { Pose() });
             var resolve = typeof(BoxingGame).GetMethod("ResolvePlayer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            Vector3 contact = game.Opponent.Body + Vector3.back * (game.tuning.gloveRadius + game.tuning.enemyBodyRadius);
+            Vector3 contact = OpponentFront(game, false, game.Opponent.Body.y) + Vector3.back * game.tuning.gloveRadius;
             resolve.Invoke(game, new object[] { contact + Vector3.forward * 0.01f, contact + Vector3.back * 0.04f, true, ImpactZone.LeftGlove, false, 0f, 0.01f });
             Assert.That(game.Round.Hits, Is.EqualTo(1));
             Assert.That(10000 - game.Round.EnemyHealth, Is.LessThanOrEqualTo(1), "A fast 5cm wrist tap is not a full punch.");
@@ -485,7 +498,7 @@ namespace Hapbeat.Boxing.Tests
             pose.left = game.Opponent.Head + Vector3.back * 0.5f;
             Advance(0.4f, pose);
             int before = game.Round.Hits;
-            float contactDistance = game.tuning.gloveRadius + game.tuning.enemyHeadRadius;
+            float contactDistance = game.tuning.gloveRadius + game.Opponent.Head.z - OpponentFront(game, true, game.Opponent.Head.y).z;
             int steps = Mathf.CeilToInt((.5f - contactDistance) / .008f) + 2;
             for (int i = 0; i < steps; i++)
             {

@@ -4,7 +4,15 @@ using UnityEngine;
 
 namespace Hapbeat.Boxing
 {
-    // Rig pose provides arm-guard geometry; game-side sweeps remain collision authority.
+    // One sphere of a hit shape (world space).
+    public struct BoxingHitSphere
+    {
+        public Vector3 center;
+        public float radius;
+        public BoxingHitSphere(Vector3 center, float radius) { this.center = center; this.radius = radius; }
+    }
+
+    // Rig pose provides arm-guard and head / torso hit geometry; game-side sweeps remain collision authority.
     public sealed class BoxingOpponentAvatar : MonoBehaviour
     {
         public SkinnedMeshRenderer skin;
@@ -74,6 +82,44 @@ namespace Hapbeat.Boxing
             BodyReaction = body; Reaction = Mathf.Max(Reaction, Mathf.Lerp(.3f, 1, gain));
         }
         public void ResetReaction() { Reaction = 0; BodyReaction = false; smoothingStarted = false; }
+        // Head and torso hit shapes fitted to the skinned mesh, in each bone's frame (metres at avatar scale 1;
+        // +Y up the bone, +Z the opponent's front, X across), so they lean and turn with the rendered body.
+        // Torso: one row per mesh ring (spine / chest), its elliptic cross-section (half width A, half depth B,
+        // centre Zc) covered by spheres on the major axis, each as large as the ellipse allows at its place.
+        // Head: three spheres stacked along the head bone. BoxingHitShapeTests checks them against the mesh.
+        private readonly struct TorsoRow
+        {
+            public readonly bool chest; public readonly float y, zc, a, b;
+            public TorsoRow(bool chest, float y, float zMin, float zMax, float a) { this.chest = chest; this.y = y; zc = (zMin + zMax) * .5f; b = (zMax - zMin) * .5f; this.a = a; }
+        }
+        private static readonly TorsoRow[] TorsoRows = {
+            new TorsoRow(false, .005f, -.087f, .087f, .129f), new TorsoRow(false, .065f, -.086f, .090f, .131f), new TorsoRow(false, .095f, -.090f, .097f, .142f),
+            new TorsoRow(true, -.055f, -.093f, .108f, .160f), new TorsoRow(true, .005f, -.098f, .117f, .180f), new TorsoRow(true, .065f, -.100f, .124f, .194f),
+            new TorsoRow(true, .125f, -.099f, .118f, .207f), new TorsoRow(true, .155f, -.095f, .102f, .216f), new TorsoRow(true, .215f, -.085f, .085f, .214f) };
+        // Sphere places along each row's major axis (share of A).
+        private static readonly float[] RowSpread = { 0, -.25f, .25f, -.5f, .5f, -.7f, .7f, -.85f, .85f };
+        private static readonly float[] HeadHeights = { .065f, .125f, .185f };
+        private const float HeadRadius = .109f, HeadZ = .003f;
+        public static readonly int TorsoSpheres = 9 * 9, HeadSpheres = 3;
+        // Fills head[HeadSpheres] and torso[TorsoSpheres] for the current (rendered) pose. No allocation.
+        public void GetHitShapes(BoxingHitSphere[] headShape, BoxingHitSphere[] torso)
+        {
+            float scale = transform.localScale.x;
+            for (int i = 0; i < HeadHeights.Length; i++)
+                headShape[i] = new BoxingHitSphere(head.position + head.rotation * (new Vector3(0, HeadHeights[i], HeadZ) * scale), HeadRadius * scale);
+            int k = 0;
+            foreach (var row in TorsoRows)
+            {
+                var bone = row.chest ? chest : spine;
+                float focus = (row.a * row.a - row.b * row.b) / row.a;
+                foreach (float share in RowSpread)
+                {
+                    float x = share * row.a, ax = Mathf.Abs(x);
+                    float radius = ax <= focus ? row.b * Mathf.Sqrt(Mathf.Max(0, 1 - x * x / (row.a * row.a - row.b * row.b))) : row.a - ax;
+                    torso[k++] = new BoxingHitSphere(bone.position + bone.rotation * (new Vector3(x, row.y, row.zc) * scale), radius * scale);
+                }
+            }
+        }
         public void GetGuardArms(BoxingGuardArm[] arms)
         {
             BoxingGuardArm Segment(Transform a,Transform b,float radius) => new BoxingGuardArm(a.position,b.position,

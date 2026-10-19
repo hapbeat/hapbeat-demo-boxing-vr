@@ -105,7 +105,8 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(MarkerShown, Is.True);
             Vector3 belly = Marker.transform.position;
             Assert.That(belly.y, Is.LessThan(game.Opponent.Body.y - .05f));
-            Assert.That(belly.z, Is.LessThan(game.Opponent.Body.z - game.tuning.enemyBodyRadius));
+            float surface = BoxingSceneTests.OpponentFront(game, false, belly.y).z;
+            Assert.That(belly.z, Is.LessThan(surface).And.GreaterThan(surface - .03f), "Just before the belly's surface.");
             int guarded = game.Round.EnemyBlocks;
             Punch(belly);
             Assert.That(game.Round.Hits, Is.EqualTo(1), "A straight to the body must pass the head guard.");
