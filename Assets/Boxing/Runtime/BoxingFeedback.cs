@@ -173,7 +173,7 @@ namespace Hapbeat.Boxing
         // The impact's share of the cue (the wrist floor applied), before the full-scale cap and the trim.
         public float HapticGain(BoxingImpact impact) =>
             TriggerIndex(impact) < 2 * WristCues ? Mathf.Max(impact.gain, wristMinimumGain) : impact.gain;
-        // Demo-wide haptics trim in dB (BoxingTuning.hapticsTrimDb, the Demo Session option haptics_db); set by BoxingGame.
+        // Demo-wide haptics trim in dB (the Demo Session option haptics_db, else BoxingTuning.hapticsTrimDb); set by BoxingGame.
         public float HapticsTrimDb { get; set; } = -2;
         public static readonly int[] TrimSteps = { 0, -2, -4, -6, -9, -12 };
         // GainMultiplier for this impact: the wanted level is entry gain x intensity x the impact's share, capped at full

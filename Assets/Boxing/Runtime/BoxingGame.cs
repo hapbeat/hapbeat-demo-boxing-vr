@@ -95,8 +95,20 @@ namespace Hapbeat.Boxing
         public void Initialize()
         {
             if (Opponent == null) Opponent = new BoxingOpponent(tuning); previousPhase = Round.Phase;
-            if (feedback != null && tuning != null) feedback.HapticsTrimDb = tuning.hapticsTrimDb;
+            ApplyHapticsTrim();
         }
+        // The demo-wide haptics trim from the Demo Session option haptics_db, this headset's per-demo setting (scope device):
+        // the ticket's value, or without a ticket the value kept from the last one (else the descriptor default), read through
+        // DemoSession.GetOption either way. BoxingTuning.hapticsTrimDb only when there is no valid option (no descriptor).
+        public void ApplyHapticsTrim()
+        {
+            if (feedback != null && tuning != null)
+                feedback.HapticsTrimDb = HapticsTrimDb(Hapbeat.DemoSwitch.DemoSession.GetOption("haptics_db"), tuning.hapticsTrimDb);
+        }
+        // haptics_db: the cut in dB as a non-negative number ("2" = -2 dB; option values cannot start with '-').
+        internal static float HapticsTrimDb(string option, float fallback) =>
+            int.TryParse(option, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var db)
+            && Array.IndexOf(BoxingFeedback.TrimSteps, -db) >= 0 ? -db : fallback;
         private void Awake() => Initialize();
         private void OnEnable()
         {

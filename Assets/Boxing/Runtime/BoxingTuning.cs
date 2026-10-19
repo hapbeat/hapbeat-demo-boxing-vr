@@ -33,9 +33,10 @@ namespace Hapbeat.Boxing
         [Min(0)] public float restartAfterResultsSeconds = 4;
         // Demo Session: the completion panel appears this long after the final bell (the bell and voice keep playing).
         [Min(0)] public float resultPanelDelaySeconds = 1;
-        // Demo-wide haptics trim in dB (0 / -2 / -4 / -6 / -9 / -12; Demo Session option haptics_db): the sent amplitude,
-        // capped at the clip's full scale, times 10^(dB/20) (BoxingFeedback.HapticMultiplier). The bands brown out at the
-        // former full level; -2 dB is about 80 %.
+        // Demo-wide haptics trim in dB (0 / -2 / -4 / -6 / -9 / -12): the sent amplitude, capped at the clip's full scale,
+        // times 10^(dB/20) (BoxingFeedback.HapticMultiplier). The bands brown out at the former full level; -2 dB is about
+        // 80 %. Only the fallback: the Demo Session option haptics_db (this headset's per-demo setting) decides it
+        // (BoxingGame.ApplyHapticsTrim).
         public float hapticsTrimDb = -2;
         // Round music volume (linear, about -21 dB): well under the impact sounds; not scaled by the narration volume.
         [Range(0, 1)] public float musicVolume = 0.09f;

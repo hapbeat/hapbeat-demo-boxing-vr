@@ -6,7 +6,8 @@ using UnityEngine;
 
 namespace Hapbeat.Boxing.Tests
 {
-    // The demo-wide haptics trim (BoxingTuning.hapticsTrimDb, Demo Session option haptics_db): computed only, nothing is sent.
+    // The demo-wide haptics trim (Demo Session option haptics_db, scope device; BoxingTuning.hapticsTrimDb as the fallback):
+    // computed only, nothing is sent.
     public sealed class BoxingHapticTrimTests
     {
         private BoxingGame game;
@@ -74,6 +75,7 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(DemoSessionDescriptor.TryParse(File.ReadAllText("Assets/StreamingAssets/hapbeat-demo-session.json"), out var descriptor, out var error), Is.True, error);
             var option = descriptor.FindOption("haptics_db");
             Assert.That(option.Default, Is.EqualTo("2"));
+            Assert.That(option.IsDevice, Is.True, "This headset's per-demo setting, not a preset's.");
             foreach (var value in new[] { "0", "2", "4", "6", "9", "12" }) Assert.That(option.HasValue(value), Is.True, value);
             string ticket = "{\"version\":1,\"session_id\":\"0f3a9c2e7b1d4a57\",\"index\":0,\"haptics_ui\":true,\"steps\":[" +
                 "{\"demo_id\":\"boxing\",\"title\":\"Boxing\",\"package\":\"com.hapbeat.boxing\",\"activity\":\"com.unity3d.player.UnityPlayerGameActivity\",\"options\":{\"round\":\"55\",\"haptics_db\":\"6\"},\"retry\":true}]," +
@@ -81,10 +83,36 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(DemoSession.TryBegin(ticket, "boxing", descriptor, out error), Is.True, error);
             var host = game.gameObject.AddComponent<BoxingSessionHost>();
             DemoSession.RegisterHost(host);
-            Assert.That(game.tuning.hapticsTrimDb, Is.EqualTo(-6));
             Assert.That(game.feedback.HapticsTrimDb, Is.EqualTo(-6));
+            Assert.That(game.tuning.hapticsTrimDb, Is.EqualTo(-2), "The tuning asset is only the fallback and stays.");
             game.Initialize();
             Assert.That(game.feedback.HapticsTrimDb, Is.EqualTo(-6), "A recenter keeps the session's trim.");
+        }
+
+        [Test] public void ALaunchWithoutATicketUsesTheTrimKeptFromTheLastTicket()
+        {
+            var store = new MemoryDemoDeviceOptionStore();
+            // No ticket ever: the descriptor default.
+            DemoSession.ResetForTests(deviceOptions: store);
+            DemoSession.Initialize("boxing", new SafeDemoSessionPlatform());
+            game.Initialize();
+            Assert.That(game.feedback.HapticsTrimDb, Is.EqualTo(-2));
+
+            Assert.That(DemoSessionDescriptor.TryParse(File.ReadAllText("Assets/StreamingAssets/hapbeat-demo-session.json"), out var descriptor, out var error), Is.True, error);
+            string ticket = "{\"version\":1,\"session_id\":\"0f3a9c2e7b1d4a58\",\"index\":0,\"haptics_ui\":false,\"steps\":[" +
+                "{\"demo_id\":\"boxing\",\"title\":\"Boxing\",\"package\":\"com.hapbeat.boxing\",\"activity\":\"com.unity3d.player.UnityPlayerGameActivity\",\"options\":{\"round\":\"30\",\"haptics_db\":\"9\"},\"retry\":true}]," +
+                "\"finish\":{\"package\":\"jp.hapbeat.demohub\",\"activity\":\"com.unity3d.player.UnityPlayerGameActivity\"}}";
+            DemoSession.ResetForTests(deviceOptions: store);
+            Assert.That(DemoSession.TryBegin(ticket, "boxing", descriptor, out error), Is.True, error);
+
+            // Started again from Quest's app list (or Demo Switch SWITCH): no ticket, the kept -9 dB.
+            DemoSession.ResetForTests(deviceOptions: store);
+            DemoSession.Initialize("boxing", new SafeDemoSessionPlatform());
+            Assert.That(DemoSession.IsActive, Is.False);
+            game.Initialize();
+            Assert.That(game.feedback.HapticsTrimDb, Is.EqualTo(-9));
+            Assert.That(BoxingGame.HapticsTrimDb("7", -2), Is.EqualTo(-2), "Not a trim step: the fallback.");
+            Assert.That(BoxingGame.HapticsTrimDb(null, -4), Is.EqualTo(-4));
         }
     }
 }

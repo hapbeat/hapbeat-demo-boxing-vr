@@ -41,6 +41,7 @@
         "en": "Haptics level"
       },
       "default": "2",
+      "scope": "device",
       "values": [
         {
           "value": "0",
