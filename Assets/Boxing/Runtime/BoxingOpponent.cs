@@ -31,6 +31,9 @@ namespace Hapbeat.Boxing
         public BoxingGuard Guard { get; private set; }
         public bool BodyGuard => Guard==BoxingGuard.BodyStraight || Guard==BoxingGuard.BodyHook;
         public bool HookGuard => Guard==BoxingGuard.HeadHook || Guard==BoxingGuard.BodyHook;
+        // A hook guard covers one side: -1 = Left (world -X, the Left glove's side), +1 = Right. The other glove stays
+        // in the high guard at the chin. Straight guards use both gloves alike.
+        public float GuardSide { get; private set; } = 1;
         // 0..1: how closely both gloves have reached the committed guard pose (1 = settled).
         public float GuardWeight { get; private set; }
         public int AttackId { get; private set; }
@@ -76,6 +79,9 @@ namespace Hapbeat.Boxing
         private readonly BoxingTuning tuning;
         private readonly System.Random seeds;
         private System.Random random;
+        // The covered side of hook guards: its own stream (seeded with random's seed), so choosing a side leaves the
+        // other choices' sequence unchanged.
+        private System.Random sideRandom;
         private float height = 1.65f, floorHeight, clock;
         // Root in world space, head relative to Root, gloves relative to Head.
         private Vector3 root, rootVelocity, headOffset, headVelocity, leftOffset, leftVelocity, rightOffset, rightVelocity;
@@ -88,6 +94,7 @@ namespace Hapbeat.Boxing
         private Vector3 aim, strikeStart, strikeVelocity, bulge, evadeOffset;
         private float staggerPush;
         private BoxingGuard coverGuard;
+        private float coverSide = 1;
         private readonly float[] heat = new float[4], hitTimes = new float[8], launchTimes = new float[8], guardWeights = new float[4];
         private int hitNext, launchNext;
         private readonly int[] recent = new int[3];
@@ -117,10 +124,10 @@ namespace Hapbeat.Boxing
         public void Reset(float playerHeight,float floor=0)
         {
             height = Mathf.Max(.2f,playerHeight); floorHeight=floor; clock = 0;
-            random = new System.Random(seeds.Next());
+            int seed = seeds.Next(); random = new System.Random(seed); sideRandom = new System.Random(seed ^ 0x5bd1e995);
             StopCombat(); decisionWait = OpeningSeconds * Pace;
             Action = BoxingAction.Hold; Actions = 0; Attack = BoxingAttack.HeadStraight; AttackLeft = false; AttackId = CompletedAttacks = 0;
-            Guard = coverGuard = BoxingGuard.HeadStraight;
+            Guard = coverGuard = BoxingGuard.HeadStraight; GuardSide = coverSide = 1;
             for (int i = 0; i < heat.Length; i++) heat[i] = 0;
             for (int i = 0; i < hitTimes.Length; i++) hitTimes[i] = launchTimes[i] = float.NegativeInfinity;
             for (int i = 0; i < recent.Length; i++) recent[i] = -1;
@@ -266,7 +273,8 @@ namespace Hapbeat.Boxing
             var zone = ahead.y <= Head.y - .25f ? BoxingHitZone.Body : !hook ? BoxingHitZone.HeadCenter :
                 velocity.x > 0 ? BoxingHitZone.HeadLeft : BoxingHitZone.HeadRight;
             float chance = ReadChance * (1 + .15f * Mathf.Min(2, heat[(int)zone]));
-            if (random.NextDouble() < chance) BeginDefend(zone, hook);
+            // Travelling towards +X, the glove arrives from the Left (-X) side.
+            if (random.NextDouble() < chance) BeginDefend(zone, hook, velocity.x > 0 ? -1 : 1);
         }
 
         // ---- Choices ----
@@ -305,12 +313,21 @@ namespace Hapbeat.Boxing
                 case BoxingAction.StepIn: Step(new Vector2(rootGoal.x, -.06f)); break;
                 case BoxingAction.StepOut: Step(new Vector2(rootGoal.x, .07f)); break;
                 case BoxingAction.Circle: Step(new Vector2(root.x > 0 ? -.11f : .11f, rootGoal.y)); break;
-                case BoxingAction.Hold: Cover(ChooseGuard(null), tuning.guardSeconds * Next(.7f, 1.1f)); decisionWait = guardTime; break;
+                case BoxingAction.Hold: Cover(ChooseGuard(null), tuning.guardSeconds * Next(.7f, 1.1f), ChooseSide()); decisionWait = guardTime; break;
                 default: BeginAttack(action, false); break;
             }
         }
         private void Step(Vector2 goal) { rootGoal = goal; goalTime = 1.5f; decisionWait = Next(.3f, .55f) * Pace; }
-        private void Cover(BoxingGuard guard, float seconds) { Guarding = true; Guard = guard; guardTime = seconds; }
+        private void Cover(BoxingGuard guard, float seconds, float side) { Guarding = true; Guard = guard; GuardSide = side; guardTime = seconds; }
+        // Without a read: the side the player's wide (likely hooking) glove threatens, else the side hit more, else either.
+        // The player's left glove (world -X) hooks towards +X and arrives on the Left side.
+        private float ChooseSide()
+        {
+            float left = heat[(int)BoxingHitZone.HeadLeft] + (stanceKnown && leftOpen ? 1 : 0);
+            float right = heat[(int)BoxingHitZone.HeadRight] + (stanceKnown && rightOpen ? 1 : 0);
+            if (Mathf.Abs(left - right) > .01f) return left > right ? -1 : 1;
+            return sideRandom.NextDouble() < .5 ? -1 : 1;
+        }
         private BoxingGuard ChooseGuard(BoxingGuard? read)
         {
             float total = 0;
@@ -332,7 +349,7 @@ namespace Hapbeat.Boxing
             hitFlurry = punchFlurry = false;
             if (counter) { StartCounter(); return; }
             State = BoxingOpponentState.Neutral; Record(BoxingAction.StepOut); Step(new Vector2(rootGoal.x, .07f));
-            Cover(ChooseGuard(null), tuning.guardSeconds * .6f);
+            Cover(ChooseGuard(null), tuning.guardSeconds * .6f, ChooseSide());
         }
 
         // ---- Defence ----
@@ -342,13 +359,14 @@ namespace Hapbeat.Boxing
             attacking = retracting = pendingStrike = false; Telegraphing = Feinting = Counter = false;
             Evade = BoxingEvade.None; evadeOffset = Vector3.zero;
         }
-        private void BeginDefend(BoxingHitZone zone, bool hook)
+        private void BeginDefend(BoxingHitZone zone, bool hook, float side)
         {
             CancelAttack();
             State = BoxingOpponentState.Defend; stateTime = 0; stateDuration = .5f; hitDuringDefense = false;
             var read = zone == BoxingHitZone.Body ? (hook ? BoxingGuard.BodyHook : BoxingGuard.BodyStraight) :
                 zone == BoxingHitZone.HeadCenter ? BoxingGuard.HeadStraight : BoxingGuard.HeadHook;
-            Cover(ChooseGuard(read), stateDuration);
+            // A read hook covers its side; a guess at another guard still picks one side.
+            Cover(ChooseGuard(read), stateDuration, hook ? side : ChooseSide());
             if (zone == BoxingHitZone.Body || random.NextDouble() >= .15f + .35f * Skill) return;
             if (zone != BoxingHitZone.HeadCenter) { Evade = BoxingEvade.Duck; evadeOffset = new Vector3(0, -Next(.12f, .16f), 0); }
             else if (random.NextDouble() < .6)
@@ -373,7 +391,7 @@ namespace Hapbeat.Boxing
         {
             State = BoxingOpponentState.Neutral;
             if (hitFlurry || punchFlurry) { HandleFlurry(); return; }
-            Cover(ChooseGuard(null), tuning.guardSeconds * Next(.5f, .8f));
+            Cover(ChooseGuard(null), tuning.guardSeconds * Next(.5f, .8f), ChooseSide());
             decisionWait = guardTime * Mathf.Lerp(1, .6f, Skill);
         }
 
@@ -402,7 +420,7 @@ namespace Hapbeat.Boxing
             Guarding = false; attacking = pendingStrike = true; retracting = false; this.strikeScale = strikeScale;
         }
         // Tutorial: the scripted opponent holds this guard (no timeout) until ScriptedRelease or a strike.
-        internal void ScriptedGuard(BoxingGuard guard) { Guarding = true; Guard = guard; }
+        internal void ScriptedGuard(BoxingGuard guard, float side = 1) { Guarding = true; Guard = guard; GuardSide = side; }
         internal void ScriptedRelease() => Guarding = false;
         private void BeginFeint()
         {
@@ -461,7 +479,7 @@ namespace Hapbeat.Boxing
             Striking = Telegraphing = false; retracting = true; phaseTime = 0;
             bool last = comboIndex >= combo.Length - 1;
             phaseDuration = last ? tuning.recoverSeconds : .16f;
-            if (last) coverGuard = ChooseGuard(null);
+            if (last) { coverGuard = ChooseGuard(null); coverSide = ChooseSide(); }
             Vector3 still = -(rootVelocity + headVelocity);
             if (AttackLeft) { Left = fist; leftOffset = fist - Head; leftVelocity = still; }
             else { Right = fist; rightOffset = fist - Head; rightVelocity = still; }
@@ -472,7 +490,7 @@ namespace Hapbeat.Boxing
             if (Scripted) return;
             if (combo.Length > 1) { rootGoal = new Vector2(rootGoal.x, .05f); goalTime = .8f; }
             if (hitFlurry || punchFlurry) { HandleFlurry(); return; }
-            Cover(coverGuard, tuning.guardSeconds * Next(.5f, .9f));
+            Cover(coverGuard, tuning.guardSeconds * Next(.5f, .9f), coverSide);
             decisionWait = guardTime * Mathf.Lerp(1, .55f, Skill);
         }
 
@@ -491,15 +509,18 @@ namespace Hapbeat.Boxing
             if (retracting) return retractFrom * (1 - Mathf.SmoothStep(0, 1, t));
             return 0;
         }
-        private static Vector3 GuardOffset(BoxingGuard guard, float side)
+        // side: this glove's side (-1 Left, +1 Right); cover: the side a hook guard covers. The covering glove of a hook guard
+        // sits at the temple (head) or beside the cheek with its elbow dropped onto the flank (body, BoxingOpponentAvatar.Pole);
+        // the other glove keeps the high guard at the chin.
+        internal static Vector3 GuardOffset(BoxingGuard guard, float side, float cover)
         {
             switch (guard)
             {
-                case BoxingGuard.HeadHook: return new Vector3(side * .17f, .005f, -.035f);       // ear-muff at the temples
-                case BoxingGuard.BodyStraight: return new Vector3(side * .06f, -.35f, -.21f);    // gloves before the solar plexus
-                case BoxingGuard.BodyHook: return new Vector3(side * .265f, -.36f, -.045f);      // elbows dropped onto the flanks, gloves clear of the torso
-                default: return new Vector3(side * .065f, -.015f, -.20f);                        // high guard before the face
+                case BoxingGuard.HeadHook: if (side == cover) return new Vector3(side * .165f, .01f, -.065f); break;  // glove at the temple
+                case BoxingGuard.BodyStraight: return new Vector3(side * .06f, -.35f, -.21f);                       // gloves before the solar plexus
+                case BoxingGuard.BodyHook: if (side == cover) return new Vector3(side * .12f, -.17f, -.17f); break;   // glove before the jaw, elbow on the flank
             }
+            return new Vector3(side * .065f, -.015f, -.20f);                                                       // high guard before the face
         }
         private Vector3 HandTarget(bool left, out float smooth)
         {
@@ -508,12 +529,12 @@ namespace Hapbeat.Boxing
             if (Guarding)
             {
                 if (State == BoxingOpponentState.Defend) smooth = tuning.opponentDefendSmoothSeconds;
-                return GuardOffset(Guard, side);
+                return GuardOffset(Guard, side, GuardSide);
             }
             if (!attacking) return rest;
             bool lastRetract = retracting && comboIndex >= combo.Length - 1;
-            if (AttackLeft != left) return lastRetract ? GuardOffset(coverGuard, side) : new Vector3(side * .075f, -.085f, -.20f); // other glove stays at the chin
-            if (retracting) { smooth = tuning.opponentFistReturnSeconds; return lastRetract ? GuardOffset(coverGuard, side) : rest; }
+            if (AttackLeft != left) return lastRetract ? GuardOffset(coverGuard, side, coverSide) : new Vector3(side * .075f, -.085f, -.20f); // other glove stays at the chin
+            if (retracting) { smooth = tuning.opponentFistReturnSeconds; return lastRetract ? GuardOffset(coverGuard, side, coverSide) : rest; }
             if (Telegraphing || Feinting) return rest + new Vector3(side * (Hook ? .10f : .025f), BodyAttack ? -.18f : -.02f, .06f);
             return rest;
         }
@@ -565,7 +586,7 @@ namespace Hapbeat.Boxing
             GuardWeight = 0;
             if (Guarding)
             {
-                float error = Mathf.Max((leftOffset - GuardOffset(Guard, -1)).magnitude, (rightOffset - GuardOffset(Guard, 1)).magnitude);
+                float error = Mathf.Max((leftOffset - GuardOffset(Guard, -1, GuardSide)).magnitude, (rightOffset - GuardOffset(Guard, 1, GuardSide)).magnitude);
                 GuardWeight = Mathf.Clamp01(1 - error / GuardTolerance);
             }
         }

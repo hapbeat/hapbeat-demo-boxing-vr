@@ -37,6 +37,17 @@ namespace Hapbeat.Boxing
         // Elbow poles and torso yaw ease towards the opponent state instead of switching in one frame.
         private Vector3 leftPole, rightPole;
         private float smoothedYaw;
+        // Each glove's twist about its forearm (degrees, GloveTwist), eased at most TwistRate so a fast strike cannot spin it.
+        private float leftTwist, rightTwist;
+        private const float TwistRate = 360;
+        // Each elbow's last bend direction (world, from the shoulder-wrist axis): the torso-clearance choice turns it at
+        // most BendRate, so a changed choice swings the elbow round instead of flipping it (behind the body, across).
+        private Vector3 leftBend, rightBend;
+        // Each forearm's last direction. The glove is aligned to it and the arm solved once per frame, so the wrist
+        // follows the forearm over frames; iterating to the fixed point within a frame (the former 5 passes from a fixed
+        // guess) could settle on another solution and swing the glove and elbow round in one frame.
+        private Vector3 leftForearm, rightForearm;
+        private const float BendRate = 540;
         private bool smoothingStarted;
 
         public void CaptureRest()
@@ -146,6 +157,7 @@ namespace Hapbeat.Boxing
             var rf = rightFoot.position + new Vector3(.035f,0,.13f);
             var lr = leftFoot.rotation; var rr = rightFoot.rotation;
             Vector3 leftTarget = Pole(opponent, true, -1), rightTarget = Pole(opponent, false, 1);
+            bool snap = !smoothingStarted;
             if (!smoothingStarted) { leftPole = leftTarget; rightPole = rightTarget; smoothedYaw = opponent.BodyYaw; smoothingStarted = true; }
             float step = Mathf.Max(0, dt);
             float poleBlend = 1 - Mathf.Exp(-step / .08f);
@@ -160,40 +172,60 @@ namespace Hapbeat.Boxing
             transform.position += opponent.Head - HeadCenter;
             Solve(leftThigh, leftShin, leftFoot, lf, Vector3.back); leftFoot.rotation = lr;
             Solve(rightThigh, rightShin, rightFoot, rf, Vector3.back); rightFoot.rotation = rr;
-            Arm(leftUpper, leftFore, leftHand, leftCenter, opponent.Left, opponent.Head, leftPole);
-            Arm(rightUpper, rightFore, rightHand, rightCenter, opponent.Right, opponent.Head, rightPole);
+            Arm(leftUpper, leftFore, leftHand, leftCenter, opponent.Left, opponent.Head, leftPole, -1, ref leftTwist, ref leftBend, ref leftForearm, snap, step);
+            Arm(rightUpper, rightFore, rightHand, rightCenter, opponent.Right, opponent.Head, rightPole, 1, ref rightTwist, ref rightBend, ref rightForearm, snap, step);
             Reaction = Mathf.Max(0, Reaction - Mathf.Max(0, dt) * 2.8f);
         }
-        // Elbow direction: horizontal for a hook, raised forward for the ear-muff guard, tucked down for body guards.
+        // Elbow direction: horizontal for a hook, down for the guards (a head hook guard's covering elbow forward under
+        // the glove, a body hook guard's dropped onto the flank).
         private static Vector3 Pole(BoxingOpponent opponent, bool left, float side)
         {
             if (opponent.Hook && opponent.AttackLeft == left) return new Vector3(side, .05f, .1f);
             if (opponent.Guarding)
                 switch (opponent.Guard)
                 {
-                    case BoxingGuard.HeadHook: return new Vector3(side * .7f, -.35f, -.35f);
                     case BoxingGuard.BodyStraight: return new Vector3(side * .15f, -1, -.05f);
-                    case BoxingGuard.BodyHook: return new Vector3(side * .35f, -1, .05f);
+                    // The glove at the temple is nearly above the shoulder: the elbow comes forward under it, not out.
+                    case BoxingGuard.HeadHook: if (side == opponent.GuardSide) return new Vector3(side * .05f, -.25f, -1); break;
+                    case BoxingGuard.BodyHook: if (side == opponent.GuardSide) return new Vector3(side * .45f, -1, .9f); break;
                 }
             return new Vector3(side * .3f, -1, .1f);
         }
-        private void Arm(Transform upper, Transform fore, Transform hand, Vector3 center, Vector3 target, Vector3 targetHead, Vector3 pole)
+        // The back of the glove (local Z) for a forearm direction (local Y, cuff -> knuckles): the back that faces the
+        // player (-Z) on an upright forearm, carried to the forearm by the shortest rotation, then twisted about the forearm.
+        // Continuous in the direction; its only singular direction is a forearm hanging straight down, which no guard or
+        // strike uses. The former reference (-Z projected on the forearm's normal plane, right as the fallback) flipped
+        // whenever the forearm pointed near the player, as in the body guards and at the end of a strike.
+        internal static Vector3 GloveBack(Vector3 direction, float twist) =>
+            Quaternion.AngleAxis(twist, direction) * (Quaternion.FromToRotation(Vector3.up, direction) * Vector3.back);
+        // Twist for a forearm pointing at the player: a quarter turn inwards (vertical fist, palm towards the centre line)
+        // as the forearm comes down from upright to the player, none on an upright forearm.
+        internal static float GloveTwist(Vector3 direction, float side) =>
+            -side * 90 * Mathf.InverseLerp(.4f, .95f, Vector3.Dot(direction, Vector3.back));
+        private void Arm(Transform upper, Transform fore, Transform hand, Vector3 center, Vector3 target, Vector3 targetHead, Vector3 pole, float side,
+            ref float twist, ref Vector3 bendState, ref Vector3 forearm, bool snap, float dt)
         {
+            Vector3 previousBend = snap ? Vector3.zero : bendState, used = previousBend;
+            float maxTurn = BendRate * dt;
             float extension = Mathf.Clamp01((targetHead.z - target.z - .28f) / .35f);
-            Vector3 direction = Vector3.Lerp(Vector3.up, Vector3.back, extension).normalized;
+            Vector3 direction = snap || forearm.sqrMagnitude < .5f ? Vector3.Lerp(Vector3.up, Vector3.back, extension).normalized : forearm;
             // Explicit two-axis wrist frame: local Y runs cuff -> knuckles, local Z
-            // is the back of the glove. Iterate towards the forearm to avoid bent wrists.
-            for (int i=0; i<5; i++)
+            // is the back of the glove. After a reset iterate towards the forearm to avoid bent wrists.
+            for (int pass = snap ? 0 : 1; pass < 2; pass++)
             {
-                Vector3 back = Vector3.Lerp(Vector3.back,Vector3.up,extension);
-                back = Vector3.ProjectOnPlane(back,direction).normalized;
-                if(back.sqrMagnitude<.001f) back=Vector3.ProjectOnPlane(Vector3.right,direction).normalized;
-                Quaternion rotation = Quaternion.LookRotation(back,direction);
-                Vector3 offset = rotation * Vector3.Scale(center, hand.lossyScale);
-                SolveArm(upper, fore, hand, target - offset, pole);
-                hand.rotation = rotation;
-                direction = (hand.position-fore.position).normalized;
+                for (int i=0; i<(snap ? 5 : 1); i++)
+                {
+                    Quaternion rotation = Quaternion.LookRotation(GloveBack(direction, twist),direction);
+                    Vector3 offset = rotation * Vector3.Scale(center, hand.lossyScale);
+                    used = SolveArm(upper, fore, hand, target - offset, pole, previousBend, maxTurn);
+                    hand.rotation = rotation;
+                    direction = (hand.position-fore.position).normalized;
+                }
+                // After a reset the twist starts at its target (a second solve); otherwise it eases towards it for the next frame.
+                float goal = GloveTwist(direction, side);
+                twist = pass == 0 ? goal : Mathf.MoveTowards(twist, goal, TwistRate * dt);
             }
+            bendState = used; forearm = direction;
         }
         // The torso as an elliptic column from the belly to the shoulders (metres at scale 1), widened by the arm's thickness.
         private const float TorsoHalfWidth = .15f, TorsoHalfDepth = .11f, ArmClearance = .045f;
@@ -213,7 +245,8 @@ namespace Hapbeat.Boxing
                 Mathf.Min(TorsoClearance(Vector3.Lerp(elbow, wrist, .35f), shoulderHeight), TorsoClearance(Vector3.Lerp(elbow, wrist, .7f), shoulderHeight)));
         // Two-bone arm IK whose elbow follows the pole unless the elbow or forearm would sink into the torso;
         // then the elbow turns about the shoulder-wrist axis to the nearest clear direction (guards tuck the arms close).
-        private void SolveArm(Transform upper, Transform lower, Transform end, Vector3 target, Vector3 pole)
+        // The bend turns from the previous frame's (previous, zero = none) by at most maxTurn degrees. Returns the bend used.
+        private Vector3 SolveArm(Transform upper, Transform lower, Transform end, Vector3 target, Vector3 pole, Vector3 previous, float maxTurn)
         {
             Vector3 start = upper.position, delta = target - start;
             float distance = Mathf.Max(.0001f, delta.magnitude);
@@ -238,11 +271,14 @@ namespace Hapbeat.Boxing
                 }
             // Without a clear direction keep the pole unless turning helps noticeably (no flipping between poor choices).
             if (!clear && bestScore < original + .1f) best = bend;
+            Vector3 last = Vector3.ProjectOnPlane(previous, direction);
+            if (last.sqrMagnitude > 1e-6f) best = Vector3.RotateTowards(last.normalized, best, maxTurn * Mathf.Deg2Rad, 0);
             Vector3 elbow = centre + best * reach;
             upper.rotation = Quaternion.FromToRotation(lower.position - start, elbow - start) * upper.rotation;
             lower.position = elbow;
             lower.rotation = Quaternion.FromToRotation(end.position - lower.position, target - lower.position) * lower.rotation;
             end.position = target;
+            return best;
         }
         private static void Solve(Transform upper, Transform lower, Transform end, Vector3 target, Vector3 pole)
         {

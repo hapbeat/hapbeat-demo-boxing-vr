@@ -254,12 +254,16 @@ namespace Hapbeat.Boxing.Tests
         [TestCase(false)] [TestCase(true)] public void GuardInterceptionAndBodyHitSelectDifferentOutcomes(bool bodyGuard)
         {
             game.Round.Tick(3, false);
-            // The head case uses the earmuff guard: a high guard's forearms legitimately cover the chest.
-            for (int i = 0; i < 12000 && (game.Opponent.GuardWeight < 0.99f || game.Opponent.BodyGuard!=bodyGuard || (!bodyGuard && !game.Opponent.HookGuard)); i++) game.Opponent.Tick(0.01f, Pose().head, Quaternion.identity, true);
+            // The head case uses the head hook guard (its glove at the temple), the body case the low body straight guard. A high
+            // guard's forearms legitimately cover the chest; a body hook guard keeps the other glove before the face.
+            var wanted = bodyGuard ? BoxingGuard.BodyStraight : BoxingGuard.HeadHook;
+            for (int i = 0; i < 12000 && (game.Opponent.GuardWeight < 0.99f || !game.Opponent.Guarding || game.Opponent.Guard != wanted); i++) game.Opponent.Tick(0.01f, Pose().head, Quaternion.identity, true);
             Assert.That(game.Opponent.Guarding, Is.True);
             typeof(BoxingGame).GetMethod("SaveHistory", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(game, new object[] { Pose() });
             var resolve = typeof(BoxingGame).GetMethod("ResolvePlayer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            Vector3 from = game.Opponent.Left + Vector3.back * 0.5f, to = game.Opponent.Left;
+            // Head: a hook into the covering glove at the temple (its forearm stands before the face below it); body: a straight.
+            Vector3 guardGlove = bodyGuard || game.Opponent.GuardSide < 0 ? game.Opponent.Left : game.Opponent.Right;
+            Vector3 from = guardGlove + (bodyGuard ? Vector3.back : Vector3.right * game.Opponent.GuardSide) * 0.5f, to = guardGlove;
             var args = new object[] { to, from, true, ImpactZone.LeftGlove, false, 0f, 0.1f };
             resolve.Invoke(game, args);
             Assert.That(game.Round.EnemyBlocks, Is.EqualTo(1)); Assert.That(game.Round.Hits, Is.Zero);
@@ -267,7 +271,8 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(BoxingFeedback.CueName(game.feedback.LastImpact), Does.StartWith("punch_glove_"));
             Assert.That(game.Round.EnemyHealth, Is.EqualTo(10000));
             resolve.Invoke(game, args); Assert.That(game.Round.EnemyBlocks, Is.EqualTo(1), "Held overlap must not repeatedly fire.");
-            Vector3 uncovered=bodyGuard ? game.Opponent.Head : game.Opponent.Body;
+            // Open: the face over the low gloves, or the belly below the head hook guard's elbows.
+            Vector3 uncovered=bodyGuard ? game.Opponent.Head : game.Opponent.Body + Vector3.down * .12f;
             resolve.Invoke(game, new object[] { uncovered, uncovered + Vector3.back * 0.6f, true, ImpactZone.RightGlove, false, 0f, 0.1f });
             Assert.That(game.Round.Hits, Is.EqualTo(1)); Assert.That(game.Round.EnemyHealth, Is.LessThan(10000));
             Assert.That(game.feedback.LastImpact.surface, Is.EqualTo(ImpactSurface.Body));

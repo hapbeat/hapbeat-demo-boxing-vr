@@ -30,7 +30,14 @@ namespace Hapbeat.Boxing.Tests
             {
                 game.Opponent.Tick(.01f,Vector3.up*1.65f,Quaternion.identity,true);
                 if(game.Opponent.GuardWeight<.95f) continue;
-                if(game.Opponent.BodyGuard) {body=true; Assert.That(game.Opponent.Left.y,Is.LessThan(game.Opponent.Head.y-.3f));}
+                var o=game.Opponent;
+                if(o.Guard==BoxingGuard.BodyStraight) {body=true; Assert.That(o.Left.y,Is.LessThan(o.Head.y-.3f));}
+                // A body hook guard drops the covering side's elbow (its glove below the chin); the other glove stays at the chin.
+                else if(o.Guard==BoxingGuard.BodyHook)
+                {
+                    body=true; Vector3 cover=o.GuardSide<0 ? o.Left : o.Right, other=o.GuardSide<0 ? o.Right : o.Left;
+                    Assert.That(cover.y,Is.LessThan(o.Head.y-.1f)); Assert.That(other.y,Is.GreaterThan(o.Head.y-.1f));
+                }
                 else {head=true; Assert.That(game.Opponent.Left.y,Is.GreaterThan(game.Opponent.Head.y-.1f));}
             }
             Assert.That(head && body,Is.True);

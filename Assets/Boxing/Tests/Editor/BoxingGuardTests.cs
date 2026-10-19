@@ -8,6 +8,8 @@ namespace Hapbeat.Boxing.Tests
         private BoxingTuning tuning;
         [SetUp] public void Setup()=>tuning=ScriptableObject.CreateInstance<BoxingTuning>();
         [TearDown] public void Cleanup()=>Object.DestroyImmediate(tuning);
+        // A hook guard covers one side (GuardSide), with the glove at the temple for a head hook; a body hook guard's cover is
+        // the dropped forearm, checked on the rendered arms (BoxingGuardMotionTests), so here only its glove side is checked.
         [Test] public void AllFourGuardsInterceptTheirIntendedDirectionBeforeTheBody()
         {
             var enemy=new BoxingOpponent(tuning, 11); int seen=0;
@@ -19,6 +21,14 @@ namespace Hapbeat.Boxing.Tests
                 float radius=enemy.BodyGuard ? tuning.enemyBodyRadius : tuning.enemyHeadRadius;
                 foreach(int side in new[]{-1,1})
                 {
+                    if(enemy.HookGuard && side!=(int)enemy.GuardSide) continue;
+                    if(enemy.Guard==BoxingGuard.BodyHook)
+                    {
+                        Vector3 cover=side<0 ? enemy.Left : enemy.Right, other=side<0 ? enemy.Right : enemy.Left;
+                        Assert.That((cover.x-enemy.Head.x)*side,Is.GreaterThan((other.x-enemy.Head.x)*-side),"The body hook guard's glove moves to its side.");
+                        Assert.That(cover.y,Is.LessThan(other.y),"Its elbow drops, the glove with it.");
+                        continue;
+                    }
                     Vector3 from=target+(enemy.HookGuard ? Vector3.right*side : Vector3.back)*.8f;
                     Assert.That(BoxingCollision.Sweep(from,target,tuning.gloveRadius,target,target,radius,out float bodyTime),Is.True);
                     float first=float.PositiveInfinity;
