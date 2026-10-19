@@ -179,8 +179,8 @@ namespace Hapbeat.Boxing
         public float HapticGain(BoxingImpact impact) =>
             TriggerIndex(impact) < 2 * WristCues ? Mathf.Max(impact.gain, wristMinimumGain) : impact.gain;
         // Demo-wide haptics trim in dB (the Demo Session option haptics_db, else BoxingTuning.hapticsTrimDb); set by BoxingGame.
-        public float HapticsTrimDb { get; set; } = -2;
-        public static readonly int[] TrimSteps = { 0, -2, -4, -6, -9, -12 };
+        public float HapticsTrimDb { get; set; } = -3;
+        public static readonly int[] TrimSteps = { 0, -3, -6, -9, -12, -15, -18, -24 };
         // GainMultiplier for this impact: the wanted level is entry gain x intensity x the impact's share, capped at full
         // scale for the clip (1 / its peak; above it the SDK limiter only squashed it, so a trim did nothing), times
         // 10^(trim/20), divided back by entry gain x intensity. Nothing is sent above full scale and the trim acts in dB.

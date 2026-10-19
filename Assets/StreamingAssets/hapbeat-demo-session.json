@@ -40,7 +40,7 @@
         "ja": "触覚の強さ",
         "en": "Haptics level"
       },
-      "default": "2",
+      "default": "3",
       "scope": "device",
       "values": [
         {
@@ -51,17 +51,10 @@
           }
         },
         {
-          "value": "2",
+          "value": "3",
           "label": {
-            "ja": "-2 dB",
-            "en": "-2 dB"
-          }
-        },
-        {
-          "value": "4",
-          "label": {
-            "ja": "-4 dB",
-            "en": "-4 dB"
+            "ja": "-3 dB",
+            "en": "-3 dB"
           }
         },
         {
@@ -83,6 +76,27 @@
           "label": {
             "ja": "-12 dB",
             "en": "-12 dB"
+          }
+        },
+        {
+          "value": "15",
+          "label": {
+            "ja": "-15 dB",
+            "en": "-15 dB"
+          }
+        },
+        {
+          "value": "18",
+          "label": {
+            "ja": "-18 dB",
+            "en": "-18 dB"
+          }
+        },
+        {
+          "value": "24",
+          "label": {
+            "ja": "-24 dB",
+            "en": "-24 dB"
           }
         }
       ]
