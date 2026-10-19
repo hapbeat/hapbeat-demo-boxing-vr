@@ -28,6 +28,10 @@ namespace Hapbeat.Boxing
         private const int JapaneseFontSize = 48;
         private Font boardFont, japaneseFont;
         private int boardFontSize;
+        // Tutorial target (BoxingGame.TutorialTarget): one unlit loop line in the contact ring's material, facing the player.
+        // Drawing only: contacts use the opponent's collision shapes, never this.
+        public LineRenderer TutorialMarker { get; private set; }
+        private const float MarkerRadius = .07f;
         private string lastImpact = "";
         public void Flash(BoxingImpact impact)
         {
@@ -66,6 +70,7 @@ namespace Hapbeat.Boxing
             bool tutorial = game.Round.Phase == BoxingPhase.Tutorial;
             if (tutorial && japaneseFont == null) { japaneseFont = Resources.Load<Font>(JapaneseFontPath); if (japaneseFont == null) japaneseFont = boardFont; }
             timerText.font = tutorial ? japaneseFont : boardFont; timerText.fontSize = tutorial ? JapaneseFontSize : boardFontSize;
+            RenderTutorialMarker(game, menuOpen);
             timerText.text = game.TrackingWarning && game.Round.Phase != BoxingPhase.Results ?
                 (game.input.ActiveMode == BoxingInputMode.Hands ? "HAND TRACKING LOST" : "TRACKING LOST") :
                 game.Round.Phase == BoxingPhase.Results ? result :
@@ -99,6 +104,25 @@ namespace Hapbeat.Boxing
             EnemyHealthBar.rectTransform.anchorMax = new Vector2(round.EnemyHealth / round.MaximumHealth, 1);
             playerHealthText.text = "YOU  " + Mathf.CeilToInt(round.PlayerHealth) + " / " + Mathf.CeilToInt(round.MaximumHealth);
             enemyHealthText.text = "OPPONENT  " + Mathf.CeilToInt(round.EnemyHealth) + " / " + Mathf.CeilToInt(round.MaximumHealth);
+        }
+        private void RenderTutorialMarker(BoxingGame game, bool menuOpen)
+        {
+            bool visible = game.TutorialTarget(out var position) && !menuOpen;
+            if (TutorialMarker == null)
+            {
+                if (!visible || hitBurst == null) return;
+                TutorialMarker = new GameObject("Tutorial target", typeof(LineRenderer)).GetComponent<LineRenderer>();
+                var ring = hitBurst.GetComponent<LineRenderer>();
+                if (ring != null) TutorialMarker.sharedMaterial = ring.sharedMaterial;
+                TutorialMarker.useWorldSpace = false; TutorialMarker.loop = true; TutorialMarker.widthMultiplier = .012f;
+                TutorialMarker.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; TutorialMarker.receiveShadows = false;
+                TutorialMarker.startColor = TutorialMarker.endColor = new Color(1, .85f, .2f, .75f);
+                TutorialMarker.positionCount = 32;
+                for (int i = 0; i < 32; i++) { float a = i * Mathf.PI * 2 / 32; TutorialMarker.SetPosition(i, new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * MarkerRadius); }
+            }
+            TutorialMarker.gameObject.SetActive(visible);
+            // The opponent faces -Z (towards the player): the ring's plane faces the player.
+            if (visible) TutorialMarker.transform.SetPositionAndRotation(position, Quaternion.identity);
         }
         private static void RenderForearm(Transform arm,Vector3 hand,Quaternion rotation,bool visible)
         {

@@ -60,13 +60,16 @@ namespace Hapbeat.Boxing
         // Tutorial (BoxingPhase.Tutorial): 1-2 punch the head-guarding opponent, 3-4 take / block its straight, 5 = 試合開始.
         public int TutorialStep { get; private set; }
         public string TutorialText => tutorialMessageTime > 0 ? tutorialMessage : TutorialSteps[Mathf.Clamp(TutorialStep - 1, 0, TutorialSteps.Length - 1)];
-        internal static readonly string[] TutorialSteps = { "1/4  相手の顔を打ってみよう", "2/4  ガードしていない胴を打とう", "3/4  相手のパンチを受けてみよう", "4/4  顔の前で構えてパンチを防ごう" };
+        internal static readonly string[] TutorialSteps = { "1/4  相手の顔を打ってみよう", "2/4  お腹を打とう", "3/4  相手のパンチを受けてみよう", "4/4  顔の前で構えてパンチを防ごう" };
         internal static readonly string[] TutorialResults = { "ガードの上からはダメージが入らない", "ダメージが入った！", "ガードしないとダメージを受ける", "ガード成功！" };
         // Steps 3-4: the wrong outcome (blocked / hit) repeats the strike with this hint.
         internal static readonly string[] TutorialHints = { "ガードしないで受けてみよう", "グローブを顔の前に構えよう" };
         internal const string TutorialStartText = "試合開始";
         // Pause after a tutorial strike before the next; the blocking step's straight is this much slower than usual.
         private const float TutorialStrikeGap = 1.5f, TutorialBlockStrikeScale = 1.5f;
+        // Face marker just before the guarding gloves (0.2 m before the head); belly marker this far below the body centre
+        // (the head guard's elbows hang before the upper body, BoxingTutorialTests).
+        private const float TutorialFaceMarkerDepth = .31f, TutorialBellyDrop = .1f;
         private string tutorialMessage = "";
         private float tutorialStepTime, tutorialMessageTime, tutorialStrikeWait;
         private bool tutorialAdvance, tutorialGuarded, tutorialBody, tutorialStriking;
@@ -291,6 +294,23 @@ namespace Hapbeat.Boxing
             tutorialMessageTime = 0; tutorialStrikes = 0; tutorialStrikeWait = TutorialStrikeGap;
             if (TutorialStep == 3) Opponent.ScriptedRelease();
         }
+        // The marker for steps 1-2 (BoxingPresentation): before the guarded face, then on the belly below the guarding
+        // elbows, where a straight reaches the body past the head guard. Hidden during the step's result message.
+        public bool TutorialTarget(out Vector3 position)
+        {
+            position = default;
+            if (Round.Phase != BoxingPhase.Tutorial || TutorialStep < 1 || TutorialStep > 2 || tutorialAdvance) return false;
+            position = TutorialStep == 1 ? Opponent.Head + Vector3.back * TutorialFaceMarkerDepth
+                : Opponent.Body + Vector3.down * TutorialBellyDrop + Vector3.back * (tuning.enemyBodyRadius + .01f);
+            return true;
+        }
+        // The fallback (timeout, last strike) moves on without the step's result message.
+        private void NextTutorialStep()
+        {
+            if (TutorialStep == 5) { StartRound(); return; }
+            if (TutorialStep == 4) { TutorialStep = 5; TutorialMessage(TutorialStartText, true); return; }
+            EnterTutorialStep();
+        }
         // advance: a step's result message, then the next step; otherwise a hint while the step goes on.
         private void TutorialMessage(string text, bool advance)
         {
@@ -302,17 +322,15 @@ namespace Hapbeat.Boxing
             if (tutorialAdvance)
             {
                 if (tutorialMessageTime > 0) return;
-                if (TutorialStep == 5) { StartRound(); return; }
-                if (TutorialStep == 4) { TutorialStep = 5; TutorialMessage(TutorialStartText, true); return; }
-                EnterTutorialStep(); return;
+                NextTutorialStep(); return;
             }
             tutorialStepTime += dt;
             if (TutorialStep <= 2)
             {
                 // Set every step: a recenter (Opponent.Reset) drops it.
                 Opponent.ScriptedGuard(BoxingGuard.HeadStraight);
-                if ((TutorialStep == 1 ? tutorialGuarded : tutorialBody) || tutorialStepTime >= tuning.tutorialStepTimeoutSeconds)
-                    TutorialMessage(TutorialResults[TutorialStep - 1], true);
+                if (TutorialStep == 1 ? tutorialGuarded : tutorialBody) TutorialMessage(TutorialResults[TutorialStep - 1], true);
+                else if (tutorialStepTime >= tuning.tutorialStepTimeoutSeconds) NextTutorialStep();
                 return;
             }
             if (tutorialStriking)
@@ -321,7 +339,8 @@ namespace Hapbeat.Boxing
                 if (Opponent.State == BoxingOpponentState.Attack) return;
                 tutorialStriking = false; tutorialStrikes++; tutorialStrikeWait = TutorialStrikeGap;
                 bool hit = Round.Taken > tutorialTaken, blocked = Round.Blocks > tutorialBlocks;
-                if ((TutorialStep == 3 ? hit : blocked) || tutorialStrikes >= tuning.tutorialStrikes) TutorialMessage(TutorialResults[TutorialStep - 1], true);
+                if (TutorialStep == 3 ? hit : blocked) TutorialMessage(TutorialResults[TutorialStep - 1], true);
+                else if (tutorialStrikes >= tuning.tutorialStrikes) NextTutorialStep();
                 else if (TutorialStep == 3 ? blocked : hit) TutorialMessage(TutorialHints[TutorialStep - 3], false);
                 return;
             }
