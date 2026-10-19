@@ -31,7 +31,8 @@ namespace Hapbeat.Boxing
         // Tutorial target (BoxingGame.TutorialTarget): one unlit loop line in the contact ring's material, facing the player.
         // Drawing only: contacts use the opponent's collision shapes, never this.
         public LineRenderer TutorialMarker { get; private set; }
-        private const float MarkerRadius = .07f;
+        // The tutorial ring: its radius and line width (BoxingGame.TutorialTarget keeps the whole rim before the body).
+        public const float MarkerRadius = .07f, MarkerWidth = .012f;
         private string lastImpact = "";
         public void Flash(BoxingImpact impact)
         {
@@ -116,7 +117,7 @@ namespace Hapbeat.Boxing
                 TutorialMarker = new GameObject("Tutorial target", typeof(LineRenderer)).GetComponent<LineRenderer>();
                 var ring = hitBurst.GetComponent<LineRenderer>();
                 if (ring != null) TutorialMarker.sharedMaterial = ring.sharedMaterial;
-                TutorialMarker.useWorldSpace = false; TutorialMarker.loop = true; TutorialMarker.widthMultiplier = .012f;
+                TutorialMarker.useWorldSpace = false; TutorialMarker.loop = true; TutorialMarker.widthMultiplier = MarkerWidth;
                 TutorialMarker.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; TutorialMarker.receiveShadows = false;
                 TutorialMarker.startColor = TutorialMarker.endColor = new Color(1, .85f, .2f, .75f);
                 TutorialMarker.positionCount = 32;

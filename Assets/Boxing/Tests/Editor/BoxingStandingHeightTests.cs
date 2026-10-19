@@ -81,34 +81,66 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.Opponent.Head.y, Is.EqualTo(1.85f).Within(1e-4f));
         }
 
-        // Steps 1-2 mark where a straight punch meets the guarding gloves at face height / the torso at belly height.
-        [Test] public void TutorialRingsSitOnTheSurfacesTheyMark()
+        // Steps 1-2: the rings stand before the guarding gloves at face height / the belly, the whole rim in front of the skinned
+        // mesh (no ring point behind it) and at most a few centimetres away.
+        [Test] public void TutorialRingsStayInFrontOfTheBody()
         {
             game.tuning.tutorialStepTimeoutSeconds = 1;
             Run(game.tuning.autoStartSeconds + 1, Standing(1.65f));
             Assert.That(game.TutorialStep, Is.EqualTo(1));
             Run(.6f, Standing(1.65f));
+            game.presentation.Render(game, Standing(1.65f), true, 0);
             Assert.That(game.TutorialTarget(out var face), Is.True);
-            float gloveGap = float.PositiveInfinity;
-            foreach (var glove in new[] { game.Opponent.Left, game.Opponent.Right })
-                gloveGap = Mathf.Min(gloveGap, Vector3.Distance(face, glove) - game.tuning.enemyGloveRadius);
-            Assert.That(gloveGap, Is.InRange(0f, .01f), "Step 1: on the front of the guarding gloves");
             Assert.That(face.y, Is.EqualTo(game.Opponent.Head.y).Within(1e-4f));
             Assert.That(face.z, Is.LessThan(Mathf.Min(game.Opponent.Left.z, game.Opponent.Right.z)), "towards the player");
+            float faceGap = AssertRimInFront("step 1");
+            Assert.That(faceGap, Is.InRange(.015f, .08f), "Step 1: just before the gloves");
 
             Assert.That(RunUntil(() => game.TutorialStep == 2, 3), Is.True);
             Run(.3f, Standing(1.65f));
+            game.presentation.Render(game, Standing(1.65f), true, 0);
             Assert.That(game.TutorialTarget(out var belly), Is.True);
-            var avatar = game.presentation.enemyAvatar;
-            var head = new BoxingHitSphere[BoxingOpponentAvatar.HeadSpheres]; var torso = new BoxingHitSphere[BoxingOpponentAvatar.TorsoSpheres];
-            avatar.GetHitShapes(head, torso);
-            float shapeGap = float.PositiveInfinity;
-            foreach (var s in torso) shapeGap = Mathf.Min(shapeGap, Vector3.Distance(belly, s.center) - s.radius);
-            Assert.That(shapeGap, Is.InRange(0f, .01f), "Step 2: on the torso hit shape's front");
-            float meshGap = BoxingHitShapeTests.MeshDistance(BoxingHitShapeTests.Triangles(avatar, avatar.spine, avatar.chest), belly);
-            Assert.That(meshGap, Is.LessThan(.02f), $"Step 2: {meshGap:F3} m from the belly mesh");
             Assert.That(belly.y, Is.LessThan(game.Opponent.Body.y - .05f));
+            float bellyGap = AssertRimInFront("step 2");
+            Assert.That(bellyGap, Is.InRange(.015f, .08f), "Step 2: just before the belly");
             Assert.That(game.feedback.Sends, Is.Zero);
+        }
+        // Every point of the rendered ring against the skinned mesh along the player's line of sight (+Z): returns the
+        // smallest gap from the ring's centre line to the mesh behind it.
+        private float AssertRimInFront(string label)
+        {
+            var avatar = game.presentation.enemyAvatar; var marker = game.presentation.TutorialMarker;
+            Assert.That(marker != null && marker.gameObject.activeSelf, Is.True, label);
+            var triangles = BoxingHitShapeTests.Triangles(avatar, avatar.skin.bones);
+            float half = marker.widthMultiplier * .5f, closest = float.PositiveInfinity;
+            for (int i = 0; i < marker.positionCount; i++)
+            {
+                Vector3 local = marker.GetPosition(i), point = marker.transform.TransformPoint(local);
+                // The line's outer edge as well as its centre.
+                foreach (var p in new[] { point, marker.transform.TransformPoint(local * (1 + half / local.magnitude)) })
+                {
+                    float mesh = MeshFrontZ(triangles, p.x, p.y);
+                    if (float.IsPositiveInfinity(mesh)) continue;
+                    Assert.That(p.z, Is.LessThan(mesh), $"{label}: ring point {i} behind the mesh ({p.z:F3} vs {mesh:F3})");
+                    closest = Mathf.Min(closest, mesh - p.z);
+                }
+            }
+            Assert.That(closest, Is.LessThan(float.PositiveInfinity), label + ": the ring is over the body");
+            return closest;
+        }
+        // The nearest mesh surface along +Z through (x, y) (Moller-Trumbore), +inf if none.
+        private static float MeshFrontZ(System.Collections.Generic.List<Vector3> t, float x, float y)
+        {
+            float best = float.PositiveInfinity; Vector3 o = new Vector3(x, y, -10), d = Vector3.forward;
+            for (int i = 0; i < t.Count; i += 3)
+            {
+                Vector3 e1 = t[i + 1] - t[i], e2 = t[i + 2] - t[i], p = Vector3.Cross(d, e2); float det = Vector3.Dot(e1, p);
+                if (Mathf.Abs(det) < 1e-9f) continue;
+                float inv = 1 / det; Vector3 s = o - t[i]; float u = Vector3.Dot(s, p) * inv; if (u < 0 || u > 1) continue;
+                Vector3 q = Vector3.Cross(s, e1); float v = Vector3.Dot(d, q) * inv; if (v < 0 || u + v > 1) continue;
+                float dist = Vector3.Dot(e2, q) * inv; if (dist > 0) best = Mathf.Min(best, o.z + dist);
+            }
+            return best;
         }
         private bool RunUntil(System.Func<bool> done, float seconds)
         {

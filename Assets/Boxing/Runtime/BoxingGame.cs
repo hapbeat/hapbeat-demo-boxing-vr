@@ -75,8 +75,8 @@ namespace Hapbeat.Boxing
         // Face marker just before the guarding gloves (0.2 m before the head); belly marker this far below the body centre
         // (the head guard's elbows hang before the upper body, BoxingTutorialTests).
         private const float TutorialFaceMarkerDepth = .31f, TutorialBellyDrop = .1f;
-        // The markers sit this far before the surface they mark (towards the player).
-        private const float TutorialMarkerLead = .005f;
+        // The ring's whole rim sits this far before the frontmost surface behind it (towards the player).
+        private const float TutorialMarkerLead = .02f;
         private string tutorialMessage = "";
         private float tutorialStepTime, tutorialMessageTime, tutorialStrikeWait;
         // The tutorial line still speaking (seconds): steps 3-4 hold the next strike until it ends.
@@ -340,22 +340,44 @@ namespace Hapbeat.Boxing
         {
             position = default;
             if (Round.Phase != BoxingPhase.Tutorial || TutorialStep < 1 || TutorialStep > 2 || tutorialAdvance) return false;
-            if (TutorialStep == 1)
+            // Step 1: before the guarding gloves at face height (where a straight to the face meets them); step 2: before the
+            // torso at belly height. The ring faces the player: it sits TutorialMarkerLead before the frontmost surface of
+            // the opponent (head, torso, gloves as capsules along the glove, arms) behind its centre or any point of its rim,
+            // so no part of it cuts into the body.
+            float x = TutorialStep == 1 ? Opponent.Head.x : Opponent.Body.x, y = TutorialStep == 1 ? Opponent.Head.y : Opponent.Body.y - TutorialBellyDrop * Opponent.Size;
+            int count = MarkerShapes();
+            float rim = BoxingPresentation.MarkerRadius + BoxingPresentation.MarkerWidth * .5f, z = float.PositiveInfinity;
+            for (int i = 0; i <= MarkerRimSamples; i++)
             {
-                // On the guarding gloves where a straight to the face meets them (before they are up: before the face).
-                enemyGloves[0] = new BoxingHitSphere(Opponent.Left, tuning.enemyGloveRadius); enemyGloves[1] = new BoxingHitSphere(Opponent.Right, tuning.enemyGloveRadius);
-                if (!StraightMeets(enemyGloves, 2, Opponent.Head.x, Opponent.Head.y, out position)) position = Opponent.Head + Vector3.back * (TutorialFaceMarkerDepth * Opponent.Size);
+                float a = i * Mathf.PI * 2 / MarkerRimSamples, r = i == MarkerRimSamples ? 0 : rim;
+                if (StraightMeets(markerShapes, count, x + Mathf.Cos(a) * r, y + Mathf.Sin(a) * r, out var front)) z = Mathf.Min(z, front.z);
             }
-            else
-            {
-                UpdateEnemyShapes();
-                float y = Opponent.Body.y - TutorialBellyDrop * Opponent.Size;
-                if (!StraightMeets(enemyTorso, enemyTorsoCount, Opponent.Body.x, y, out position)) position = Opponent.Body + Vector3.back * tuning.enemyBodyRadius;
-            }
-            position += Vector3.back * TutorialMarkerLead;
+            if (float.IsPositiveInfinity(z)) z = (TutorialStep == 1 ? Opponent.Head.z - TutorialFaceMarkerDepth * Opponent.Size : Opponent.Body.z - tuning.enemyBodyRadius);
+            position = new Vector3(x, y, z - TutorialMarkerLead);
             return true;
         }
-        private readonly BoxingHitSphere[] enemyGloves = new BoxingHitSphere[2];
+        private const int MarkerRimSamples = 24, GloveSpheres = 5, ArmSpheres = 6;
+        // The glove as a capsule along the glove (15 x 13 x 26 cm: radius 7 cm, centres 6 cm either side of the middle).
+        private const float GloveCapsuleRadius = .07f, GloveCapsuleHalf = .06f;
+        private readonly BoxingHitSphere[] markerShapes = new BoxingHitSphere[BoxingOpponentAvatar.HeadSpheres + BoxingOpponentAvatar.TorsoSpheres + 2 * GloveSpheres + 4 * ArmSpheres];
+        private int MarkerShapes()
+        {
+            UpdateEnemyArms();
+            int n = 0;
+            for (int i = 0; i < enemyHeadCount; i++) markerShapes[n++] = enemyHead[i];
+            for (int i = 0; i < enemyTorsoCount; i++) markerShapes[n++] = enemyTorso[i];
+            var avatar = presentation != null ? presentation.enemyAvatar : null;
+            for (int g = 0; g < 2; g++)
+            {
+                Vector3 centre = g == 0 ? Opponent.Left : Opponent.Right;
+                Vector3 along = avatar != null ? (g == 0 ? avatar.leftHand : avatar.rightHand).rotation * Vector3.up : Vector3.zero;
+                float radius = avatar != null ? GloveCapsuleRadius : tuning.enemyGloveRadius;
+                for (int i = 0; i < GloveSpheres; i++) markerShapes[n++] = new BoxingHitSphere(centre + along * (GloveCapsuleHalf * (i * 2f / (GloveSpheres - 1) - 1)), radius);
+            }
+            foreach (var arm in enemyArms)
+                for (int i = 0; i < ArmSpheres; i++) markerShapes[n++] = new BoxingHitSphere(Vector3.Lerp(arm.start, arm.end, i / (ArmSpheres - 1f)), arm.radius);
+            return n;
+        }
         // Where a straight punch along +Z at (x, y) first meets these spheres' surfaces.
         internal static bool StraightMeets(BoxingHitSphere[] spheres, int count, float x, float y, out Vector3 point)
         {

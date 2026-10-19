@@ -87,7 +87,7 @@ namespace Hapbeat.Boxing.Tests
             // 1: the marker sits before the guarded face; the punch on it lands on the guard: blocked, no damage.
             Assert.That(MarkerShown, Is.True);
             Assert.That(game.TutorialTarget(out var face), Is.True);
-            Assert.That(Marker.transform.position, Is.EqualTo(face));
+            Assert.That(Vector3.Distance(Marker.transform.position, face), Is.LessThan(.002f));
             Assert.That(face.y, Is.EqualTo(game.Opponent.Head.y).Within(.001f)); Assert.That(face.z, Is.LessThan(Mathf.Min(game.Opponent.Left.z, game.Opponent.Right.z)));
             Assert.That(Marker.GetComponent<Collider>(), Is.Null, "The marker takes no part in collisions.");
             Punch(Marker.transform.position);
@@ -106,7 +106,7 @@ namespace Hapbeat.Boxing.Tests
             Vector3 belly = Marker.transform.position;
             Assert.That(belly.y, Is.LessThan(game.Opponent.Body.y - .05f));
             float surface = BoxingSceneTests.OpponentFront(game, false, belly.y).z;
-            Assert.That(belly.z, Is.LessThan(surface).And.GreaterThan(surface - .03f), "Just before the belly's surface.");
+            Assert.That(belly.z, Is.LessThan(surface - .015f).And.GreaterThan(surface - .1f), "Just before the belly's surface.");
             int guarded = game.Round.EnemyBlocks;
             Punch(belly);
             Assert.That(game.Round.Hits, Is.EqualTo(1), "A straight to the body must pass the head guard.");
