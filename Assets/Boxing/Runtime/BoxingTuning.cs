@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Hapbeat.Boxing
 {
-    public enum BoxingPhase { Ready, Countdown, Fighting, Results }
+    public enum BoxingPhase { Ready, Tutorial, Countdown, Fighting, Results }
     public enum BoxingOutcome { Win, Lose, Tie }
     public enum BoxingInputMode { Controllers, Hands }
     public enum ImpactMode { Continuous, WeakHard }
@@ -21,6 +21,13 @@ namespace Hapbeat.Boxing
         [Min(1)] public float maximumHealth = 100;
         // Startup: steady tracking at the start position for this long, then the 3-2-1 countdown (no START press).
         [Min(0)] public float autoStartSeconds = 2;
+        // The first start after launch teaches guard / body / take / block before the countdown (BoxingGame.StartTutorial).
+        public bool tutorialOnStart = true;
+        // The punch steps (1-2) advance anyway after this long; the strike steps (3-4) after this many strikes.
+        [Min(1)] public float tutorialStepTimeoutSeconds = 20;
+        [Min(1)] public int tutorialStrikes = 3;
+        // Each step's result message stays this long before the next step.
+        [Min(0)] public float tutorialMessageSeconds = 1.5f;
         // Outside a Demo Session: the result stays this long after its presentation, then the next round starts.
         [Min(0)] public float restartAfterResultsSeconds = 4;
         // Demo Session: the completion panel appears this long after the final bell (the bell and voice keep playing).
@@ -173,9 +180,16 @@ namespace Hapbeat.Boxing
             PlayerHealth < EnemyHealth ? BoxingOutcome.Lose : BoxingOutcome.Tie;
         public void Start(float duration, float maximumHealth = 100)
         {
+            Clear(maximumHealth);
+            TimeLeft = duration; Countdown = 3; Phase = BoxingPhase.Countdown;
+        }
+        // Contacts count as in a round, but no clock runs and no knockout ends it; Start resets everything.
+        public void StartTutorial(float maximumHealth = 100) { Clear(maximumHealth); TimeLeft = Countdown = 0; Phase = BoxingPhase.Tutorial; }
+        private void Clear(float maximumHealth)
+        {
             MaximumHealth = Mathf.Max(1, maximumHealth);
             PlayerHealth = EnemyHealth = MaximumHealth;
-            TimeLeft = duration; Countdown = 3; Hits = Blocks = EnemyBlocks = Taken = Dodges = Score = 0; Phase = BoxingPhase.Countdown;
+            Hits = Blocks = EnemyBlocks = Taken = Dodges = Score = 0;
         }
         public void Tick(float dt, bool paused)
         {
@@ -193,7 +207,7 @@ namespace Hapbeat.Boxing
         }
         public void Report(BoxingImpact impact)
         {
-            if (Phase != BoxingPhase.Fighting) return;
+            if (Phase != BoxingPhase.Fighting && Phase != BoxingPhase.Tutorial) return;
             float damage = impact.damage;
             if (impact.surface == ImpactSurface.Glove)
             {
@@ -201,7 +215,7 @@ namespace Hapbeat.Boxing
             }
             else if (impact.attack) { Hits++; Score += Mathf.RoundToInt(20 + 80 * Mathf.Clamp01(impact.gain)); EnemyHealth = Mathf.Max(0, EnemyHealth - damage); }
             else if (impact.zone == ImpactZone.Head || impact.zone == ImpactZone.Body) { Taken++; PlayerHealth = Mathf.Max(0, PlayerHealth - damage); }
-            if (PlayerHealth <= 0 || EnemyHealth <= 0) Phase = BoxingPhase.Results;
+            if (Phase == BoxingPhase.Fighting && (PlayerHealth <= 0 || EnemyHealth <= 0)) Phase = BoxingPhase.Results;
         }
         public void Dodge() { if (Phase == BoxingPhase.Fighting) { Dodges++; Score += 10; } }
     }

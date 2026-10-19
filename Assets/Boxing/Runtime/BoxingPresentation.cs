@@ -21,6 +21,13 @@ namespace Hapbeat.Boxing
         public Image EnemyHealthBar { get; private set; }
         private Text playerHealthText, enemyHealthText;
         private float flashTime;
+        // The tutorial's Japanese board text: the Demo Session's bundled Noto Sans CJK JP (com.hapbeat.demo-switch
+        // Resources, DemoSessionFont.ResourcePath). The built-in LegacyRuntime font has no Japanese glyphs on Quest.
+        // Its CJK line is taller than the Latin one: 48 keeps each line inside the 85-unit board box (a line cut by the box shows nothing).
+        public const string JapaneseFontPath = "HapbeatDemoSession/NotoSansCJKjp-Regular";
+        private const int JapaneseFontSize = 48;
+        private Font boardFont, japaneseFont;
+        private int boardFontSize;
         private string lastImpact = "";
         public void Flash(BoxingImpact impact)
         {
@@ -55,9 +62,14 @@ namespace Hapbeat.Boxing
             enemyAvatar.Render(game.Opponent, !game.Paused && valid ? deltaTime : 0);
             string result = (game.Round.PlayerHealth<=0 || game.Round.EnemyHealth<=0 ? "KNOCKOUT" : "ROUND COMPLETE") + " - " +
                 (game.Round.Outcome==BoxingOutcome.Win ? "YOU WIN" : game.Round.Outcome==BoxingOutcome.Lose ? "YOU LOSE" : "DRAW");
+            if (boardFont == null) { boardFont = timerText.font; boardFontSize = timerText.fontSize; }
+            bool tutorial = game.Round.Phase == BoxingPhase.Tutorial;
+            if (tutorial && japaneseFont == null) { japaneseFont = Resources.Load<Font>(JapaneseFontPath); if (japaneseFont == null) japaneseFont = boardFont; }
+            timerText.font = tutorial ? japaneseFont : boardFont; timerText.fontSize = tutorial ? JapaneseFontSize : boardFontSize;
             timerText.text = game.TrackingWarning && game.Round.Phase != BoxingPhase.Results ?
                 (game.input.ActiveMode == BoxingInputMode.Hands ? "HAND TRACKING LOST" : "TRACKING LOST") :
                 game.Round.Phase == BoxingPhase.Results ? result :
+                tutorial ? game.TutorialText :
                 game.Round.Phase == BoxingPhase.Countdown ? Mathf.CeilToInt(game.Round.Countdown).ToString() :
                 game.Round.Phase == BoxingPhase.Ready ? game.tuning.roundSeconds.ToString("0") + " SECOND ROUND" : Mathf.CeilToInt(game.Round.TimeLeft).ToString("00") + "s";
             scoreText.text = "SCORE " + game.Round.Score + "     HIT " + game.Round.Hits + "     BLOCK " + game.Round.Blocks + "     DODGE " + game.Round.Dodges;

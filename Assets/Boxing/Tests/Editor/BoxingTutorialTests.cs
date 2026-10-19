@@ -1,0 +1,216 @@
+using System;
+using NUnit.Framework;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using Object = UnityEngine.Object;
+
+namespace Hapbeat.Boxing.Tests
+{
+    // The startup tutorial (BoxingGame.StartTutorial) driven with test poses: silent, no Hapbeat output.
+    public sealed class BoxingTutorialTests
+    {
+        private BoxingGame game;
+        private BoxingTuning original;
+
+        [SetUp] public void Setup()
+        {
+            EditorSceneManager.OpenScene(Editor.BoxingProject.ScenePath);
+            game = Object.FindFirstObjectByType<BoxingGame>();
+            original = game.tuning; game.tuning = Object.Instantiate(original);
+            game.feedback.forceSilent = true; game.feedback.sdkRoot.SetActive(false); game.Initialize();
+            game.input.SetTestPose(BoxingSceneTests.Pose());
+        }
+
+        [TearDown] public void Cleanup()
+        {
+            Object.DestroyImmediate(game.tuning); game.tuning = original;
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
+        }
+
+        private string Board => game.presentation.timerText.text;
+        private void Run(float seconds, BoxerPose pose) { for (int i = 0; i < Mathf.CeilToInt(seconds * 100); i++) game.Simulate(.01f, pose); }
+        private bool RunUntil(Func<bool> done, float seconds, BoxerPose pose)
+        {
+            for (int i = 0; i < Mathf.CeilToInt(seconds * 100) && !done(); i++) game.Simulate(.01f, pose);
+            return done();
+        }
+        private void Begin()
+        {
+            Assert.That(RunUntil(() => game.Round.Phase == BoxingPhase.Tutorial, game.tuning.autoStartSeconds + 1, BoxingSceneTests.Pose()), Is.True);
+            Assert.That(game.TutorialStep, Is.EqualTo(1));
+        }
+        // The left glove sets off .45 m short of the target and drives through it (a closed, fast straight).
+        private void Punch(Vector3 target)
+        {
+            var pose = BoxingSceneTests.Pose(); Vector3 start = target + Vector3.back * .45f;
+            pose.left = start; Run(.2f, pose);
+            for (int i = 1; i <= 25; i++) { pose.left = Vector3.Lerp(start, target + Vector3.forward * .05f, i / 25f); game.Simulate(.01f, pose); }
+            for (int i = 1; i <= 25; i++) { pose.left = Vector3.Lerp(target + Vector3.forward * .05f, start, i / 25f); game.Simulate(.01f, pose); }
+        }
+
+        [Test] public void TuningAssetEnablesTheTutorialWithItsTimings()
+        {
+            Assert.That(original.tutorialOnStart, Is.True);
+            Assert.That(original.tutorialStepTimeoutSeconds, Is.EqualTo(20));
+            Assert.That(original.tutorialStrikes, Is.EqualTo(3));
+            Assert.That(original.tutorialMessageSeconds, Is.EqualTo(1.5f));
+        }
+
+        [Test] public void StartupTeachesFourStepsThenCountsDownToTheRoundWithOneGong()
+        {
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Ready));
+            Begin();
+            Assert.That(game.menu.IsOpen, Is.False);
+            Assert.That(game.Opponent.Scripted, Is.True);
+            Run(.6f, BoxingSceneTests.Pose());
+            Assert.That(Board, Is.EqualTo(BoxingGame.TutorialSteps[0]));
+            Assert.That(game.Opponent.Guarding && game.Opponent.Guard == BoxingGuard.HeadStraight, Is.True, "Step 1 holds the head guard.");
+            Assert.That(game.Opponent.GuardWeight, Is.GreaterThan(.9f));
+
+            // 1: the punch lands on the guard: blocked, no damage.
+            Punch(game.Opponent.Left);
+            Assert.That(game.Round.EnemyBlocks, Is.GreaterThan(0)); Assert.That(game.Round.Hits, Is.Zero);
+            Assert.That(game.Round.EnemyHealth, Is.EqualTo(game.Round.MaximumHealth));
+            Assert.That(Board, Is.EqualTo(BoxingGame.TutorialResults[0]));
+            Assert.That(RunUntil(() => game.TutorialStep == 2, 2, BoxingSceneTests.Pose()), Is.True);
+            Run(.6f, BoxingSceneTests.Pose());
+            Assert.That(Board, Is.EqualTo(BoxingGame.TutorialSteps[1]));
+            Assert.That(game.Opponent.Guarding && game.Opponent.Guard == BoxingGuard.HeadStraight, Is.True, "Step 2 keeps the head guard.");
+
+            // 2: the head guard leaves the body open to a straight punch below the elbows (they hang before the upper belly).
+            int guarded = game.Round.EnemyBlocks;
+            Punch(game.Opponent.Body + Vector3.down * .1f);
+            Assert.That(game.Round.Hits, Is.EqualTo(1), "A straight to the body must pass the head guard.");
+            Assert.That(game.Round.EnemyBlocks, Is.EqualTo(guarded));
+            Assert.That(game.Round.EnemyHealth, Is.LessThan(game.Round.MaximumHealth));
+            Assert.That(Board, Is.EqualTo(BoxingGame.TutorialResults[1]));
+            Assert.That(game.Opponent.AttackId, Is.Zero, "No attacks during steps 1-2.");
+            Assert.That(RunUntil(() => game.TutorialStep == 3, 2, BoxingSceneTests.Pose()), Is.True);
+            Run(.1f, BoxingSceneTests.Pose());
+            Assert.That(Board, Is.EqualTo(BoxingGame.TutorialSteps[2]));
+            Assert.That(game.Opponent.Guarding, Is.False, "Steps 3-4 drop the guard.");
+
+            // 3: the open player takes one straight.
+            Assert.That(RunUntil(() => game.Round.Taken > 0, 4, BoxingSceneTests.Pose()), Is.True);
+            Assert.That(game.Opponent.Attack, Is.EqualTo(BoxingAttack.HeadStraight));
+            Assert.That(RunUntil(() => Board == BoxingGame.TutorialResults[2], 2, BoxingSceneTests.Pose()), Is.True);
+            Assert.That(game.Opponent.AttackId, Is.EqualTo(1));
+            Assert.That(RunUntil(() => game.TutorialStep == 4, 2, BoxingSceneTests.Pose()), Is.True);
+            Run(.1f, BoxingSceneTests.Pose(true));
+            Assert.That(Board, Is.EqualTo(BoxingGame.TutorialSteps[3]));
+
+            // 4: gloves before the face block the slower straight; then 試合開始 and the countdown.
+            int taken = game.Round.Taken;
+            Assert.That(RunUntil(() => game.Round.Blocks > 0, 5, BoxingSceneTests.Pose(true)), Is.True);
+            Assert.That(game.Round.Taken, Is.EqualTo(taken));
+            Assert.That(RunUntil(() => Board == BoxingGame.TutorialResults[3], 2, BoxingSceneTests.Pose(true)), Is.True);
+            Assert.That(RunUntil(() => Board == BoxingGame.TutorialStartText, 2, BoxingSceneTests.Pose(true)), Is.True);
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Tutorial));
+            Assert.That(game.feedback.Rings, Is.Zero, "No gong for the tutorial.");
+            Assert.That(RunUntil(() => game.Round.Phase == BoxingPhase.Countdown, 2, BoxingSceneTests.Pose()), Is.True);
+            Assert.That(game.Opponent.Scripted, Is.False, "The round's AI is back.");
+            Assert.That(game.Round.Taken + game.Round.Hits + game.Round.Blocks + game.Round.EnemyBlocks, Is.Zero, "The round starts from zero.");
+            Assert.That(game.Round.PlayerHealth, Is.EqualTo(game.Round.MaximumHealth));
+            Assert.That(game.Round.EnemyHealth, Is.EqualTo(game.Round.MaximumHealth));
+            Run(3.5f, BoxingSceneTests.Pose());
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Fighting));
+            Assert.That(game.feedback.Rings, Is.EqualTo(1), "One gong starts the round.");
+            Assert.That(game.feedback.Sends, Is.Zero);
+        }
+
+        [Test] public void PunchStepsAdvanceAfterTheTimeoutAndAPauseHoldsThem()
+        {
+            Begin();
+            var pose = BoxingSceneTests.Pose();
+            game.InputSuspended = true;
+            Run(game.tuning.tutorialStepTimeoutSeconds + 5, pose);
+            Assert.That(game.TutorialStep, Is.EqualTo(1), "A pause holds the tutorial.");
+            game.InputSuspended = false;
+            Run(game.tuning.tutorialStepTimeoutSeconds - 1, pose);
+            Assert.That(game.TutorialStep, Is.EqualTo(1));
+            Assert.That(game.Opponent.AttackId, Is.Zero, "The guarding opponent never attacks.");
+            Assert.That(game.Opponent.Evade, Is.EqualTo(BoxingEvade.None));
+            Assert.That(RunUntil(() => Board == BoxingGame.TutorialResults[0], 1.5f, pose), Is.True, "Step 1 times out with its message.");
+            Assert.That(RunUntil(() => game.TutorialStep == 2, 2, pose), Is.True);
+            Run(game.tuning.tutorialStepTimeoutSeconds - 1, pose);
+            Assert.That(game.TutorialStep, Is.EqualTo(2));
+            Assert.That(RunUntil(() => game.TutorialStep == 3, 4, pose), Is.True, "Step 2 times out as well.");
+            Assert.That(game.Round.Taken + game.Round.Hits, Is.Zero);
+        }
+
+        [Test] public void StrikeStepsRepeatOnTheWrongOutcomeAndAdvanceAfterTheirStrikes()
+        {
+            game.tuning.tutorialStepTimeoutSeconds = 1;
+            Begin();
+            Assert.That(RunUntil(() => game.TutorialStep == 3, 6, BoxingSceneTests.Pose()), Is.True);
+
+            // 3 asks to take the punch: blocking repeats it with the hint, three strikes move on anyway.
+            var guard = BoxingSceneTests.Pose(true);
+            bool hint = false;
+            Assert.That(RunUntil(() => { hint |= Board == BoxingGame.TutorialHints[0]; return game.TutorialStep == 4; }, 15, guard), Is.True);
+            Assert.That(hint, Is.True, "A block shows the hint.");
+            Assert.That(game.Round.Blocks, Is.EqualTo(game.tuning.tutorialStrikes)); Assert.That(game.Round.Taken, Is.Zero);
+            Assert.That(game.Opponent.AttackId, Is.EqualTo(game.tuning.tutorialStrikes));
+
+            // 4 asks to block: a hit repeats it with the hint, three strikes start the round anyway.
+            var open = BoxingSceneTests.Pose();
+            hint = false;
+            Assert.That(RunUntil(() => { hint |= Board == BoxingGame.TutorialHints[1]; return game.Round.Phase == BoxingPhase.Countdown; }, 20, open), Is.True);
+            Assert.That(hint, Is.True, "A hit shows the hint.");
+            Assert.That(game.Opponent.AttackId, Is.Zero, "StartRound resets the opponent.");
+        }
+
+        [Test] public void StartRoundSkipsTheTutorialAndRetryOrRestartNeverReplaysIt()
+        {
+            Begin();
+            game.StartRound();
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Countdown));
+            Assert.That(game.TutorialStep, Is.Zero);
+            Assert.That(game.Opponent.Scripted, Is.False);
+            Assert.That(game.Opponent.Guarding, Is.False, "The held tutorial guard is dropped.");
+            var pose = BoxingSceneTests.Pose();
+            Run(8, pose);
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Fighting));
+            Assert.That(game.Opponent.Actions, Is.GreaterThan(0), "The AI chooses its own actions again.");
+            // The round ends and the next one starts by itself: straight into the countdown.
+            game.Round.Tick(1000, false); game.Simulate(.01f, pose);
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Results));
+            Assert.That(RunUntil(() => game.Round.Phase != BoxingPhase.Results, game.RestartTime + 1, pose), Is.True);
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Countdown));
+            game.StartRound();
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Countdown), "Restart / retry is the plain round.");
+        }
+
+        [Test] public void WithoutTheTutorialTheStartupCountsDownAsBefore()
+        {
+            game.tuning.tutorialOnStart = false;
+            var pose = BoxingSceneTests.Pose();
+            Assert.That(RunUntil(() => game.Round.Phase != BoxingPhase.Ready, game.tuning.autoStartSeconds + 1, pose), Is.True);
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Countdown));
+            Assert.That(game.Opponent.Scripted, Is.False);
+        }
+
+        [Test] public void JapaneseBoardTextUsesTheBundledFontAndFitsTheBoard()
+        {
+            var text = game.presentation.timerText;
+            var latin = text.font; int size = text.fontSize;
+            Begin(); Run(.3f, BoxingSceneTests.Pose());
+            Assert.That(text.font.name, Does.Contain("Noto"));
+            Assert.That(text.fontSize, Is.LessThan(size));
+            var all = string.Join("", BoxingGame.TutorialSteps) + string.Join("", BoxingGame.TutorialResults) + string.Join("", BoxingGame.TutorialHints) + BoxingGame.TutorialStartText;
+            foreach (var character in all)
+                if (character != ' ') Assert.That(text.font.HasCharacter(character), Is.True, character.ToString());
+            var box = text.rectTransform.rect;
+            foreach (var line in new[] { BoxingGame.TutorialSteps, BoxingGame.TutorialResults, BoxingGame.TutorialHints, new[] { BoxingGame.TutorialStartText } })
+            foreach (var value in line)
+            {
+                text.text = value;
+                Assert.That(text.preferredWidth, Is.LessThanOrEqualTo(box.width), value);
+                Assert.That(text.preferredHeight, Is.LessThanOrEqualTo(box.height), value);
+            }
+            game.StartRound(); Run(.3f, BoxingSceneTests.Pose());
+            Assert.That(text.font, Is.SameAs(latin), "The round's board text is unchanged.");
+            Assert.That(text.fontSize, Is.EqualTo(size));
+        }
+    }
+}

@@ -57,6 +57,20 @@ namespace Hapbeat.Boxing
         public float TrackingLostSeconds { get; private set; }
         private BoxerPose held;
         private bool haveHeld, leftWasActive = true, rightWasActive = true, headWasTracked = true;
+        // Tutorial (BoxingPhase.Tutorial): 1-2 punch the head-guarding opponent, 3-4 take / block its straight, 5 = 試合開始.
+        public int TutorialStep { get; private set; }
+        public string TutorialText => tutorialMessageTime > 0 ? tutorialMessage : TutorialSteps[Mathf.Clamp(TutorialStep - 1, 0, TutorialSteps.Length - 1)];
+        internal static readonly string[] TutorialSteps = { "1/4  相手の顔を打ってみよう", "2/4  ガードしていない胴を打とう", "3/4  相手のパンチを受けてみよう", "4/4  顔の前で構えてパンチを防ごう" };
+        internal static readonly string[] TutorialResults = { "ガードの上からはダメージが入らない", "ダメージが入った！", "ガードしないとダメージを受ける", "ガード成功！" };
+        // Steps 3-4: the wrong outcome (blocked / hit) repeats the strike with this hint.
+        internal static readonly string[] TutorialHints = { "ガードしないで受けてみよう", "グローブを顔の前に構えよう" };
+        internal const string TutorialStartText = "試合開始";
+        // Pause after a tutorial strike before the next; the blocking step's straight is this much slower than usual.
+        private const float TutorialStrikeGap = 1.5f, TutorialBlockStrikeScale = 1.5f;
+        private string tutorialMessage = "";
+        private float tutorialStepTime, tutorialMessageTime, tutorialStrikeWait;
+        private bool tutorialAdvance, tutorialGuarded, tutorialBody, tutorialStriking;
+        private int tutorialStrikes, tutorialTaken, tutorialBlocks;
 
         public void Initialize() { if (Opponent == null) Opponent = new BoxingOpponent(tuning); previousPhase = Round.Phase; }
         private void Awake() => Initialize();
@@ -103,13 +117,28 @@ namespace Hapbeat.Boxing
         public void RecenterPlayer() { input.Recenter(); OnRecentered(); feedback.StopImpacts(); }
         public void UseHandTracking() { input.SelectMode(BoxingInputMode.Hands); ResetHistory(); }
         public void UseControllers() { input.SelectMode(BoxingInputMode.Controllers); ResetHistory(); }
+        // The plain round (countdown, gong): retry, restart and the next round never repeat the tutorial.
         public void StartRound()
+        {
+            Prepare();
+            // The opponent's own AI fights again; Opponent.Reset (OnRecentered) already dropped a held tutorial guard.
+            Opponent.Scripted = false; TutorialStep = 0;
+            Round.Start(tuning.roundSeconds, tuning.maximumHealth);
+        }
+        // Four short steps before the first round (tuning.tutorialOnStart); the last one starts the round.
+        public void StartTutorial()
+        {
+            Prepare();
+            Opponent.Scripted = true;
+            Round.StartTutorial(tuning.maximumHealth);
+            TutorialStep = 0; EnterTutorialStep();
+        }
+        private void Prepare()
         {
             if (presentation != null && presentation.enemyAvatar != null) presentation.enemyAvatar.ResetReaction();
             // Head height must not depend on controllers/both hands already being tracked.
             input.Recenter(); OnRecentered();
             calibrationPending=!input.HeadTracked && !input.HasOverride;
-            Round.Start(tuning.roundSeconds, tuning.maximumHealth);
             ResultPresentationTime=0;
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); menu.Close();
             spokenCountdown=0; resultsReported=false; readyTime=0;
@@ -207,9 +236,9 @@ namespace Hapbeat.Boxing
             { ResetHistory(); feedback.StopFeedback(); return; }
             if(Round.Phase==BoxingPhase.Ready)
             {
-                // Startup: both gloves tracked at the start position for a moment, then the countdown and gong.
+                // Startup: both gloves tracked at the start position for a moment, then the tutorial (or straight the countdown and gong).
                 readyTime+=dt;
-                if(readyTime>=tuning.autoStartSeconds) { StartRound(); return; }
+                if(readyTime>=tuning.autoStartSeconds) { if(tuning.tutorialOnStart) StartTutorial(); else StartRound(); return; }
             }
             if(Round.Phase==BoxingPhase.Countdown)
             {
@@ -217,13 +246,15 @@ namespace Hapbeat.Boxing
                 if(number!=spokenCountdown) { feedback.SpeakCountdown(number); spokenCountdown=number; }
             }
             Round.Tick(dt, false);
+            // The tutorial fights like a round (contacts, reports, the scripted opponent) without the round clock.
+            bool combat = Combat;
             // Without history this frame restarts the opponent's view of the gloves (no velocity across a gap).
             Opponent.ObservePlayer(pose, haveHistory ? dt : 0);
-            Opponent.Tick(dt, pose.head, pose.headRotation, Round.Phase == BoxingPhase.Fighting);
+            Opponent.Tick(dt, pose.head, pose.headRotation, combat);
             sampledHead = pose.head;
             if (LeftHandActive) leftPunch.Sample(pose.left - pose.head, dt, tuning);
             if (RightHandActive) rightPunch.Sample(pose.right - pose.head, dt, tuning);
-            if (haveHistory && Round.Phase == BoxingPhase.Fighting)
+            if (haveHistory && combat)
             {
                 leftBlockedThisFrame = rightBlockedThisFrame = false;
                 leftCooldown = Mathf.Max(0, leftCooldown - dt); rightCooldown = Mathf.Max(0, rightCooldown - dt);
@@ -237,6 +268,7 @@ namespace Hapbeat.Boxing
                     lastCompleted = Opponent.CompletedAttacks;
                 }
             }
+            if (Round.Phase == BoxingPhase.Tutorial) TickTutorial(dt);
             if (Round.Phase != previousPhase)
             {
                 if (Round.Phase == BoxingPhase.Results)
@@ -251,6 +283,51 @@ namespace Hapbeat.Boxing
             }
             SaveHistory(pose);
             if (presentation != null) presentation.Render(this, pose, true,dt);
+        }
+        private bool Combat => Round.Phase == BoxingPhase.Fighting || Round.Phase == BoxingPhase.Tutorial;
+        private void EnterTutorialStep()
+        {
+            TutorialStep++; tutorialStepTime = 0; tutorialAdvance = tutorialGuarded = tutorialBody = tutorialStriking = false;
+            tutorialMessageTime = 0; tutorialStrikes = 0; tutorialStrikeWait = TutorialStrikeGap;
+            if (TutorialStep == 3) Opponent.ScriptedRelease();
+        }
+        // advance: a step's result message, then the next step; otherwise a hint while the step goes on.
+        private void TutorialMessage(string text, bool advance)
+        {
+            tutorialMessage = text; tutorialMessageTime = tuning.tutorialMessageSeconds; tutorialAdvance = advance;
+        }
+        private void TickTutorial(float dt)
+        {
+            if (tutorialMessageTime > 0) tutorialMessageTime -= dt;
+            if (tutorialAdvance)
+            {
+                if (tutorialMessageTime > 0) return;
+                if (TutorialStep == 5) { StartRound(); return; }
+                if (TutorialStep == 4) { TutorialStep = 5; TutorialMessage(TutorialStartText, true); return; }
+                EnterTutorialStep(); return;
+            }
+            tutorialStepTime += dt;
+            if (TutorialStep <= 2)
+            {
+                // Set every step: a recenter (Opponent.Reset) drops it.
+                Opponent.ScriptedGuard(BoxingGuard.HeadStraight);
+                if ((TutorialStep == 1 ? tutorialGuarded : tutorialBody) || tutorialStepTime >= tuning.tutorialStepTimeoutSeconds)
+                    TutorialMessage(TutorialResults[TutorialStep - 1], true);
+                return;
+            }
+            if (tutorialStriking)
+            {
+                // A strike ends when the opponent leaves its attack (retracted, or cut short by a recenter).
+                if (Opponent.State == BoxingOpponentState.Attack) return;
+                tutorialStriking = false; tutorialStrikes++; tutorialStrikeWait = TutorialStrikeGap;
+                bool hit = Round.Taken > tutorialTaken, blocked = Round.Blocks > tutorialBlocks;
+                if ((TutorialStep == 3 ? hit : blocked) || tutorialStrikes >= tuning.tutorialStrikes) TutorialMessage(TutorialResults[TutorialStep - 1], true);
+                else if (TutorialStep == 3 ? blocked : hit) TutorialMessage(TutorialHints[TutorialStep - 3], false);
+                return;
+            }
+            if ((tutorialStrikeWait -= dt) > 0) return;
+            tutorialTaken = Round.Taken; tutorialBlocks = Round.Blocks; tutorialStriking = true;
+            Opponent.ScriptedStrike(BoxingAttack.HeadStraight, false, TutorialStep == 4 ? TutorialBlockStrikeScale : 1);
         }
         private void ResolveEnemy(BoxerPose p, float dt)
         {
@@ -295,7 +372,7 @@ namespace Hapbeat.Boxing
         }
         private void ResolvePlayer(Vector3 to, Vector3 from, bool closed, ImpactZone side, ref bool contact, ref float cooldown, float dt)
         {
-            if (Round.Phase != BoxingPhase.Fighting) return;
+            if (!Combat) return;
             float earliest = float.PositiveInfinity;
             Vector3 targetFrom = default, targetTo = default;
             var surface = ImpactSurface.Body;
@@ -327,6 +404,7 @@ namespace Hapbeat.Boxing
             Vector3 headAtContact = Vector3.Lerp(previous.head, sampledHead, earliest);
             float strength = (side == ImpactZone.LeftGlove ? leftPunch : rightPunch).Consume(point - headAtContact, tuning);
             var impact = new BoxingImpact(side, speed, point, tuning, surface, strength, part);
+            if (Round.Phase == BoxingPhase.Tutorial) { if (surface == ImpactSurface.Glove) tutorialGuarded = true; else if (!hitHead) tutorialBody = true; }
             if (surface == ImpactSurface.Body)
             {
                 Opponent.React(impact.gain, BoxingOpponent.Zone(hitHead, dt > 0 ? (to - from) / dt : Vector3.zero));
@@ -350,7 +428,7 @@ namespace Hapbeat.Boxing
         }
         private void Report(BoxingImpact impact)
         {
-            if (Round.Phase != BoxingPhase.Fighting) return;
+            if (!Combat) return;
             Round.Report(impact); feedback.Impact(impact);
             if (presentation != null) presentation.Flash(impact);
         }

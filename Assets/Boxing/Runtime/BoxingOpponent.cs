@@ -50,7 +50,7 @@ namespace Hapbeat.Boxing
         // A wind-up that never strikes. Telegraphing stays reserved for real strikes.
         public bool Feinting { get; private set; }
         public BoxingEvade Evade { get; private set; }
-        // Haptic recording only: no own choices, reads, staggers or covers; strikes only through ScriptedStrike.
+        // Haptic recording and the tutorial: no own choices, reads, staggers or covers; strikes only through ScriptedStrike.
         internal bool Scripted { get; set; }
 
         private const float HomeZ = 1.08f, MaxStep = 1f / 240, OpeningSeconds = 1.2f;
@@ -401,6 +401,9 @@ namespace Hapbeat.Boxing
             State = BoxingOpponentState.Attack; combo = new[] { new Strike(attack, left) }; comboIndex = 0; telegraphScale = 1;
             Guarding = false; attacking = pendingStrike = true; retracting = false; this.strikeScale = strikeScale;
         }
+        // Tutorial: the scripted opponent holds this guard (no timeout) until ScriptedRelease or a strike.
+        internal void ScriptedGuard(BoxingGuard guard) { Guarding = true; Guard = guard; }
+        internal void ScriptedRelease() => Guarding = false;
         private void BeginFeint()
         {
             State = BoxingOpponentState.Attack; combo = Combos[0]; comboIndex = 0;

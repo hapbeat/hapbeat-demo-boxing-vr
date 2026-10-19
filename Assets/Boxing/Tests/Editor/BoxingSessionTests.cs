@@ -107,7 +107,8 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.tuning.roundSeconds, Is.EqualTo(original.roundSeconds));
         }
 
-        [Test] public void StartupBeginsTheCountdownWithoutAMenuAfterAShortReadyTime()
+        // The tutorial's own steps and its countdown to the round: BoxingTutorialTests.
+        [Test] public void StartupBeginsTheTutorialWithoutAMenuAfterAShortReadyTime()
         {
             var pose = BoxingSceneTests.Pose();
             Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Ready));
@@ -119,11 +120,12 @@ namespace Hapbeat.Boxing.Tests
             for (int i = 0; i < Mathf.CeilToInt(game.tuning.autoStartSeconds * 100) - 30; i++) game.Simulate(.01f, pose);
             Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Ready), "The player gets a moment before the countdown.");
             for (int i = 0; i < 60; i++) game.Simulate(.01f, pose);
-            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Countdown));
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Tutorial));
+            Assert.That(game.TutorialStep, Is.EqualTo(1));
             Assert.That(game.menu.IsOpen, Is.False);
             for (int i = 0; i < 350; i++) game.Simulate(.01f, pose);
-            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Fighting));
-            Assert.That(game.feedback.Rings, Is.EqualTo(1), "The gong starts the round.");
+            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Tutorial), "The tutorial runs before the countdown.");
+            Assert.That(game.feedback.Rings, Is.Zero, "The gong waits for the round.");
         }
 
         [Test] public void SharedPauseFreezesTheRoundButTheGlovesFollowAndRemoteControlsUseIt()

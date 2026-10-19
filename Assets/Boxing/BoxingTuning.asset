@@ -15,6 +15,10 @@ MonoBehaviour:
   roundSeconds: 90
   maximumHealth: 100
   autoStartSeconds: 2
+  tutorialOnStart: 1
+  tutorialStepTimeoutSeconds: 20
+  tutorialStrikes: 3
+  tutorialMessageSeconds: 1.5
   restartAfterResultsSeconds: 4
   resultPanelDelaySeconds: 1
   enemyInterval: 1.6
