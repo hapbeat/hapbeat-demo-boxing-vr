@@ -155,12 +155,13 @@ namespace Hapbeat.Boxing
             }
             if (clip != null) PlaySound(clip, Mathf.Clamp01(impact.gain) * sounds.volumes[sound], LastSoundDelay);
         }
-        // Own punch: on the opponent's glove, or anywhere else (head, body, arms). Received: on the glove,
-        // the forearm, or the head / body. Scoring keeps counting arm contacts as glove surfaces.
+        // Own punch: on the opponent's guard (glove or arm), or on its head / body. Received: on the glove,
+        // the forearm, or the head / body. Scoring counts arm contacts as glove surfaces too.
         public static int CueIndex(BoxingImpact impact)
         {
             int hard = impact.hard ? 1 : 0;
-            if (impact.attack) return (impact.surface == ImpactSurface.Glove && impact.part == ImpactPart.Glove ? 0 : 2) + hard;
+            // Any meeting with the opponent's guard (glove or arm) is punch_glove; punch_body only on the head or torso.
+            if (impact.attack) return (impact.surface == ImpactSurface.Glove ? 0 : 2) + hard;
             if (impact.zone == ImpactZone.Head || impact.zone == ImpactZone.Body)
             {
                 if (impact.surface != ImpactSurface.Body) throw new ArgumentException("Received head/body hits cannot be glove guards.");

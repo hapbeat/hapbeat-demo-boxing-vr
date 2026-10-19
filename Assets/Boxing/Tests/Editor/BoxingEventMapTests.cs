@@ -68,7 +68,9 @@ namespace Hapbeat.Boxing.Tests
                     float medium=tuning.punchHardStrength-.05f;
                     Assert.That(Cue(new BoxingImpact(ImpactZone.LeftGlove,speed,Vector3.zero,tuning,ImpactSurface.Glove,1)),Is.EqualTo("punch_glove_hard"));
                     Assert.That(Cue(new BoxingImpact(ImpactZone.LeftGlove,speed,Vector3.zero,tuning,ImpactSurface.Glove,medium)),Is.EqualTo("punch_glove_soft"));
-                    Assert.That(Cue(new BoxingImpact(ImpactZone.LeftGlove,speed,Vector3.zero,tuning,ImpactSurface.Glove,1,ImpactPart.Forearm)),Is.EqualTo("punch_body_hard"));
+                    // The opponent's forearm guard is a guard like its glove.
+                    Assert.That(Cue(new BoxingImpact(ImpactZone.LeftGlove,speed,Vector3.zero,tuning,ImpactSurface.Glove,1,ImpactPart.Forearm)),Is.EqualTo("punch_glove_hard"));
+                    Assert.That(Cue(new BoxingImpact(ImpactZone.LeftGlove,speed,Vector3.zero,tuning,ImpactSurface.Glove,0,ImpactPart.Forearm)),Is.EqualTo("punch_glove_soft"));
                     Assert.That(Cue(new BoxingImpact(ImpactZone.RightGlove,speed,Vector3.zero,tuning,ImpactSurface.Body,1)),Is.EqualTo("punch_body_hard"));
                     Assert.That(Cue(new BoxingImpact(ImpactZone.RightGlove,speed,Vector3.zero,tuning,ImpactSurface.Body,medium)),Is.EqualTo("punch_body_soft"));
                     // An unprepared punch is always soft.

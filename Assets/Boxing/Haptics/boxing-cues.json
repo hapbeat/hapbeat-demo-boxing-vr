@@ -5,22 +5,22 @@
     "punch_glove_soft": {
       "intensity": 1,
       "loop": false,
-      "description": "自分のパンチが相手のグローブに当たる（打った側の手首）・弱（元 BodySoft.wav）"
+      "description": "自分のパンチが相手のガード（グローブ・腕）に当たる（打った側の手首）・弱（元 BodySoft.wav）"
     },
     "punch_glove_hard": {
       "intensity": 1,
       "loop": false,
-      "description": "自分のパンチが相手のグローブに当たる（打った側の手首）・強（元 damage.wav）"
+      "description": "自分のパンチが相手のガード（グローブ・腕）に当たる（打った側の手首）・強（元 damage.wav）"
     },
     "punch_body_soft": {
       "intensity": 1,
       "loop": false,
-      "description": "自分のパンチが相手の頭・胴・腕（グローブ以外）に当たる（打った側の手首）・弱（元 BodySoft.wav）"
+      "description": "自分のパンチが相手の頭・胴に当たる（打った側の手首）・弱（元 BodySoft.wav）"
     },
     "punch_body_hard": {
       "intensity": 1,
       "loop": false,
-      "description": "自分のパンチが相手の頭・胴・腕（グローブ以外）に当たる（打った側の手首）・強（元 damage.wav）"
+      "description": "自分のパンチが相手の頭・胴に当たる（打った側の手首）・強（元 damage.wav）"
     },
     "guard_glove_soft": {
       "intensity": 0.46,
@@ -314,7 +314,7 @@
   },
   "cues": {
     "punch_glove": {
-      "description": "自分のパンチが相手のグローブに当たる（打った側の手首）。弱: 接触の相対速度 2.5 m/s 未満、または準備なし（引き戻し無し）の当たり。強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）。gain = 準備状態と振りの速さ（0.12〜1）",
+      "description": "自分のパンチが相手のガード（グローブ・腕）に当たる（打った側の手首）。弱: 接触の相対速度 2.5 m/s 未満、または準備なし（引き戻し無し）の当たり。強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）。gain = 準備状態と振りの速さ（0.12〜1）",
       "variation": {
         "pick": "random"
       },
@@ -389,7 +389,7 @@
       }
     },
     "punch_body": {
-      "description": "自分のパンチが相手の頭・胴・腕（グローブ以外）に当たる（打った側の手首）。弱: 接触の相対速度 2.5 m/s 未満、または準備なし（引き戻し無し）の当たり。強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）。gain = 準備状態と振りの速さ（0.12〜1）",
+      "description": "自分のパンチが相手の頭・胴に当たる（打った側の手首）。弱: 接触の相対速度 2.5 m/s 未満、または準備なし（引き戻し無し）の当たり。強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）。gain = 準備状態と振りの速さ（0.12〜1）",
       "sfx": {
         "sounds": [
           "punch_body_hard_T131_A",

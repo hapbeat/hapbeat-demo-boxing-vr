@@ -64,7 +64,7 @@ Controllersモードでは、メニューを閉じた追跡安定中に左ステ
 
 ### 前腕のガード
 
-NPCは左右の上腕・前腕にも、描画リグに追従する連続スイープ判定を持ちます。グローブ・腕・身体のうち最初に接触した面を採用し、腕で遮られたパンチは身体を傷つけません。腕への接触は得点上はグローブ接触（相手のガード）と同じ扱いで、音・触覚は頭・胴への命中と同じ `punch_body_*` です。NPCのグローブもプレイヤーと同じ幅15cm（接触判定の半径7.5cm）です。
+NPCは左右の上腕・前腕にも、描画リグに追従する連続スイープ判定を持ちます。グローブ・腕・身体のうち最初に接触した面を採用し、腕で遮られたパンチは身体を傷つけません。腕への接触は得点上はグローブ接触（相手のガード）と同じ扱いで、音・触覚もグローブに当たったときと同じ `punch_glove_*` です（`punch_body_*` は頭・胴への命中だけ）。NPCのグローブもプレイヤーと同じ幅15cm（接触判定の半径7.5cm）です。
 
 プレイヤーにはグローブの手首方向へ伸びる長さ28cm・直径9cmの簡易前腕を表示します。実際の肘の推定ではなく、手首の向きに固定した防御用モデルです。前腕への接触も同じ左腕／右腕のガードとして処理し、受けた側の手首で `guard_arm_*` の音・触覚を鳴らします。前腕自体は相手にダメージを与えません。判定は既存の移動掃引方式（重なる13個の球）で、頭・胴・グローブと最初の接触を比較します。追跡喪失・メニュー中には判定せず、メニューでは前腕も非表示です。
 
@@ -132,8 +132,8 @@ Unity SDKのStreamClipを使うため、事前のKit転送は不要です。イ�
 
 | ゲームのイベント（cue 表の cue:variant） | 状況 | 鳴る場所 | EventMapエントリー | 既定の波形 / 音 |
 |---|---|---|---|---|
-| `punch_glove_soft` / `punch_glove_hard` | 自分のパンチが相手のグローブに当たる | 打った側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactSoft_medium_000` / `impactSoft_heavy_000` |
-| `punch_body_soft` / `punch_body_hard` | 自分のパンチが相手の頭・胴・腕（グローブ以外）に当たる | 打った側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactPunch_medium_000` / `impactPunch_heavy_000` |
+| `punch_glove_soft` / `punch_glove_hard` | 自分のパンチが相手のガード（グローブ・腕）に当たる | 打った側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactSoft_medium_000` / `impactSoft_heavy_000` |
+| `punch_body_soft` / `punch_body_hard` | 自分のパンチが相手の頭・胴に当たる | 打った側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactPunch_medium_000` / `impactPunch_heavy_000` |
 | `guard_glove_soft` / `guard_glove_hard` | 相手のパンチを自分のグローブで受ける | 受けた側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactSoft_medium_000` / `impactSoft_heavy_000` |
 | `guard_arm_soft` / `guard_arm_hard` | 相手のパンチを自分の前腕で受ける | 受けた側の手首 | `left_` / `right_` + cue | BodySoft / damage、`impactSoft_medium_000` / `impactSoft_heavy_000` |
 | `hit_body_soft` / `hit_body_hard` | 相手のパンチが自分の頭・胴に当たる | 首 | cue（`*/pos_neck`） | BodySoft / damage、`impactPunch_medium_000` / `impactPunch_heavy_000` |
