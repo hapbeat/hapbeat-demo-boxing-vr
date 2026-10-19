@@ -63,12 +63,20 @@ namespace Hapbeat.Boxing.Editor
             feedback.loseVoice=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Boxing/Audio/Voice/you_lose.ogg");
             feedback.tieVoice=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Boxing/Audio/Voice/its_a_tie.ogg");
             InstallTutorialVoice(feedback);
+            if(feedback.musicSource==null)
+            {
+                var music=new GameObject("Round music"); music.transform.SetParent(feedback.transform,false);
+                feedback.musicSource=music.AddComponent<AudioSource>(); feedback.musicSource.playOnAwake=false; feedback.musicSource.spatialBlend=0; feedback.musicSource.loop=false;
+            }
+            feedback.music=AssetDatabase.LoadAssetAtPath<AudioClip>(MusicPath);
+            if(feedback.music==null) throw new System.InvalidOperationException("Round music missing: "+MusicPath);
             BoxingForearmSetup.Install(game.presentation);
             EditorUtility.SetDirty(feedback);
         }
 
         // Tutorial narration generated from Voice/voice-lines.json (hapbeat-demos tools/tts/generate-voice.py).
         public const string TutorialVoicePath="Assets/Boxing/Audio/Tutorial/";
+        public const string MusicPath="Assets/Boxing/Audio/Music/BoxingRingMusic.wav";
         public static void InstallTutorialVoice(BoxingFeedback feedback)
         {
             AudioClip Load(string id)

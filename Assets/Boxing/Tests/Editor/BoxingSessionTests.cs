@@ -48,22 +48,22 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(descriptor.DemoId, Is.EqualTo(settings.CurrentDemoId));
             Assert.That(descriptor.SupportsHapticsToggle, Is.True);
             var round = descriptor.FindOption("round");
-            Assert.That(round.Default, Is.EqualTo("90"));
-            Assert.That(round.HasValue("60") && round.HasValue("90"), Is.True);
+            Assert.That(round.Default, Is.EqualTo("55"));
+            Assert.That(round.HasValue("30") && round.HasValue("55"), Is.True);
         }
 
         [Test] public void SessionRoundEndsInTheCompletionPanelAndRetryRestartsTheRound()
         {
-            Assert.That(DemoSession.TryBegin(Ticket("60"), "boxing", Descriptor(), out var error), Is.True, error);
+            Assert.That(DemoSession.TryBegin(Ticket("30"), "boxing", Descriptor(), out var error), Is.True, error);
             var host = game.gameObject.AddComponent<BoxingSessionHost>();
             DemoSession.RegisterHost(host);
-            Assert.That(game.tuning.roundSeconds, Is.EqualTo(60));
+            Assert.That(game.tuning.roundSeconds, Is.EqualTo(30));
             Assert.That(game.feedback.hapticsEnabled, Is.True, "Each step starts with haptics on.");
 
             var pose = BoxingSceneTests.Pose();
             game.StartRound();
             for (int i = 0; i < 350; i++) game.Simulate(.01f, pose);
-            Assert.That(game.Round.TimeLeft, Is.LessThanOrEqualTo(60));
+            Assert.That(game.Round.TimeLeft, Is.LessThanOrEqualTo(30));
             game.Round.Tick(90, false); game.Simulate(.01f, pose);
             Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Results));
             // The panel follows the final bell after about a second, without waiting for the bell and voice to end.
@@ -82,7 +82,7 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(DemoSession.IsCompletionShown, Is.False);
             Assert.That(game.InputSuspended, Is.False);
             Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Countdown));
-            Assert.That(game.Round.TimeLeft, Is.EqualTo(60));
+            Assert.That(game.Round.TimeLeft, Is.EqualTo(30));
         }
 
         [Test] public void HapticsSwitchMirrorsTheMenuRowAndKeepsSound()

@@ -17,7 +17,7 @@ namespace Hapbeat.Boxing
         public Vector3 headCenter, leftCenter, rightCenter;
         public float neutralHeadHeight;
         public const float GloveWidth = .15f;
-        public const float OpponentGloveWidth = .18f;
+        public const float OpponentGloveWidth = .15f;
         public const float GloveDepthRatio = .75f;
         public float leftGloveLocalWidth, rightGloveLocalWidth;
         public float leftUpperRadius,leftForeRadius,rightUpperRadius,rightForeRadius;
@@ -91,7 +91,7 @@ namespace Hapbeat.Boxing
             // Height is fixed throughout a round. Bobbing lowers the hips over planted feet,
             // rather than scaling the entire character up and down.
             transform.localScale = Vector3.one * (opponent.StandingHeadHeight / neutralHeadHeight);
-            // NPC gloves have a larger silhouette; player gloves keep their existing size.
+            // NPC gloves have the player's 15 cm width (GloveWidth).
             leftHand.localScale *= OpponentGloveWidth/(leftGloveLocalWidth*leftHand.lossyScale.x);
             rightHand.localScale *= OpponentGloveWidth/(rightGloveLocalWidth*rightHand.lossyScale.x);
             leftHand.localScale=Vector3.Scale(leftHand.localScale,new Vector3(1,1,GloveDepthRatio));

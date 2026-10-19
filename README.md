@@ -1,6 +1,6 @@
 # Hapbeat Boxing
 
-Unity **6000.3.12f1** の90秒VRスパーリングデモ。左右のグローブで攻撃・ガードし、頭を動かして相手のパンチを避けます。起動後の最初だけ短いチュートリアル（4ステップ）を行い、3カウント後にラウンドが始まり、終了時に得点と再開メニューを表示します。Hapbeatが未接続でもゲームは動作します。
+Unity **6000.3.12f1** の1ラウンド55秒のVRスパーリングデモ。左右のグローブで攻撃・ガードし、頭を動かして相手のパンチを避けます。起動後の最初だけ短いチュートリアル（4ステップ）を行い、3カウント後にラウンドが始まり、終了時に得点と再開メニューを表示します。Hapbeatが未接続でもゲームは動作します。
 
 スコアボードには自分と相手のHPバーを表示します。初期HPは各100、プレイヤーの攻撃は準備状態とHMD相対速度に応じて0.5〜20、敵の通常ヒットは10・強ヒットは20ダメージ、グローブ・腕でのガードはダメージなしです。HPが0になるとKOで終了し、再スタート時に全回復します。ガード成立時は相手のパンチを接触点で止め、そこから引き戻します。攻撃のターン制限はありません。
 
@@ -27,7 +27,7 @@ Unity XRI 3.3.1の標準シミュレーターPrefab・入力設定を使用し�
 
 1. この `boxing-vr` フォルダーをUnity 6000.3.12f1で開き、`Assets/Boxing/Scenes/Boxing.unity` を開きます。
 2. Meta Horizon LinkでQuestをAir Link接続します。WindowsのOpenXR runtimeはMeta Horizon Linkを選択してください。
-3. `Hapbeat Boxing > Editor Input > Air Link` を選び、Unityのactive build targetをWindowsにしてPlayを押します。起動時メニューの `START 90s ROUND` を選択します。
+3. `Hapbeat Boxing > Editor Input > Air Link` を選び、Unityのactive build targetをWindowsにしてPlayを押します。起動時メニューの `START 55s ROUND` を選択します。
 
 手追跡（Hands）が既定です。メニューでは半透明の手を表示し、親指と人差し指の中点から伸びるレイで項目を指し、つまんで決定します。Meta Aimの照準方向・ピンチ入力を使用し、対応デバイスが存在しない環境では実測の手首方向と指先間隔を使います。Meta Aimが存在するが無効／システムジェスチャー中の場合は選択を止めます。視線だけでは選択されません。コントローラーは不要です。起動時のHMD位置・向きをリング上の開始位置に合わせます。必要ならメニューから `RECENTER` を選択します。
 
@@ -64,7 +64,7 @@ Controllersモードでは、メニューを閉じた追跡安定中に左ステ
 
 ### 前腕のガード
 
-NPCは左右の上腕・前腕にも、描画リグに追従する連続スイープ判定を持ちます。グローブ・腕・身体のうち最初に接触した面を採用し、腕で遮られたパンチは身体を傷つけません。腕への接触は得点上はグローブ接触（相手のガード）と同じ扱いで、音・触覚は頭・胴への命中と同じ `punch_body_*` です。NPCグローブは幅18cm、プレイヤーは既存の15cmを維持します。
+NPCは左右の上腕・前腕にも、描画リグに追従する連続スイープ判定を持ちます。グローブ・腕・身体のうち最初に接触した面を採用し、腕で遮られたパンチは身体を傷つけません。腕への接触は得点上はグローブ接触（相手のガード）と同じ扱いで、音・触覚は頭・胴への命中と同じ `punch_body_*` です。NPCのグローブもプレイヤーと同じ幅15cm（接触判定の半径7.5cm）です。
 
 プレイヤーにはグローブの手首方向へ伸びる長さ28cm・直径9cmの簡易前腕を表示します。実際の肘の推定ではなく、手首の向きに固定した防御用モデルです。前腕への接触も同じ左腕／右腕のガードとして処理し、受けた側の手首で `guard_arm_*` の音・触覚を鳴らします。前腕自体は相手にダメージを与えません。判定は既存の移動掃引方式（重なる13個の球）で、頭・胴・グローブと最初の接触を比較します。追跡喪失・メニュー中には判定せず、メニューでは前腕も非表示です。
 
@@ -110,7 +110,7 @@ Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です�
 
 決着したフレームで終了ゴングと勝敗音声を同時に開始します。専用音源を使い、最後の打撃音・触覚は中断しません。Demo Sessionでは終了から1秒（`BoxingTuning.resultPanelDelaySeconds`）で完了パネルを出し、ゴングと音声はそのまま最後まで鳴ります。完了・ポーズのパネル表示中はグローブの代わりにDemo Hubと同じ手（`DemoHands`）を表示し、指先で押します。Demo Session外ではゴングと音声が終わってから次のラウンドを始めます。
 
-手・HMDのトラッキングが一瞬外れても試合は続きます。外れた手は非表示になり、その間はパンチもガードもしません。戻った手は今の位置から再開し、外れていた間の移動をパンチとして扱いません。`BoxingTuning.trackingGraceSeconds`（既定3秒）を超えて外れたままなら、`HAND TRACKING LOST` を表示して停止し、戻ると再開します。その間に新しい攻撃やダメージは発生しません。時間切れも残りHPで判定し、同じHPなら引き分けです。開始カウント「3・2・1」と勝敗「You win / You lose / It's a tie」はKenney Voiceover Packの男性音声です（CC0、`Assets/Boxing/Audio/Voice/License.txt`）。チュートリアルの日本語音声はローカルのAivisSpeech Engineで生成した「まお」の声で、音声モデルは[Aivis Common Model License 1.0](https://github.com/Aivis-Project/ACML/blob/master/ACML-1.0.md)です（商用利用可、クレジット表記は任意）。音声は全デモ共通の-20 LUFSに正規化してあり（`hapbeat-demos/tools/tts/loudness.py`）、Demo Hubのナレーション音量（`DemoNarration.Gain`）で鳴ります。SOUND OFFは全音声に適用されます。
+手・HMDのトラッキングが一瞬外れても試合は続きます。外れた手は非表示になり、その間はパンチもガードもしません。戻った手は今の位置から再開し、外れていた間の移動をパンチとして扱いません。`BoxingTuning.trackingGraceSeconds`（既定3秒）を超えて外れたままなら、`HAND TRACKING LOST` を表示して停止し、戻ると再開します。その間に新しい攻撃やダメージは発生しません。時間切れも残りHPで判定し、同じHPなら引き分けです。開始カウント「3・2・1」と勝敗「You win / You lose / It's a tie」はKenney Voiceover Packの男性音声です（CC0、`Assets/Boxing/Audio/Voice/License.txt`）。チュートリアルの日本語音声はローカルのAivisSpeech Engineで生成した「まお」の声で、音声モデルは[Aivis Common Model License 1.0](https://github.com/Aivis-Project/ACML/blob/master/ACML-1.0.md)です（商用利用可、クレジット表記は任意）。ラウンド中のBGMはUmplix「[Boxing Ring](https://opengameart.org/content/boxing-ring-0)」（OpenGameArt、CC0、`Assets/Boxing/Audio/Music/License.txt`）で、開始ゴングで始まり、終了ゴング・再スタート・チュートリアル開始で約1秒かけて消えます。メニュー・共通ポーズ・追跡停止の間はラウンドの時計と一緒に止まり、同じ位置から再開します。チュートリアルとカウントダウンの間は流しません。音量は `BoxingTuning.musicVolume`（既定0.12、約-18dB）で、打撃音より十分小さく、ナレーション音量とは独立です。曲は55秒で、既定のラウンド（`roundSeconds` 55秒）と同じ長さです。Demo Sessionの `round` は30秒と55秒（既定）で、30秒のラウンドでは終了ゴングで曲を消します。音声は全デモ共通の-20 LUFSに正規化してあり（`hapbeat-demos/tools/tts/loudness.py`）、Demo Hubのナレーション音量（`DemoNarration.Gain`）で鳴ります。SOUND OFFは全音声に適用されます。
 
 頭への命中は上体と頭を反らし、胴への命中は少し前屈して肘を寄せます。ガードはこの被弾リアクションを起こしません。メニュー／停止中はリアクションの時間も止まり、ラウンド再開時にリセットします。FBXに同梱した見本クリップは実行せず、ゲームの攻撃・ガードに同期した逆運動学（IK）で動かします。従来の攻撃距離が骨格の腕長を超える場合は腕を伸長して拳を判定位置に合わせます。実機での伸び方・遮蔽の見え方は調整対象です。
 
@@ -177,7 +177,7 @@ Unity Editorを閉じて、PowerShellから実行します。Unityの場所が�
 ./tools/verify-apk.ps1
 ```
 
-`Logs/` にテスト結果・実行ログ・画像が出ます。Smokeは実際のPlay Modeで90秒ラウンド、パンチ、ガード、回避、被弾、メニュー停止を再生し、3部位・弱打／強打・接触のイベント（自分のパンチのグローブ／それ以外、ガード、被弾）・ゲイン変化・触覚送信ゼロ・エラーゼロを検証します。`Builds/Windows/HapbeatBoxing.exe`、`Builds/HapbeatBoxing.apk` が生成先です。
+`Logs/` にテスト結果・実行ログ・画像が出ます。Smokeは実際のPlay Modeで1ラウンド（`roundSeconds`、既定55秒）、パンチ、ガード、回避、被弾、メニュー停止を再生し、3部位・弱打／強打・接触のイベント（自分のパンチのグローブ／それ以外、ガード、被弾）・ゲイン変化・触覚送信ゼロ・エラーゼロを検証します。`Builds/Windows/HapbeatBoxing.exe`、`Builds/HapbeatBoxing.apk` が生成先です。
 
 InputTestsはUnity公式InputTestFixtureを使うPlay Modeの入力テストです。XRIシミュレーターに加え、OpenXRのOculus Touch／Touch Plusレイアウトを検査します。実シーンで明示的なControllersモードの維持、左右スティック選択、Aで開始、グローブ追従、カウントダウン進行を確認します。テスト用XR Handsプロバイダーで、コントローラーなし起動、遅れて届く手追跡、視線で開始、追跡復帰、左手だけでメニューを開く操作も検査します。Hand Interactionデバイスと遅れて認識したTouchの姿勢が混ざらない回帰テストを含みます。InputTestsはEditor InputをSimulatorにしてネイティブXRを無効にした状態で実行し、実機確認時はAir Linkへ戻してください。SimulatorSmokeは標準Prefabへキーボードイベントを渡し、頭・左右の個別移動、ボタン、追跡喪失／復帰を実際のゲーム入力で確認します。全自動検証は無音・実機送信なしです。ビルドでは詳細レポートからEditorシミュレーター資産の混入も検査します。
 

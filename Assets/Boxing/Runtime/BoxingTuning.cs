@@ -17,7 +17,8 @@ namespace Hapbeat.Boxing
     public sealed class BoxingTuning : ScriptableObject
     {
         [Header("Round")]
-        [Min(10)] public float roundSeconds = 90;
+        // The round music (Assets/Boxing/Audio/Music, 55 s) lasts one default round.
+        [Min(10)] public float roundSeconds = 55;
         [Min(1)] public float maximumHealth = 100;
         // Startup: steady tracking at the start position for this long, then the 3-2-1 countdown (no START press).
         [Min(0)] public float autoStartSeconds = 2;
@@ -32,6 +33,8 @@ namespace Hapbeat.Boxing
         [Min(0)] public float restartAfterResultsSeconds = 4;
         // Demo Session: the completion panel appears this long after the final bell (the bell and voice keep playing).
         [Min(0)] public float resultPanelDelaySeconds = 1;
+        // Round music volume (linear, about -18 dB): well under the impact sounds; not scaled by the narration volume.
+        [Range(0, 1)] public float musicVolume = 0.12f;
         // Opponent pace: 1.6 is the reference; larger values slow every Neutral decision proportionally.
         [Min(0.1f)] public float enemyInterval = 1.6f;
         // Reference wind-up; each strike scales it (jab short, hook long, follow-ups and counters shorter).
@@ -72,7 +75,7 @@ namespace Hapbeat.Boxing
         [Min(1)] public float opponentRootMaxAcceleration = 6;
         [Header("Collision (metres / seconds)")]
         [Min(0.01f)] public float gloveRadius = 0.07f;
-        [Min(0.01f)] public float enemyGloveRadius = 0.09f;
+        [Min(0.01f)] public float enemyGloveRadius = 0.075f;
         [Min(0.01f)] public float headRadius = 0.14f;
         [Min(0.01f)] public float enemyHeadRadius = 0.145f;
         [Min(0.01f)] public float enemyBodyRadius = 0.21f;
@@ -166,6 +169,8 @@ namespace Hapbeat.Boxing
     {
         public BoxingPhase Phase { get; private set; } = BoxingPhase.Ready;
         public float TimeLeft { get; private set; }
+        // The round length given to Start (TimeLeft counts down from it).
+        public float Duration { get; private set; }
         public float Countdown { get; private set; }
         public int Hits { get; private set; }
         public int Blocks { get; private set; }
@@ -181,7 +186,7 @@ namespace Hapbeat.Boxing
         public void Start(float duration, float maximumHealth = 100)
         {
             Clear(maximumHealth);
-            TimeLeft = duration; Countdown = 3; Phase = BoxingPhase.Countdown;
+            TimeLeft = Duration = duration; Countdown = 3; Phase = BoxingPhase.Countdown;
         }
         // Contacts count as in a round, but no clock runs and no knockout ends it; Start resets everything.
         public void StartTutorial(float maximumHealth = 100) { Clear(maximumHealth); TimeLeft = Countdown = 0; Phase = BoxingPhase.Tutorial; }

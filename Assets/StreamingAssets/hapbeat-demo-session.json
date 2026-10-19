@@ -16,20 +16,20 @@
         "ja": "ラウンド",
         "en": "Round"
       },
-      "default": "90",
+      "default": "55",
       "values": [
         {
-          "value": "60",
+          "value": "30",
           "label": {
-            "ja": "60秒",
-            "en": "60 s"
+            "ja": "30秒",
+            "en": "30 s"
           }
         },
         {
-          "value": "90",
+          "value": "55",
           "label": {
-            "ja": "90秒",
-            "en": "90 s"
+            "ja": "55秒",
+            "en": "55 s"
           }
         }
       ]

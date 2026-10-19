@@ -66,8 +66,24 @@ namespace Hapbeat.Boxing.Tests
             foreach(float h in new[]{1.3f,1.9f})
             {
                 game.Opponent.Reset(h); avatar.Render(game.Opponent,0);
-                Assert.That(avatar.leftGloveLocalWidth*avatar.leftHand.lossyScale.x,Is.EqualTo(.18f).Within(.001f));
+                Assert.That(avatar.leftGloveLocalWidth*avatar.leftHand.lossyScale.x,Is.EqualTo(.15f).Within(.001f), "The opponent's gloves match the player's width.");
             }
+        }
+        // Visible size of the opponent's glove (hand bone's weighted vertices at the rendered scale) next to the player's.
+        [Test] public void OpponentGloveMatchesThePlayerGloveSize()
+        {
+            var avatar=game.presentation.enemyAvatar; game.Opponent.Reset(1.65f); avatar.Render(game.Opponent,0);
+            var skin=avatar.skin; var mesh=skin.sharedMesh; int index=System.Array.IndexOf(skin.bones,avatar.leftHand);
+            var vertices=mesh.vertices; var weights=mesh.boneWeights; var bounds=new Bounds(); bool first=true;
+            for(int i=0;i<vertices.Length;i++)
+            {
+                if(!(weights[i].boneIndex0==index && weights[i].weight0>.9f)) continue;
+                var point=Vector3.Scale(mesh.bindposes[index].MultiplyPoint3x4(vertices[i]),avatar.leftHand.lossyScale);
+                if(first) { bounds=new Bounds(point,Vector3.zero); first=false; } else bounds.Encapsulate(point);
+            }
+            var player=Editor.BoxingContent.GloveSize(game.presentation.leftGlove);
+            Debug.Log($"BOXING_GLOVE_SIZE opponent={bounds.size.x:F3}x{bounds.size.y:F3}x{bounds.size.z:F3} player={player.x:F3}x{player.y:F3}x{player.z:F3}");
+            Assert.That(bounds.size.x,Is.EqualTo(player.x).Within(.002f),"Same width as the player's glove.");
         }
         [Test] public void MissingHandPredictionIsShortAndBounded()
         {

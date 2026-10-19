@@ -1,0 +1,10 @@
+Boxing Ring (music)
+
+by Umplix
+https://opengameart.org/content/boxing-ring-0
+
+License: Creative Commons Zero (CC0 1.0)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Commercial use, modification and redistribution are allowed; credit is optional.
+BoxingRingMusic.wav is the downloaded "boxing_ring_-_music.wav" with its RIFF metadata chunks removed (audio unchanged).

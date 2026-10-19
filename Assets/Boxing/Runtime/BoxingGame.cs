@@ -99,7 +99,7 @@ namespace Hapbeat.Boxing
         {
             if (Hapbeat.DemoSwitch.DemoPause.IsEnabled) Hapbeat.DemoSwitch.DemoPause.Pause();
             else if (!menu.IsOpen) menu.Open();
-            ResetHistory(); feedback.StopFeedback();
+            ResetHistory(); feedback.StopFeedback(); feedback.SyncMusic(true, 0);
         }
         private void BeforeSwitch(string _) => PauseForExternalTransition();
         private void FocusChanged(bool value) { focus = value; if (!value && !displayFocusKnown) PauseForExternalTransition(); }
@@ -145,7 +145,7 @@ namespace Hapbeat.Boxing
             input.Recenter(); OnRecentered();
             calibrationPending=!input.HeadTracked && !input.HasOverride;
             ResultPresentationTime=0;
-            resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); menu.Close();
+            resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); feedback.StopMusic(); menu.Close();
             spokenCountdown=0; resultsReported=false; readyTime=0;
         }
         private void Update()
@@ -215,7 +215,7 @@ namespace Hapbeat.Boxing
             if (!tracking || outside || unavailable || InputSuspended || (menu != null && menu.IsOpen))
             {
                 if (!Paused) feedback.StopImpacts();
-                Paused = true;
+                Paused = true; feedback.SyncMusic(true, 0);
                 PauseReason = unavailable ? (appPaused ? "APPLICATION PAUSED" : displayFocusKnown ? "HEADSET PAUSED - OPENXR NOT FOCUSED" : "GAME WINDOW NOT FOCUSED") : InputSuspended ? "PAUSED" : outside ? "RETURN TO YOUR START POSITION" : !tracking ? input.TrackingStatus : "PAUSED";
                 ResetHistory();
                 if (presentation != null) presentation.Render(this, pose, false);
@@ -235,7 +235,7 @@ namespace Hapbeat.Boxing
             if (Paused)
             {
                 leftContact = TouchingEnemy(pose.left); rightContact = TouchingEnemy(pose.right);
-                SaveHistory(pose); return;
+                feedback.SyncMusic(true, 0); SaveHistory(pose); return;
             }
             if (haveHistory && (Vector3.Distance(pose.left, previous.left) > 0.6f || Vector3.Distance(pose.right, previous.right) > 0.6f || Vector3.Distance(pose.head, previous.head) > 0.35f))
             { ResetHistory(); feedback.StopFeedback(); return; }
@@ -280,12 +280,14 @@ namespace Hapbeat.Boxing
                 {
                     ResultPresentationTime=0;
                     // Independent sources overlap the final hit without cancelling its tail.
-                    feedback.Ring(); feedback.SpeakResult(Round.Outcome);
+                    feedback.Ring(); feedback.SpeakResult(Round.Outcome); feedback.StopMusic();
                     resultAudioSeconds=Mathf.Max(feedback.bell.length,feedback.ResultClip(Round.Outcome).length)+.35f;
                 }
-                if (Round.Phase == BoxingPhase.Fighting) feedback.Ring();
+                if (Round.Phase == BoxingPhase.Fighting) { feedback.Ring(); feedback.StartMusic(tuning.musicVolume, Round.Duration); }
                 previousPhase = Round.Phase;
             }
+            // The music follows the round clock (a pause above holds it).
+            if (Round.Phase == BoxingPhase.Fighting) feedback.SyncMusic(false, Round.Duration - Round.TimeLeft);
             SaveHistory(pose);
             if (presentation != null) presentation.Render(this, pose, true,dt);
         }

@@ -289,6 +289,8 @@ namespace Hapbeat.Boxing.Editor
             if (f.tutorialStepVoice.Length != 4 || f.tutorialResultVoice.Length != 4 || f.tutorialHintVoice.Length != 2 || f.tutorialStartVoice == null ||
                 f.tutorialStepVoice.Concat(f.tutorialResultVoice).Concat(f.tutorialHintVoice).Any(clip => clip == null))
                 throw new InvalidOperationException("Missing tutorial voice");
+            if (f.musicSource == null || f.musicSource == f.voiceSource || f.musicSource.playOnAwake || f.musicSource.spatialBlend != 0 || f.music == null)
+                throw new InvalidOperationException("Missing round music");
             Debug.Log("BOXING_SCENE_VALID: XR rig, menu, opponent, menu hand resolvers, eighteen cue haptic bindings, no missing scripts or prefabs");
         }
         private static void ValidateLayerSettings(string path, string property)

@@ -61,6 +61,8 @@ namespace Hapbeat.Boxing
         // Per cue: the clip played last (both wrists share it, so the next impact of the cue avoids it).
         private readonly int[] lastHapticClip = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
         public AudioSource audioSource, bellSource, voiceSource;
+        // Round music (2D, its own source): from the gong to the final bell, paused with the round.
+        public AudioSource musicSource;
         // Kenney voice OGGs normalized to -20 LUFS (tools/tts/loudness.py), played at the Hub's narration volume.
         public AudioClip[] countdownVoice = new AudioClip[3];
         public AudioClip winVoice, loseVoice, tieVoice;
@@ -72,6 +74,16 @@ namespace Hapbeat.Boxing
         // order) its instruction and success lines, the retry lines of steps 3-4, and 試合開始.
         public AudioClip[] tutorialStepVoice = new AudioClip[4], tutorialResultVoice = new AudioClip[4], tutorialHintVoice = new AudioClip[2];
         public AudioClip tutorialStartVoice;
+        // Umplix "Boxing Ring" (CC0, Assets/Boxing/Audio/Music/License.txt).
+        public AudioClip music;
+        public const float MusicFadeSeconds = 1;
+        public int MusicStarts { get; private set; }
+        public int MusicStops { get; private set; }
+        // The music's round state, also when silent: started at the gong and not stopped / paused.
+        public bool MusicPlaying => musicOn && !MusicPaused;
+        public bool MusicPaused { get; private set; }
+        private bool musicOn;
+        private float musicVolume, musicFade;
         public int TutorialVoiceCues { get; private set; }
         public AudioClip LastTutorialVoice { get; private set; }
         public float ImpactTailSeconds { get; private set; }
@@ -108,6 +120,7 @@ namespace Hapbeat.Boxing
                 if (audioSource != null) audioSource.mute = true;
                 if (bellSource != null) bellSource.mute = true;
                 if (voiceSource != null) voiceSource.mute = true;
+                if (musicSource != null) musicSource.mute = true;
             }
         }
         public void Impact(BoxingImpact impact)
@@ -169,7 +182,48 @@ namespace Hapbeat.Boxing
             if (!Application.isBatchMode && !forceSilent && soundEnabled && bellSource != null && bell != null)
             { bellSource.Stop(); bellSource.PlayOneShot(bell, 0.5f); }
         }
-        private void Update() => ImpactTailSeconds=Mathf.Max(0,ImpactTailSeconds-Time.unscaledDeltaTime);
+        private void Update()
+        {
+            ImpactTailSeconds=Mathf.Max(0,ImpactTailSeconds-Time.unscaledDeltaTime);
+            if(musicFade>0 && musicSource!=null)
+            {
+                musicFade-=Time.unscaledDeltaTime;
+                musicSource.volume=musicVolume*Mathf.Clamp01(musicFade/MusicFadeSeconds);
+                if(musicFade<=0) musicSource.Stop();
+            }
+        }
+        private bool MusicAudible => !Application.isBatchMode && !forceSilent && soundEnabled && musicSource!=null && music!=null;
+        // At the gong: from the start, looping only when the round outlasts the clip by more than the fade.
+        public void StartMusic(float volume, float roundSeconds)
+        {
+            MusicStarts++; musicOn=true; MusicPaused=false; musicFade=0; musicVolume=volume;
+            if(musicSource==null) return;
+            musicSource.Stop();
+            if(music==null) return;
+            musicSource.clip=music; musicSource.loop=roundSeconds>music.length+MusicFadeSeconds; musicSource.volume=volume;
+            if(MusicAudible) { musicSource.time=0; musicSource.Play(); }
+        }
+        // Every round frame: paused holds the music; running resumes it at the round clock (seconds since the gong),
+        // also after SOUND OFF / ON.
+        public void SyncMusic(bool paused, float elapsed)
+        {
+            if(!musicOn) return;
+            MusicPaused=paused;
+            if(musicSource==null || music==null) return;
+            if(paused || !MusicAudible) { if(musicSource.isPlaying) musicSource.Pause(); return; }
+            if(musicSource.isPlaying || (!musicSource.loop && elapsed>=music.length)) return;
+            musicSource.clip=music; musicSource.volume=musicVolume;
+            musicSource.time=Mathf.Clamp(musicSource.loop ? elapsed%music.length : elapsed,0,music.length-.01f);
+            musicSource.Play();
+        }
+        // The final bell, StartRound and the tutorial start: a short fade out.
+        public void StopMusic()
+        {
+            if(!musicOn) return;
+            musicOn=false; MusicPaused=false; MusicStops++;
+            if(musicSource==null) return;
+            if(musicSource.isPlaying) musicFade=MusicFadeSeconds; else musicSource.Stop();
+        }
         public void SpeakCountdown(int number)
         {
             if(number<1 || number>3) return;
@@ -225,6 +279,10 @@ namespace Hapbeat.Boxing
                 if (set != null) foreach (var trigger in set.triggers) yield return trigger;
         }
         public void StopFeedback() { StopImpacts(); if (bellSource != null) bellSource.Stop(); if(voiceSource!=null) voiceSource.Stop(); }
-        private void OnDisable() => StopFeedback();
+        private void OnDisable()
+        {
+            StopFeedback();
+            musicOn=false; MusicPaused=false; musicFade=0; if(musicSource!=null) musicSource.Stop();
+        }
     }
 }

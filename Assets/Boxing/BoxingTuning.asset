@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e08614c1e5f17fd41a6b823a9221056f, type: 3}
   m_Name: BoxingTuning
   m_EditorClassIdentifier: Hapbeat.Boxing::Hapbeat.Boxing.BoxingTuning
-  roundSeconds: 90
+  roundSeconds: 55
   maximumHealth: 100
   autoStartSeconds: 2
   tutorialOnStart: 1
@@ -21,6 +21,7 @@ MonoBehaviour:
   tutorialMessageSeconds: 1.5
   restartAfterResultsSeconds: 4
   resultPanelDelaySeconds: 1
+  musicVolume: 0.12
   enemyInterval: 1.6
   telegraphSeconds: 0.42
   strikeSeconds: 0.22
@@ -48,7 +49,7 @@ MonoBehaviour:
   opponentHeadMaxAcceleration: 25
   opponentRootMaxAcceleration: 6
   gloveRadius: 0.07
-  enemyGloveRadius: 0.09
+  enemyGloveRadius: 0.075
   headRadius: 0.14
   enemyHeadRadius: 0.145
   enemyBodyRadius: 0.21
