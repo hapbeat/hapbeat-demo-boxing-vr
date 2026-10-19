@@ -54,7 +54,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.18
   - _id: 496fe196ca5a43eb94e192d626d8ff0b
     mode: 1
     displayName: left_punch_body_hard
@@ -68,7 +68,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.18
   - _id: 7a7e57641e7d42d7bb84fb5398c22469
     mode: 1
     displayName: left_guard_glove_soft
@@ -96,7 +96,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.18
   - _id: c4c5ae9b8d074324b61e0f477c08c68b
     mode: 1
     displayName: left_guard_arm_soft
@@ -124,7 +124,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.18
   - _id: aafe7f6f73124c6b93dbc67635592804
     mode: 1
     displayName: right_punch_glove_soft
@@ -166,7 +166,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.18
   - _id: 872b9997d3b848b5803ea6791933b42f
     mode: 1
     displayName: right_punch_body_hard
@@ -180,7 +180,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.18
   - _id: ab734116385d4c76981c499de1a141d9
     mode: 1
     displayName: right_guard_glove_soft
@@ -208,7 +208,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.18
   - _id: 1bf01b514cbb48438df2472110bf9389
     mode: 1
     displayName: right_guard_arm_soft
@@ -236,7 +236,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestIntensity: 0.18
   - _id: 5a7432825fc54c378892cd99a16c4a4d
     mode: 1
     displayName: hit_body_soft

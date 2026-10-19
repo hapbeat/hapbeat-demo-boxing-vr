@@ -148,12 +148,12 @@
       "description": "Decided in Studio for punch_body"
     },
     "punch_body_t150_a": {
-      "intensity": 1,
+      "intensity": 0.18,
       "loop": false,
       "description": "Decided in Studio for punch_body"
     },
     "punch_body_hard_t151_b": {
-      "intensity": 1,
+      "intensity": 0.18,
       "loop": false,
       "description": "Decided in Studio for punch_body:hard"
     },
