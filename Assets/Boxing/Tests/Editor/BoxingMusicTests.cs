@@ -103,7 +103,8 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void NoMusicInTheTutorialAndRestartsStopIt()
         {
             var pose = BoxingSceneTests.Pose();
-            Run(game.tuning.autoStartSeconds + .5f, pose);
+            // The startup recenter (0.5 s still) comes first.
+            Run(game.tuning.autoStartSeconds + 1, pose);
             Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Tutorial));
             Run(3, pose);
             Assert.That(Feedback.MusicStarts, Is.Zero, "No music during the tutorial.");

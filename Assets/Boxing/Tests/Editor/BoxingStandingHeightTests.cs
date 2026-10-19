@@ -85,7 +85,7 @@ namespace Hapbeat.Boxing.Tests
         [Test] public void TutorialRingsSitOnTheSurfacesTheyMark()
         {
             game.tuning.tutorialStepTimeoutSeconds = 1;
-            Run(game.tuning.autoStartSeconds + .5f, Standing(1.65f));
+            Run(game.tuning.autoStartSeconds + 1, Standing(1.65f));
             Assert.That(game.TutorialStep, Is.EqualTo(1));
             Run(.6f, Standing(1.65f));
             Assert.That(game.TutorialTarget(out var face), Is.True);

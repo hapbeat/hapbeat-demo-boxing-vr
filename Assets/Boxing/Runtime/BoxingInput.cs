@@ -67,6 +67,37 @@ namespace Hapbeat.Boxing
 
         // Each simulated frame (BoxingGame.Simulate): the head height above the floor while tracked. The lowest height of
         // the last StandingWindow seconds is what the head has held; the standing height is the most of that seen.
+        // Startup recenter (視線リセット once): after launch the visitor stands still; once the HMD has been tracked and
+        // nearly still (head below StartupSpeed and yaw below StartupYawRate for StartupStillSeconds), or after
+        // StartupTimeout seconds of tracking anyway, BoxingGame recenters once and seeds the standing eye height.
+        // The former recenter on the first tracked frame came too early (the headset still settling on the head).
+        public bool StartupRecentered { get; private set; }
+        public const float StartupSpeed = .15f, StartupYawRate = 20, StartupStillSeconds = .5f, StartupTimeout = 5;
+        private float startupTracked, startupStill, startupYaw;
+        private Vector3 startupHead;
+        private bool startupHave;
+        // Each simulated frame until the startup recenter is due; true once, on the frame it is due.
+        public bool TickStartup(bool tracked, Vector3 head, Quaternion rotation, float dt)
+        {
+            if (StartupRecentered || dt <= 0) return false;
+            if (!tracked || !(Quaternion.Dot(rotation, rotation) > .5f)) { startupHave = false; startupStill = 0; return false; }
+            float yaw = rotation.eulerAngles.y;
+            if (startupHave)
+            {
+                bool still = Vector3.Distance(head, startupHead) / dt < StartupSpeed && Mathf.Abs(Mathf.DeltaAngle(startupYaw, yaw)) / dt < StartupYawRate;
+                startupStill = still ? startupStill + dt : 0;
+            }
+            startupHave = true; startupHead = head; startupYaw = yaw; startupTracked += dt;
+            if (startupStill < StartupStillSeconds - 1e-4f && startupTracked < StartupTimeout) return false;
+            StartupRecentered = true; return true;
+        }
+        // A tutorial or round started before the startup recenter recenters itself; no startup recenter after it.
+        public void CompleteStartup() => StartupRecentered = true;
+        // The startup recenter's head height is the first standing eye height (the running maximum continues from it).
+        public void SeedStanding(float headAboveFloor)
+        {
+            StandingEyeHeight = Mathf.Clamp(headAboveFloor, StandingMin, StandingMax); standingSeen = true;
+        }
         public void ObserveHead(bool tracked, float headAboveFloor, float dt)
         {
             HeadAboveFloor = headAboveFloor;
@@ -128,7 +159,8 @@ namespace Hapbeat.Boxing
                 {
                     SubsystemManager.GetSubsystems(inputSystems);
                     foreach (var system in inputSystems) system.TrySetTrackingOriginMode(TrackingOriginModeFlags.Floor);
-                    Recenter();
+                    // The startup recenter waits until the visitor stands still (TickStartup, BoxingGame).
+                    aligned = true;
                 }
                 frame.head = headCamera.transform.position; frame.headRotation = headCamera.transform.rotation;
                 controllerFallback = false;

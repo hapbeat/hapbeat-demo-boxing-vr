@@ -170,7 +170,7 @@ namespace Hapbeat.Boxing
         {
             if (presentation != null && presentation.enemyAvatar != null) presentation.enemyAvatar.ResetReaction();
             // Head height must not depend on controllers/both hands already being tracked.
-            ReadStandingHeight(); input.Recenter(); OnRecentered();
+            ReadStandingHeight(); input.Recenter(); input.CompleteStartup(); OnRecentered();
             calibrationPending=!input.HeadTracked && !input.HasOverride;
             ResultPresentationTime=0;
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); feedback.StopMusic(); menu.Close();
@@ -189,6 +189,9 @@ namespace Hapbeat.Boxing
         {
             float floorY = input.origin != null ? input.origin.transform.position.y : input.ReferenceFloorHeight;
             input.ObserveHead(pose.valid || pose.headTracked, pose.head.y - floorY, dt > 0 && dt <= .1f ? dt : 0);
+            // Only before the first start: a tutorial or round started otherwise (menu, session) recenters itself (Prepare).
+            if (Round.Phase == BoxingPhase.Ready && input.TickStartup(pose.valid || pose.headTracked, pose.head, pose.headRotation, dt > 0 && dt <= .1f ? dt : 0))
+            { input.Recenter(); input.SeedStanding(input.ReferenceEyeHeight); OnRecentered(); }
             if(calibrationPending && input.HeadTracked)
             { ReadStandingHeight(); input.Recenter(); OnRecentered(); calibrationPending=false; return; }
             if(Round.Phase==BoxingPhase.Results && previousPhase==BoxingPhase.Results && !menu.IsOpen)
@@ -271,8 +274,9 @@ namespace Hapbeat.Boxing
             { ResetHistory(); feedback.StopFeedback(); return; }
             if(Round.Phase==BoxingPhase.Ready)
             {
-                // Startup: both gloves tracked at the start position for a moment, then the tutorial (or straight the countdown and gong).
-                readyTime+=dt;
+                // Startup: after the startup recenter, both gloves tracked at the start position for a moment, then the tutorial
+                // (or straight the countdown and gong).
+                if (input.StartupRecentered) readyTime+=dt; else readyTime=0;
                 if(readyTime>=tuning.autoStartSeconds) { if(tuning.tutorialOnStart) StartTutorial(); else StartRound(); return; }
             }
             if(Round.Phase==BoxingPhase.Countdown)
