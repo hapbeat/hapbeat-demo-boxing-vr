@@ -1198,56 +1198,6 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
---- !u!1 &79708173
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 79708175}
-  - component: {fileID: 79708174}
-  m_Layer: 0
-  m_Name: Haptic right_guard_glove_hard_2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &79708174
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 79708173}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf86876cf7f5a4749a8d3693f9a68bbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Hapbeat.Runtime::Hapbeat.HapbeatUnityEventTrigger
-  _eventMap: {fileID: 11400000, guid: fd70f47f0a96f4145af527a1d1146e8c, type: 2}
-  _entryId: 2e30e808c4744f00a29f6da81e02096d
-  _triggerEnabled: 1
-  _cooldown: 0
-  _gainMultiplier: 1
-  _verboseLog: 0
---- !u!4 &79708175
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 79708173}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 412601333}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &92183114
 GameObject:
   m_ObjectHideFlags: 0
@@ -2404,9 +2354,7 @@ MonoBehaviour:
   - triggers:
     - {fileID: 769973120}
     - {fileID: 439367343}
-    - {fileID: 487709204}
     syncMs:
-    - 0
     - 0
     - 0
     pick: 0
@@ -2423,17 +2371,13 @@ MonoBehaviour:
   - triggers:
     - {fileID: 722510757}
     - {fileID: 767821287}
-    - {fileID: 1748825691}
     syncMs:
-    - 0
     - 0
     - 0
     pick: 0
   - triggers:
     - {fileID: 589922017}
-    - {fileID: 1693215047}
     syncMs:
-    - 0
     - 0
     pick: 0
   - triggers:
@@ -2445,9 +2389,7 @@ MonoBehaviour:
     pick: 0
   - triggers:
     - {fileID: 1495145314}
-    - {fileID: 1428296681}
     syncMs:
-    - 0
     - 0
     pick: 0
   - triggers:
@@ -2460,9 +2402,7 @@ MonoBehaviour:
   - triggers:
     - {fileID: 1653306386}
     - {fileID: 2124114335}
-    - {fileID: 2027785889}
     syncMs:
-    - 0
     - 0
     - 0
     pick: 0
@@ -2479,17 +2419,13 @@ MonoBehaviour:
   - triggers:
     - {fileID: 1215821599}
     - {fileID: 1930951538}
-    - {fileID: 1927456661}
     syncMs:
-    - 0
     - 0
     - 0
     pick: 0
   - triggers:
     - {fileID: 499378637}
-    - {fileID: 79708174}
     syncMs:
-    - 0
     - 0
     pick: 0
   - triggers:
@@ -2501,9 +2437,7 @@ MonoBehaviour:
     pick: 0
   - triggers:
     - {fileID: 661063068}
-    - {fileID: 663014928}
     syncMs:
-    - 0
     - 0
     pick: 0
   - triggers:
@@ -2738,19 +2672,11 @@ Transform:
   - {fileID: 363961750}
   - {fileID: 430092256}
   - {fileID: 439367344}
-  - {fileID: 487709205}
   - {fileID: 2124114336}
-  - {fileID: 2027785890}
   - {fileID: 767821288}
-  - {fileID: 1748825692}
   - {fileID: 1930951539}
-  - {fileID: 1927456662}
-  - {fileID: 1693215048}
-  - {fileID: 79708175}
   - {fileID: 1092501348}
   - {fileID: 609608347}
-  - {fileID: 1428296682}
-  - {fileID: 663014929}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!82 &412601334
@@ -3211,56 +3137,6 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 486451602}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 412601333}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &487709203
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 487709205}
-  - component: {fileID: 487709204}
-  m_Layer: 0
-  m_Name: Haptic left_punch_glove_hard_3
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &487709204
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 487709203}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf86876cf7f5a4749a8d3693f9a68bbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Hapbeat.Runtime::Hapbeat.HapbeatUnityEventTrigger
-  _eventMap: {fileID: 11400000, guid: fd70f47f0a96f4145af527a1d1146e8c, type: 2}
-  _entryId: 475eccf5133c41b698b1f196ac00c8b4
-  _triggerEnabled: 1
-  _cooldown: 0
-  _gainMultiplier: 1
-  _verboseLog: 0
---- !u!4 &487709205
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 487709203}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -3850,56 +3726,6 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 661063067}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 412601333}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &663014927
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 663014929}
-  - component: {fileID: 663014928}
-  m_Layer: 0
-  m_Name: Haptic right_guard_arm_hard_2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &663014928
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 663014927}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf86876cf7f5a4749a8d3693f9a68bbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Hapbeat.Runtime::Hapbeat.HapbeatUnityEventTrigger
-  _eventMap: {fileID: 11400000, guid: fd70f47f0a96f4145af527a1d1146e8c, type: 2}
-  _entryId: 8fedbfd64e2b4e2eb1f4924b86079a63
-  _triggerEnabled: 1
-  _cooldown: 0
-  _gainMultiplier: 1
-  _verboseLog: 0
---- !u!4 &663014929
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 663014927}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -6378,56 +6204,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1428296680
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1428296682}
-  - component: {fileID: 1428296681}
-  m_Layer: 0
-  m_Name: Haptic left_guard_arm_hard_2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1428296681
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1428296680}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf86876cf7f5a4749a8d3693f9a68bbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Hapbeat.Runtime::Hapbeat.HapbeatUnityEventTrigger
-  _eventMap: {fileID: 11400000, guid: fd70f47f0a96f4145af527a1d1146e8c, type: 2}
-  _entryId: 007101d1de8e4eeea428f4b7c4a46200
-  _triggerEnabled: 1
-  _cooldown: 0
-  _gainMultiplier: 1
-  _verboseLog: 0
---- !u!4 &1428296682
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1428296680}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 412601333}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1470330966
 GameObject:
   m_ObjectHideFlags: 0
@@ -7392,56 +7168,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 412601333}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1693215046
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1693215048}
-  - component: {fileID: 1693215047}
-  m_Layer: 0
-  m_Name: Haptic left_guard_glove_hard_2
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1693215047
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1693215046}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf86876cf7f5a4749a8d3693f9a68bbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Hapbeat.Runtime::Hapbeat.HapbeatUnityEventTrigger
-  _eventMap: {fileID: 11400000, guid: fd70f47f0a96f4145af527a1d1146e8c, type: 2}
-  _entryId: b6a21b3fd6f74118bd49ee1affb7cf5d
-  _triggerEnabled: 1
-  _cooldown: 0
-  _gainMultiplier: 1
-  _verboseLog: 0
---- !u!4 &1693215048
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1693215046}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 412601333}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1702350407
 GameObject:
   m_ObjectHideFlags: 0
@@ -7701,56 +7427,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1731000273}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &1748825690
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1748825692}
-  - component: {fileID: 1748825691}
-  m_Layer: 0
-  m_Name: Haptic left_guard_glove_soft_3
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1748825691
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1748825690}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf86876cf7f5a4749a8d3693f9a68bbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Hapbeat.Runtime::Hapbeat.HapbeatUnityEventTrigger
-  _eventMap: {fileID: 11400000, guid: fd70f47f0a96f4145af527a1d1146e8c, type: 2}
-  _entryId: 6a8fbec18a4040b6b0b8bf8a2b1647df
-  _triggerEnabled: 1
-  _cooldown: 0
-  _gainMultiplier: 1
-  _verboseLog: 0
---- !u!4 &1748825692
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1748825690}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 412601333}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1780804917
 GameObject:
   m_ObjectHideFlags: 0
@@ -8154,56 +7830,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1889326359}
   m_Mesh: {fileID: 4300000, guid: d109755ba35ea484a85030358f6aa3e1, type: 2}
---- !u!1 &1927456660
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1927456662}
-  - component: {fileID: 1927456661}
-  m_Layer: 0
-  m_Name: Haptic right_guard_glove_soft_3
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1927456661
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1927456660}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf86876cf7f5a4749a8d3693f9a68bbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Hapbeat.Runtime::Hapbeat.HapbeatUnityEventTrigger
-  _eventMap: {fileID: 11400000, guid: fd70f47f0a96f4145af527a1d1146e8c, type: 2}
-  _entryId: 2f613f415b8e4c2db8a227f8db159d68
-  _triggerEnabled: 1
-  _cooldown: 0
-  _gainMultiplier: 1
-  _verboseLog: 0
---- !u!4 &1927456662
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1927456660}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 412601333}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1929838170
 GameObject:
   m_ObjectHideFlags: 0
@@ -8770,56 +8396,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1994785917}
   m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &2027785888
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2027785890}
-  - component: {fileID: 2027785889}
-  m_Layer: 0
-  m_Name: Haptic right_punch_glove_hard_3
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &2027785889
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2027785888}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf86876cf7f5a4749a8d3693f9a68bbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Hapbeat.Runtime::Hapbeat.HapbeatUnityEventTrigger
-  _eventMap: {fileID: 11400000, guid: fd70f47f0a96f4145af527a1d1146e8c, type: 2}
-  _entryId: 25c5c378950d4f0189bbb8b8ab13da53
-  _triggerEnabled: 1
-  _cooldown: 0
-  _gainMultiplier: 1
-  _verboseLog: 0
---- !u!4 &2027785890
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2027785888}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 412601333}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2055397320
 GameObject:
   m_ObjectHideFlags: 0

@@ -336,10 +336,12 @@
               "at": "hand",
               "gain": 2,
               "clips": [
-                "punch_glove_hard_t142_e",
-                "punch_glove_hard_t142_b"
+                "guard_glove_hard_t146_d",
+                "guard_glove_hard_t146_b"
               ],
               "alternates": [
+                "punch_glove_hard_t142_e",
+                "punch_glove_hard_t142_b",
                 "punch_glove_soft"
               ]
             }
@@ -367,11 +369,13 @@
               "at": "hand",
               "gain": 2,
               "clips": [
-                "punch_glove_hard_t145_a",
-                "punch_glove_hard_t145_b",
-                "punch_glove_hard_t145_d"
+                "guard_glove_hard_t146_d",
+                "guard_glove_hard_t146_b"
               ],
               "alternates": [
+                "punch_glove_hard_t145_a",
+                "punch_glove_hard_t145_b",
+                "punch_glove_hard_t145_d",
                 "punch_glove_hard_t142_b",
                 "punch_glove_hard_t142_e"
               ]
@@ -477,10 +481,11 @@
               "gain": 2,
               "clips": [
                 "guard_glove_hard_t146_d",
-                "guard_glove_hard_t146_a",
-                "guard_glove_hard_t146_c"
+                "guard_glove_hard_t146_b"
               ],
               "alternates": [
+                "guard_glove_hard_t146_a",
+                "guard_glove_hard_t146_c",
                 "guard_glove_soft"
               ]
             }
@@ -496,10 +501,11 @@
               "at": "hand",
               "gain": 2,
               "clips": [
-                "guard_glove_hard_t146_d",
-                "guard_glove_hard_t146_b"
+                "punch_body_t150_a"
               ],
               "alternates": [
+                "guard_glove_hard_t146_d",
+                "guard_glove_hard_t146_b",
                 "guard_glove_hard_t146_a",
                 "guard_glove_hard_t146_c",
                 "guard_glove_hard"
@@ -539,10 +545,12 @@
               "at": "hand",
               "gain": 2,
               "clips": [
-                "guard_arm_soft_t147_a",
-                "guard_arm_soft_t147_c"
+                "guard_arm_hard_t138_c",
+                "guard_arm_hard_t138_e"
               ],
               "alternates": [
+                "guard_arm_soft_t147_a",
+                "guard_arm_soft_t147_c",
                 "guard_arm_soft"
               ]
             }
@@ -572,6 +580,9 @@
               "at": "hand",
               "gain": 2,
               "clips": [
+                "punch_body_t150_a"
+              ],
+              "alternates": [
                 "guard_arm_hard_t138_c",
                 "guard_arm_hard_t138_e"
               ]
