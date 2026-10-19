@@ -40,6 +40,9 @@ namespace Hapbeat.Boxing
         public bool AttackLeft { get; private set; }
         public int CompletedAttacks { get; private set; }
         public float StandingHeadHeight => height + .075f;
+        // Size relative to the player's eye height (BoxingTuning.opponentSizeScale, the size probe): the glove, guard and
+        // body offsets from the head grow with it, so a larger opponent keeps the same layout.
+        public float Size { get; private set; } = 1;
         public float MotionWeight { get; private set; }
         public float BodyYaw { get; private set; }
         public BoxingAttack Attack { get; private set; }
@@ -121,8 +124,9 @@ namespace Hapbeat.Boxing
             seeds = seed.HasValue ? new System.Random(seed.Value) : new System.Random();
             Reset(1.65f);
         }
-        public void Reset(float playerHeight,float floor=0)
+        public void Reset(float playerHeight,float floor=0,float size=1)
         {
+            Size = Mathf.Max(.1f, size);
             height = Mathf.Max(.2f,playerHeight); floorHeight=floor; clock = 0;
             int seed = seeds.Next(); random = new System.Random(seed); sideRandom = new System.Random(seed ^ 0x5bd1e995);
             StopCombat(); decisionWait = OpeningSeconds * Pace;
@@ -134,7 +138,7 @@ namespace Hapbeat.Boxing
             sampleCount = sampleNext = 0; observeClock = 0; feintBoost = 0;
             tracked = leftLaunched = rightLaunched = leftThreat = rightThreat = stanceKnown = false;
             root = new Vector3(0, floorHeight, HomeZ); rootGoal = Vector2.zero; goalTime = 0;
-            headOffset = new Vector3(0, height, 0); leftOffset = RestLeft; rightOffset = RestRight;
+            headOffset = new Vector3(0, height, 0); leftOffset = RestLeft * Size; rightOffset = RestRight * Size;
             rootVelocity = headVelocity = leftVelocity = rightVelocity = Vector3.zero;
             Apply();
         }
@@ -574,8 +578,8 @@ namespace Hapbeat.Boxing
             Follow(ref headOffset, ref headVelocity, headGoal, tuning.opponentHeadSmoothSeconds, tuning.opponentHeadMaxAcceleration, dt);
 
             bool strikeLeft = Striking && AttackLeft, strikeRight = Striking && !AttackLeft;
-            if (!strikeLeft) Follow(ref leftOffset, ref leftVelocity, HandTarget(true, out float ls), ls, tuning.opponentHandMaxAcceleration, dt);
-            if (!strikeRight) Follow(ref rightOffset, ref rightVelocity, HandTarget(false, out float rs), rs, tuning.opponentHandMaxAcceleration, dt);
+            if (!strikeLeft) Follow(ref leftOffset, ref leftVelocity, HandTarget(true, out float ls) * Size, ls, tuning.opponentHandMaxAcceleration, dt);
+            if (!strikeRight) Follow(ref rightOffset, ref rightVelocity, HandTarget(false, out float rs) * Size, rs, tuning.opponentHandMaxAcceleration, dt);
             Apply();
             if (Striking)
             {
@@ -586,7 +590,7 @@ namespace Hapbeat.Boxing
             GuardWeight = 0;
             if (Guarding)
             {
-                float error = Mathf.Max((leftOffset - GuardOffset(Guard, -1, GuardSide)).magnitude, (rightOffset - GuardOffset(Guard, 1, GuardSide)).magnitude);
+                float error = Mathf.Max((leftOffset - GuardOffset(Guard, -1, GuardSide) * Size).magnitude, (rightOffset - GuardOffset(Guard, 1, GuardSide) * Size).magnitude);
                 GuardWeight = Mathf.Clamp01(1 - error / GuardTolerance);
             }
         }
@@ -594,7 +598,7 @@ namespace Hapbeat.Boxing
         {
             Root = root;
             Head = root + headOffset + new Vector3(Mathf.Sin(clock * 1.5f) * .025f, (Mathf.Cos(clock * 3) - 1) * .018f, 0);
-            Body = Head + new Vector3(0, -.43f, .015f);
+            Body = Head + new Vector3(0, -.43f, .015f) * Size;
             Left = Head + leftOffset; Right = Head + rightOffset;
         }
     }

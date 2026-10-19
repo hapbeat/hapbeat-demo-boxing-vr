@@ -24,6 +24,11 @@ namespace Hapbeat.Boxing
         public Transform leftThigh, leftShin, leftFoot, rightThigh, rightShin, rightFoot;
         public Vector3 headCenter, leftCenter, rightCenter;
         public float neutralHeadHeight;
+        // Top of the head mesh above the feet at avatar scale 1 (measured on the skinned mesh: 1.806 m at scale 1.0365).
+        public const float RestStature = 1.742f;
+        // The avatar scale and stature Render gives this opponent (its standing head height).
+        public float ScaleFor(BoxingOpponent opponent) => opponent.StandingHeadHeight / neutralHeadHeight;
+        public float StatureFor(BoxingOpponent opponent) => ScaleFor(opponent) * RestStature;
         public const float GloveWidth = .15f;
         public const float OpponentGloveWidth = .15f;
         public const float GloveDepthRatio = .75f;

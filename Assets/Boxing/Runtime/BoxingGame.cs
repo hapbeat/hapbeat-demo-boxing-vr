@@ -117,11 +117,26 @@ namespace Hapbeat.Boxing
         private void OnApplicationPause(bool value) { appPaused = value; if (value) PauseForExternalTransition(); }
         public void ResetHistory() { haveHistory = false; validTime = 0; leftContact = rightContact = false; leftCooldown = rightCooldown = 0; ResetPunches(); }
         public void ResetPunches() { leftPunch.Reset(); rightPunch.Reset(); }
+        // Size probe (TODO with tuning.opponentSizeScale): the eye height and the opponent's stature at the last recenter.
+        public float SizeEyeHeight { get; private set; }
+        public float SizeOpponentStature { get; private set; }
         private void OnRecentered()
         {
-            Initialize(); Opponent.Reset(input.ReferenceEyeHeight,input.ReferenceFloorHeight);
+            Initialize(); Opponent.Reset(input.ReferenceEyeHeight * tuning.opponentSizeScale,input.ReferenceFloorHeight,tuning.opponentSizeScale);
             presentation.CalibrateEnvironment(input.ReferenceFloorHeight,input.ReferenceEyeHeight);
             resolvedAttack=lastCompleted=0; ResetHistory();
+            LogSize();
+        }
+        private void LogSize()
+        {
+            var avatar = presentation != null ? presentation.enemyAvatar : null;
+            float scale = avatar != null ? avatar.ScaleFor(Opponent) : 0;
+            SizeEyeHeight = input.ReferenceEyeHeight;
+            SizeOpponentStature = avatar != null ? avatar.StatureFor(Opponent) : Opponent.StandingHeadHeight;
+            float cameraY = input.HasOverride ? input.Current.head.y : input.headCamera != null ? input.headCamera.transform.position.y : 0;
+            float originY = input.origin != null ? input.origin.transform.position.y : 0;
+            Debug.Log($"[Boxing Size] eye={SizeEyeHeight:F3} floor={input.ReferenceFloorHeight:F3} cameraY={cameraY:F3} originY={originY:F3} " +
+                $"opponentHead={Opponent.Head.y:F3} avatarScale={scale:F3} stature={SizeOpponentStature:F3} sizeScale={tuning.opponentSizeScale:F2}");
         }
         // Local operations for a future authenticated M5 command adapter. No new wire protocol here.
         public void RecenterPlayer() { input.Recenter(); OnRecentered(); feedback.StopImpacts(); }
@@ -311,7 +326,7 @@ namespace Hapbeat.Boxing
         {
             position = default;
             if (Round.Phase != BoxingPhase.Tutorial || TutorialStep < 1 || TutorialStep > 2 || tutorialAdvance) return false;
-            position = TutorialStep == 1 ? Opponent.Head + Vector3.back * TutorialFaceMarkerDepth : BellyFront(Opponent.Body.y - TutorialBellyDrop) + Vector3.back * .01f;
+            position = TutorialStep == 1 ? Opponent.Head + Vector3.back * (TutorialFaceMarkerDepth * Opponent.Size) : BellyFront(Opponent.Body.y - TutorialBellyDrop * Opponent.Size) + Vector3.back * .01f;
             return true;
         }
         // The front of the torso hit shape at this height (the most forward torso sphere surface on the centre line).

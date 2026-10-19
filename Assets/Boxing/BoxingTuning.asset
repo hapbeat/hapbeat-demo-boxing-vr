@@ -28,6 +28,7 @@ MonoBehaviour:
   recoverSeconds: 0.55
   guardSeconds: 1.2
   playRadius: 1
+  opponentSizeScale: 1.3
   opponentSkill: 0.6
   opponentReactionSlow: 0.3
   opponentReactionFast: 0.15

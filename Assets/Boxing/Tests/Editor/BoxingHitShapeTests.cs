@@ -17,10 +17,17 @@ namespace Hapbeat.Boxing.Tests
         {
             EditorSceneManager.OpenScene(Editor.BoxingProject.ScenePath);
             game = Object.FindFirstObjectByType<BoxingGame>();
+            // The shapes and guards are fitted at size 1; the size probe (BoxingTuning.opponentSizeScale) is checked elsewhere.
+            original = game.tuning; game.tuning = Object.Instantiate(original); game.tuning.opponentSizeScale = 1;
             game.feedback.forceSilent = true; game.feedback.sdkRoot.SetActive(false); game.Initialize();
             game.input.SetTestPose(BoxingSceneTests.Pose());
         }
-        [TearDown] public void Cleanup() => EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
+        [TearDown] public void Cleanup()
+        {
+            Object.DestroyImmediate(game.tuning); game.tuning = original;
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
+        }
+        private BoxingTuning original;
 
         // The skinned mesh as rendered now (linear blend skinning, as the GPU does), triangles of the given bones only.
         private static List<Vector3> Triangles(BoxingOpponentAvatar avatar, params Transform[] parts)

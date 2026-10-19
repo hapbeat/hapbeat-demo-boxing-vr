@@ -18,10 +18,12 @@ namespace Hapbeat.Boxing.Tests
         {
             game.input.headCamera.transform.position=new Vector3(0,height,0);
             game.RecenterPlayer();
-            Assert.That(game.Opponent.Head.y,Is.EqualTo(height).Within(.001f));
+            // Eye height x the size probe (BoxingTuning.opponentSizeScale).
+            float head=height*game.tuning.opponentSizeScale;
+            Assert.That(game.Opponent.Head.y,Is.EqualTo(head).Within(.001f));
             game.input.headCamera.transform.position=Vector3.up*(height-.3f);
             game.Opponent.Tick(.01f,game.input.headCamera.transform.position,Quaternion.identity,false);
-            Assert.That(game.Opponent.Head.y,Is.EqualTo(height).Within(.002f));
+            Assert.That(game.Opponent.Head.y,Is.EqualTo(head).Within(.002f));
         }
         [Test] public void OpponentUsesHeadAndBodyGuards()
         {

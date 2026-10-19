@@ -18,13 +18,20 @@ namespace Hapbeat.Boxing.Tests
         {
             EditorSceneManager.OpenScene(Editor.BoxingProject.ScenePath);
             game = Object.FindFirstObjectByType<BoxingGame>();
+            // The shapes and guards are fitted at size 1; the size probe (BoxingTuning.opponentSizeScale) is checked elsewhere.
+            original = game.tuning; game.tuning = Object.Instantiate(original); game.tuning.opponentSizeScale = 1;
             game.feedback.forceSilent = true; game.feedback.sdkRoot.SetActive(false); game.Initialize();
             game.input.SetTestPose(BoxingSceneTests.Pose());
             Opponent.Reset(1.65f); Opponent.Scripted = true;
             // NUnit keeps one fixture instance for all cases: start each with no previous frame.
             maxStep = 0; maxStepAt = ""; haveLast = false;
         }
-        [TearDown] public void Cleanup() => EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
+        [TearDown] public void Cleanup()
+        {
+            Object.DestroyImmediate(game.tuning); game.tuning = original;
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
+        }
+        private BoxingTuning original;
 
         private float maxStep; private string maxStepAt = "";
         private Quaternion lastLeft, lastRight; private bool haveLast; private Vector3 lastBend; private float lastTwist;
@@ -150,7 +157,8 @@ namespace Hapbeat.Boxing.Tests
                 save.Invoke(game, new object[] { BoxingSceneTests.Pose() });
                 // A horizontal hook arriving from `from` side at the temple / the lower ribs.
                 float from = covered ? side : -side;
-                Vector3 target = guard == BoxingGuard.HeadHook ? Opponent.Head + new Vector3(0, .02f, -.02f) : Opponent.Head + new Vector3(0, -.5f, -.06f);
+                // Offsets at the opponent's size (the size probe scales its layout).
+                Vector3 target = Opponent.Head + (guard == BoxingGuard.HeadHook ? new Vector3(0, .02f, -.02f) : new Vector3(0, -.5f, -.06f)) * Opponent.Size;
                 Vector3 start = target + Vector3.right * from * .6f;
                 int blocks = game.Round.EnemyBlocks, hits = game.Round.Hits;
                 resolve.Invoke(game, new object[] { target, start, true, ImpactZone.LeftGlove, false, 0f, .1f });
