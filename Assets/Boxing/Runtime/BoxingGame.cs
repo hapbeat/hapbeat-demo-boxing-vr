@@ -92,7 +92,11 @@ namespace Hapbeat.Boxing
         private bool tutorialAdvance, tutorialGuarded, tutorialBody, tutorialStriking;
         private int tutorialStrikes, tutorialTaken, tutorialBlocks;
 
-        public void Initialize() { if (Opponent == null) Opponent = new BoxingOpponent(tuning); previousPhase = Round.Phase; }
+        public void Initialize()
+        {
+            if (Opponent == null) Opponent = new BoxingOpponent(tuning); previousPhase = Round.Phase;
+            if (feedback != null && tuning != null) feedback.HapticsTrimDb = tuning.hapticsTrimDb;
+        }
         private void Awake() => Initialize();
         private void OnEnable()
         {

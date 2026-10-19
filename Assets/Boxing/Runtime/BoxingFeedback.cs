@@ -148,7 +148,7 @@ namespace Hapbeat.Boxing
             if (CanSend && LastHaptic != null)
             {
                 var trigger = LastHaptic;
-                trigger.GainMultiplier = HapticGain(impact);
+                trigger.GainMultiplier = HapticMultiplier(impact, trigger);
                 // Position addressing selects the wearable; do not silence one channel of a wrist unit.
                 trigger.Pan = 0;
                 trigger.FireAfter((float)LastHapticDelay); Sends++;
@@ -170,8 +170,44 @@ namespace Hapbeat.Boxing
             return (impact.part == ImpactPart.Forearm ? 6 : 4) + hard;
         }
         public static string CueName(BoxingImpact impact) => Cues[CueIndex(impact)];
+        // The impact's share of the cue (the wrist floor applied), before the full-scale cap and the trim.
         public float HapticGain(BoxingImpact impact) =>
             TriggerIndex(impact) < 2 * WristCues ? Mathf.Max(impact.gain, wristMinimumGain) : impact.gain;
+        // Demo-wide haptics trim in dB (BoxingTuning.hapticsTrimDb, the Demo Session option haptics_db); set by BoxingGame.
+        public float HapticsTrimDb { get; set; } = -2;
+        public static readonly int[] TrimSteps = { 0, -2, -4, -6, -9, -12 };
+        // GainMultiplier for this impact: the wanted level is entry gain x intensity x the impact's share, capped at full
+        // scale for the clip (1 / its peak; above it the SDK limiter only squashed it, so a trim did nothing), times
+        // 10^(trim/20), divided back by entry gain x intensity. Nothing is sent above full scale and the trim acts in dB.
+        public float HapticMultiplier(BoxingImpact impact, HapbeatUnityEventTrigger trigger)
+        {
+            var entry = trigger != null ? trigger.ResolveEntry() : null;
+            float effective = entry != null ? entry.GetEffectiveGain() : 1;
+            if (effective <= 0) return 0;
+            float peak = entry != null ? ClipPeak(entry.streamClip) : 0;
+            float wanted = effective * HapticGain(impact);
+            if (peak > 0) wanted = Mathf.Min(wanted, 1 / peak);
+            return wanted * Mathf.Pow(10, HapticsTrimDb / 20) / effective;
+        }
+        // The peak this impact sends relative to full scale (1 = full scale), for the tests and the README's mapping.
+        public float SentPeak(BoxingImpact impact, HapbeatUnityEventTrigger trigger)
+        {
+            var entry = trigger.ResolveEntry();
+            return entry.GetEffectiveGain() * Mathf.Clamp(HapticMultiplier(impact, trigger), 0, 2) * ClipPeak(entry.streamClip);
+        }
+        // Each stream clip's peak |sample|, read once (no allocation per impact afterwards).
+        private readonly Dictionary<AudioClip, float> clipPeaks = new Dictionary<AudioClip, float>();
+        public float ClipPeak(AudioClip clip)
+        {
+            if (clip == null) return 0;
+            if (clipPeaks.TryGetValue(clip, out float peak)) return peak;
+            clip.LoadAudioData();
+            var samples = new float[clip.samples * clip.channels];
+            peak = clip.GetData(samples, 0) ? 0 : -1;
+            foreach (float s in samples) peak = Mathf.Max(peak, Mathf.Abs(s));
+            clipPeaks[clip] = peak = Mathf.Max(0, peak);
+            return peak;
+        }
         // This demo has wrist L/R and neck receivers, not a fourth torso device.
         // Both received body/head hits use the neck entries.
         public static int TriggerIndex(BoxingImpact impact)

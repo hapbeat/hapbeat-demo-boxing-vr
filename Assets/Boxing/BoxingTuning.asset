@@ -21,6 +21,7 @@ MonoBehaviour:
   tutorialMessageSeconds: 1.5
   restartAfterResultsSeconds: 4
   resultPanelDelaySeconds: 1
+  hapticsTrimDb: -2
   musicVolume: 0.09
   enemyInterval: 1.6
   telegraphSeconds: 0.42

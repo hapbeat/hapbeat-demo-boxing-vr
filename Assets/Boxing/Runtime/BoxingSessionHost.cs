@@ -50,6 +50,9 @@ namespace Hapbeat.Boxing
             if (game == null) game = GetComponent<BoxingGame>();
             if (options.TryGetValue("round", out var round) && int.TryParse(round, out var seconds) && seconds >= 10)
                 game.tuning.roundSeconds = seconds;
+            // haptics_db: the cut in dB as a non-negative number ("2" = -2 dB; option values cannot start with '-').
+            if (options.TryGetValue("haptics_db", out var cut) && int.TryParse(cut, out var db) && System.Array.IndexOf(BoxingFeedback.TrimSteps, -db) >= 0)
+            { game.tuning.hapticsTrimDb = -db; game.feedback.HapticsTrimDb = -db; }
             game.HoldResultsForSession = true;
             if (!completionWired) game.ResultsCompleted += OnResultsCompleted;
             completionWired = true;

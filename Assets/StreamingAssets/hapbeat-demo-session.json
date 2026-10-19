@@ -33,6 +33,58 @@
           }
         }
       ]
+    },
+    {
+      "id": "haptics_db",
+      "label": {
+        "ja": "触覚の強さ",
+        "en": "Haptics level"
+      },
+      "default": "2",
+      "values": [
+        {
+          "value": "0",
+          "label": {
+            "ja": "0 dB",
+            "en": "0 dB"
+          }
+        },
+        {
+          "value": "2",
+          "label": {
+            "ja": "-2 dB",
+            "en": "-2 dB"
+          }
+        },
+        {
+          "value": "4",
+          "label": {
+            "ja": "-4 dB",
+            "en": "-4 dB"
+          }
+        },
+        {
+          "value": "6",
+          "label": {
+            "ja": "-6 dB",
+            "en": "-6 dB"
+          }
+        },
+        {
+          "value": "9",
+          "label": {
+            "ja": "-9 dB",
+            "en": "-9 dB"
+          }
+        },
+        {
+          "value": "12",
+          "label": {
+            "ja": "-12 dB",
+            "en": "-12 dB"
+          }
+        }
+      ]
     }
   ]
 }

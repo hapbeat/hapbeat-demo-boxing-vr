@@ -124,7 +124,9 @@ Hands処理およびStandalone/AndroidのHand Tracking Subsystemは有効です�
 
 既定の送信先はGloveBallと同じ `*/pos_l_wrist`、`*/pos_r_wrist`、`*/pos_neck` です。デバイスのposition設定を合わせ、PC（Air Link時）またはQuest（APK時）と同じ到達可能なLANに接続してください。1台で試す場合はEventMapのtargetをそのデバイスのpositionに合わせます。
 
-Unity SDKのStreamClipを使うため、事前のKit転送は不要です。イベントごとに波形（`Assets/Boxing/Haptics/stream-clips/<イベント>.wav`）と効果音（`Assets/Boxing/Haptics/sounds/<音>.wav`）を持ちます。既定の波形は強のイベントが従来の`damage.wav`、弱のイベントが従来の`BodySoft.wav`（長めの75Hz）と同じ内容で、Studioで作り込む前の仮の割り当てです。`GainMultiplier` にプレイヤーは準備状態と振りの速さ、敵は接触速度から求めたゲインを渡し、EventMap側のゲインと掛け合わせます。効果音の音量も同じゲインに追従します。自動検証はSDK GameObjectをAwake前に無効化し、PC音声も実機送信も行いません。通常のEditor Playは音声・触覚ONです。
+Unity SDKのStreamClipを使うため、事前のKit転送は不要です。イベントごとに波形（`Assets/Boxing/Haptics/stream-clips/<イベント>.wav`）と効果音（`Assets/Boxing/Haptics/sounds/<音>.wav`）を持ちます。既定の波形は強のイベントが従来の`damage.wav`、弱のイベントが従来の`BodySoft.wav`（長めの75Hz）と同じ内容で、Studioで作り込む前の仮の割り当てです。`GainMultiplier` にプレイヤーは準備状態と振りの速さ、敵は接触速度から求めたゲインを渡し、EventMap側のゲインと掛け合わせます。効果音の音量も同じゲインに追従します。自動検証はSDK GameObjectをAwake前に無効化し、PC音声も実機送信も行いません。
+
+**触覚の強さ（デモ全体のトリム）**: 送る強さは「EventMapのゲイン × Kitの強度 × 打撃のゲイン（手首は下限0.8）」を、その波形のフルスケール（1 / 波形のピーク）で頭打ちにしてから、`10^(dB/20)` を掛けたものです（`BoxingFeedback.HapticMultiplier`）。以前はフルスケールを超えて送り、SDKのリミッターが約0.9まで潰していたため（強の `punch_body_hard` は頭打ち前で約1.9倍）、単純な倍率では強いイベントが弱くなりませんでした。今はフルスケールを超えて送らず、トリムがそのままdBで効きます（0 dB = 1.0、-2 dB = 0.79、-4 dB = 0.63、-6 dB = 0.50、-9 dB = 0.35、-12 dB = 0.25 倍の振幅）。既定は `BoxingTuning.hapticsTrimDb` の -2 dB で、Demo Session の option `haptics_db`（値は下げ幅の数字 `0` `2` `4` `6` `9` `12`、表示は「-2 dB」など。option の値は `-` で始められないため）で Demo Hub から変えられます。開発者メニューの HAPTICS の行に今の値を表示します。通常のEditor Playは音声・触覚ONです。
 
 ガードの保持時間の基準は `BoxingTuning.guardSeconds` です。手前のグローブに当たった攻撃はガードされ、身体にはダメージが入りません。身体へ届いた攻撃のみHPを減らします。接触表示はワールド空間の小さなリングで、カメラ前の半透明パネルはありません。開始・終了にはCC0実録ベルを編集した4連打のゴングを専用音源で鳴らします。
 
