@@ -53,12 +53,12 @@
       "description": "相手のパンチが自分の頭・胴に当たる（首）・強（元 damage.wav）"
     },
     "guard_arm_hard_t138_c": {
-      "intensity": 0.07,
+      "intensity": 0.45,
       "loop": false,
       "description": "Decided in Studio for guard_arm_hard"
     },
     "guard_arm_hard_t138_e": {
-      "intensity": 0.07,
+      "intensity": 0.45,
       "loop": false,
       "description": "Decided in Studio for guard_arm_hard"
     },
@@ -103,32 +103,32 @@
       "description": "Decided in Studio for punch_glove_hard"
     },
     "guard_glove_hard_t146_d": {
-      "intensity": 0.18624788236023898,
+      "intensity": 0.5,
       "loop": false,
       "description": "Decided in Studio for guard_glove_hard"
     },
     "guard_glove_hard_t146_a": {
-      "intensity": 0.18624788236023898,
+      "intensity": 0.5,
       "loop": false,
       "description": "Decided in Studio for guard_glove_hard"
     },
     "guard_glove_hard_t146_b": {
-      "intensity": 0.24,
+      "intensity": 0.5,
       "loop": false,
       "description": "Decided in Studio for guard_glove_hard"
     },
     "guard_glove_hard_t146_c": {
-      "intensity": 0.18624788236023898,
+      "intensity": 0.5,
       "loop": false,
       "description": "Decided in Studio for guard_glove_hard"
     },
     "guard_arm_soft_t147_a": {
-      "intensity": 0.5031034958434062,
+      "intensity": 0.5,
       "loop": false,
       "description": "Decided in Studio for guard_arm_soft"
     },
     "guard_arm_soft_t147_c": {
-      "intensity": 0.402482796674725,
+      "intensity": 0.5,
       "loop": false,
       "description": "Decided in Studio for guard_arm_soft"
     },
