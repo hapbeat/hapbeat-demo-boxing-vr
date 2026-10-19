@@ -152,6 +152,11 @@ namespace Hapbeat.Boxing
                 // Position addressing selects the wearable; do not silence one channel of a wrist unit.
                 trigger.Pan = 0;
                 trigger.FireAfter((float)LastHapticDelay); Sends++;
+                // TODO(diagnostic, 2026-10-19): remove once the "guarded punch feels nothing at -9 dB" report is settled.
+                var entry = trigger.ResolveEntry();
+                Debug.Log("[Boxing Haptic] " + Cues[cue] + " " + impact.zone + " clip=" + (entry != null && entry.streamClip != null ? entry.streamClip.name : "none") +
+                    " mult=" + trigger.GainMultiplier.ToString("F3") + " peak=" + SentPeak(impact, trigger).ToString("F3") +
+                    " trim=" + HapticsTrimDb.ToString("F0") + "dB delay=" + (LastHapticDelay * 1000).ToString("F0") + "ms");
             }
             if (clip != null) PlaySound(clip, Mathf.Clamp01(impact.gain) * sounds.volumes[sound], LastSoundDelay);
         }

@@ -103,7 +103,7 @@
       "description": "Decided in Studio for punch_glove_hard"
     },
     "guard_glove_hard_t146_d": {
-      "intensity": 0.5,
+      "intensity": 1,
       "loop": false,
       "description": "Decided in Studio for guard_glove_hard"
     },
@@ -270,7 +270,7 @@
       "intensity": 0.9440408305115159
     },
     "punch_glove_soft_T133_D": {
-      "intensity": 0.9440085046532036
+      "intensity": 1
     },
     "guard_arm_soft_T134_A": {
       "intensity": 0.9440408305115159
@@ -320,73 +320,50 @@
       },
       "variants": {
         "soft": {
-          "description": "弱: 接触の相対速度 2.5 m/s 未満、または準備なし（引き戻し無し）の当たり",
-          "sfx": {
-            "sounds": [
-              "punch_glove_soft_T133_E",
-              "punch_glove_soft_T133_D"
-            ],
-            "volume": 1,
-            "alternates": [
-              "impactSoft_medium_000"
-            ]
-          },
-          "haptics": [
-            {
-              "at": "hand",
-              "gain": 2,
-              "clips": [
-                "guard_glove_hard_t146_d",
-                "guard_glove_hard_t146_b"
-              ],
-              "alternates": [
-                "punch_glove_hard_t142_e",
-                "punch_glove_hard_t142_b",
-                "punch_glove_soft"
-              ]
-            }
-          ],
-          "review": {
-            "sfx": "approved",
-            "haptics": "approved"
-          }
+          "description": "弱: 接触の相対速度 2.5 m/s 未満、または準備なし（引き戻し無し）の当たり"
         },
         "hard": {
-          "description": "強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）",
-          "sfx": {
-            "sound": "punch_glove_hard_T137_R",
-            "volume": 1,
-            "alternates": [
-              "punch_glove_hard_T107_B",
-              "punch_glove_hard_T107_D",
-              "punch_glove_hard_T117_A",
-              "punch_glove_hard_T117_B",
-              "impactSoft_heavy_000"
-            ]
-          },
-          "haptics": [
-            {
-              "at": "hand",
-              "gain": 2,
-              "clips": [
-                "guard_glove_hard_t146_d",
-                "guard_glove_hard_t146_b"
-              ],
-              "alternates": [
-                "punch_glove_hard_t145_a",
-                "punch_glove_hard_t145_b",
-                "punch_glove_hard_t145_d",
-                "punch_glove_hard_t142_b",
-                "punch_glove_hard_t142_e"
-              ]
-            }
-          ],
-          "review": {
-            "sfx": "approved",
-            "haptics": "approved"
-          }
+          "description": "強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）"
         }
-      }
+      },
+      "sfx": {
+        "sounds": [
+          "punch_glove_soft_T133_E",
+          "punch_glove_soft_T133_D"
+        ],
+        "volume": 1,
+        "alternates": [
+          "impactSoft_medium_000",
+          "punch_glove_hard_T137_R",
+          "punch_glove_hard_T107_B",
+          "punch_glove_hard_T107_D",
+          "punch_glove_hard_T117_A",
+          "punch_glove_hard_T117_B",
+          "impactSoft_heavy_000"
+        ]
+      },
+      "review": {
+        "sfx": "approved",
+        "haptics": "approved"
+      },
+      "haptics": [
+        {
+          "at": "hand",
+          "gain": 2,
+          "clips": [
+            "guard_glove_hard_t146_d",
+            "guard_glove_hard_t146_b"
+          ],
+          "alternates": [
+            "punch_glove_hard_t142_e",
+            "punch_glove_hard_t142_b",
+            "punch_glove_soft",
+            "punch_glove_hard_t145_a",
+            "punch_glove_hard_t145_b",
+            "punch_glove_hard_t145_d"
+          ]
+        }
+      ]
     },
     "punch_body": {
       "description": "自分のパンチが相手の頭・胴に当たる（打った側の手首）。弱: 接触の相対速度 2.5 m/s 未満、または準備なし（引き戻し無し）の当たり。強: 接触の相対速度 2.5 m/s 以上（準備なしの当たりは除く）。gain = 準備状態と振りの速さ（0.12〜1）",
