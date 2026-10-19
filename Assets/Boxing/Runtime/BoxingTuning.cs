@@ -33,8 +33,8 @@ namespace Hapbeat.Boxing
         [Min(0)] public float restartAfterResultsSeconds = 4;
         // Demo Session: the completion panel appears this long after the final bell (the bell and voice keep playing).
         [Min(0)] public float resultPanelDelaySeconds = 1;
-        // Round music volume (linear, about -18 dB): well under the impact sounds; not scaled by the narration volume.
-        [Range(0, 1)] public float musicVolume = 0.12f;
+        // Round music volume (linear, about -21 dB): well under the impact sounds; not scaled by the narration volume.
+        [Range(0, 1)] public float musicVolume = 0.09f;
         // Opponent pace: 1.6 is the reference; larger values slow every Neutral decision proportionally.
         [Min(0.1f)] public float enemyInterval = 1.6f;
         // Reference wind-up; each strike scales it (jab short, hook long, follow-ups and counters shorter).

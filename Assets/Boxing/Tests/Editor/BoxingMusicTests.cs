@@ -41,8 +41,8 @@ namespace Hapbeat.Boxing.Tests
             var importer = (AudioImporter)AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(Feedback.music));
             Assert.That(importer.defaultSampleSettings.loadType, Is.EqualTo(AudioClipLoadType.Streaming));
             Assert.That(importer.defaultSampleSettings.compressionFormat, Is.EqualTo(AudioCompressionFormat.Vorbis));
-            // About -18 dB, well under the impact sounds (played at up to the full impact gain).
-            Assert.That(20 * Mathf.Log10(original.musicVolume), Is.EqualTo(-18).Within(1));
+            // About -21 dB, well under the impact sounds (played at up to the full impact gain).
+            Assert.That(20 * Mathf.Log10(original.musicVolume), Is.EqualTo(-21).Within(1));
             Assert.That(original.roundSeconds, Is.EqualTo(55), "One default round lasts the music.");
         }
 

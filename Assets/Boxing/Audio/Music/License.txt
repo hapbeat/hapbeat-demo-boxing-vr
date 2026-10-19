@@ -1,4 +1,4 @@
-Boxing Ring (music)
+Boxing Ring (music, with the crowd track mixed in)
 
 by Umplix
 https://opengameart.org/content/boxing-ring-0
@@ -7,4 +7,6 @@ License: Creative Commons Zero (CC0 1.0)
 https://creativecommons.org/publicdomain/zero/1.0/
 
 Commercial use, modification and redistribution are allowed; credit is optional.
-BoxingRingMusic.wav is the downloaded "boxing_ring_-_music.wav" with its RIFF metadata chunks removed (audio unchanged).
+BoxingRingMusic.wav mixes two files from that page: "boxing_ring_-_music.wav" and "boxing_match_audience.wav"
+(the crowd resampled to 44.1 kHz, looped with a 2 s crossfade and mixed 2 dB lower), peak -1 dBFS, 54.985 s,
+RIFF metadata chunks removed.
