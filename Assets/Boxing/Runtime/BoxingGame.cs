@@ -59,6 +59,11 @@ namespace Hapbeat.Boxing
         public bool RightHandActive { get; private set; } = true;
         // Paused because tracking stayed lost beyond the grace time (the presentation shows the warning).
         public bool TrackingWarning { get; private set; }
+        // The game waits because the hands (or controllers) are not seen while the headset is tracked: in every phase but the
+        // results (before the first start, in the tutorial, in the round past the tracking grace). The board says so in
+        // Japanese (HandsMissingText), also when the head is outside the play area.
+        public bool HandsMissing { get; private set; }
+        internal const string HandsMissingText = "手が見えません。両手を前に出してください", ControllersMissingText = "コントローラーを前に出してください";
         public float TrackingLostSeconds { get; private set; }
         private BoxerPose held;
         private bool haveHeld, leftWasActive = true, rightWasActive = true, headWasTracked = true;
@@ -250,7 +255,8 @@ namespace Hapbeat.Boxing
             LeftHandActive = !graced || leftOk; RightHandActive = !graced || rightOk;
             bool tracking = pose.valid && stepValid;
             Vector3 fromStart = pose.head - input.StartPosition;
-            bool outside = new Vector2(fromStart.x, fromStart.z).magnitude > tuning.playRadius;
+            // Before the startup recenter the visitor may stand anywhere: that recenter brings the start position to them.
+            bool outside = input.StartupRecentered && new Vector2(fromStart.x, fromStart.z).magnitude > tuning.playRadius;
             if (display != null && !display.running)
             {
                 display.displayFocusChanged -= DisplayFocus;
@@ -267,6 +273,7 @@ namespace Hapbeat.Boxing
             if (display != null) DisplayFocus(OpenXRUtility.IsSessionFocused);
             bool unavailable = !input.HasOverride && (appPaused || (displayFocusKnown ? !displayFocused : !focus));
             TrackingWarning = !tracking && stepValid && !outside && !unavailable && !InputSuspended && !(menu != null && menu.IsOpen);
+            HandsMissing = !tracking && stepValid && headOk && !unavailable && !InputSuspended && !(menu != null && menu.IsOpen);
             if (!tracking || outside || unavailable || InputSuspended || (menu != null && menu.IsOpen))
             {
                 if (!Paused) feedback.StopImpacts();

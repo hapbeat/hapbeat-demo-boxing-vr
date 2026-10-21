@@ -69,11 +69,14 @@ namespace Hapbeat.Boxing
                 (game.Round.Outcome==BoxingOutcome.Win ? "YOU WIN" : game.Round.Outcome==BoxingOutcome.Lose ? "YOU LOSE" : "DRAW");
             if (boardFont == null) { boardFont = timerText.font; boardFontSize = timerText.fontSize; }
             bool tutorial = game.Round.Phase == BoxingPhase.Tutorial;
-            if (tutorial && japaneseFont == null) { japaneseFont = Resources.Load<Font>(JapaneseFontPath); if (japaneseFont == null) japaneseFont = boardFont; }
-            timerText.font = tutorial ? japaneseFont : boardFont; timerText.fontSize = tutorial ? JapaneseFontSize : boardFontSize;
+            // Hands not seen: a Japanese board message in every phase but the results (the game waits for them).
+            bool handsMissing = game.HandsMissing && game.Round.Phase != BoxingPhase.Results;
+            bool japanese = tutorial || handsMissing;
+            if (japanese && japaneseFont == null) { japaneseFont = Resources.Load<Font>(JapaneseFontPath); if (japaneseFont == null) japaneseFont = boardFont; }
+            timerText.font = japanese ? japaneseFont : boardFont; timerText.fontSize = japanese ? JapaneseFontSize : boardFontSize;
             RenderTutorialMarker(game, menuOpen);
-            timerText.text = game.TrackingWarning && game.Round.Phase != BoxingPhase.Results ?
-                (game.input.ActiveMode == BoxingInputMode.Hands ? "HAND TRACKING LOST" : "TRACKING LOST") :
+            timerText.text = handsMissing ? (game.input.ActiveMode == BoxingInputMode.Hands ? BoxingGame.HandsMissingText : BoxingGame.ControllersMissingText) :
+                game.TrackingWarning && game.Round.Phase != BoxingPhase.Results ? "TRACKING LOST" :
                 game.Round.Phase == BoxingPhase.Results ? result :
                 tutorial ? game.TutorialText :
                 game.Round.Phase == BoxingPhase.Countdown ? Mathf.CeilToInt(game.Round.Countdown).ToString() :
