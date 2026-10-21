@@ -59,7 +59,10 @@ namespace Hapbeat.Boxing
         // Haptic recording and the tutorial: no own choices, reads, staggers or covers; strikes only through ScriptedStrike.
         internal bool Scripted { get; set; }
 
-        private const float HomeZ = 1.08f, MaxStep = 1f / 240, OpeningSeconds = 1.2f;
+        internal const float HomeZ = 1.08f;
+        private const float MaxStep = 1f / 240, OpeningSeconds = 1.2f;
+        // Tutorial steps 1-2: the opponent stands this much closer than HomeZ (metres) so the targets are in easy reach.
+        internal float ScriptedAdvance { get; set; }
         private const float HeatGain = 1.2f, StanceBonus = 3.5f, GuardTolerance = .2f;
         private static readonly Vector3 RestLeft = new Vector3(-.19f, -.10f, -.23f), RestRight = new Vector3(.18f, -.09f, -.19f);
         private readonly struct Strike
@@ -131,7 +134,7 @@ namespace Hapbeat.Boxing
         public void Reset(float playerHeight,float floor=0,float size=1)
         {
             Size = Mathf.Max(.1f, size);
-            height = Mathf.Max(.2f,playerHeight); floorHeight=floor; clock = 0;
+            height = Mathf.Max(.2f,playerHeight); floorHeight=floor; clock = 0; ScriptedAdvance = 0;
             int seed = seeds.Next(); random = new System.Random(seed); sideRandom = new System.Random(seed ^ 0x5bd1e995);
             StopCombat(); decisionWait = OpeningSeconds * Pace;
             Action = BoxingAction.Hold; Actions = 0; Attack = BoxingAttack.HeadStraight; AttackLeft = false; AttackId = CompletedAttacks = 0;
@@ -580,9 +583,10 @@ namespace Hapbeat.Boxing
                 goal.x = Mathf.Clamp(rootGoal.x + stepX, -.14f, .14f);
                 goal.z = Mathf.Clamp(HomeZ + rootGoal.y + stepZ + (attack && !Feinting ? -.07f : 0), .985f, 1.175f);
             }
+            goal.z -= ScriptedAdvance;
             Follow(ref root, ref rootVelocity, goal, tuning.opponentRootSmoothSeconds, tuning.opponentRootMaxAcceleration, dt);
             if (root.x < -.155f || root.x > .155f) { root.x = Mathf.Clamp(root.x, -.155f, .155f); rootVelocity.x = 0; }
-            if (root.z < .975f || root.z > 1.185f) { root.z = Mathf.Clamp(root.z, .975f, 1.185f); rootVelocity.z = 0; }
+            if (root.z < .975f - ScriptedAdvance || root.z > 1.185f) { root.z = Mathf.Clamp(root.z, .975f - ScriptedAdvance, 1.185f); rootVelocity.z = 0; }
 
             float extension = Extension();
             MotionWeight = Mathf.Max(0, extension);

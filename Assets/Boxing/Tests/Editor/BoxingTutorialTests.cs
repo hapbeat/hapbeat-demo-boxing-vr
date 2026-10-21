@@ -288,6 +288,59 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(game.feedback.Sends, Is.Zero);
         }
 
+        // Steps 1-2 advance on any real contact with the target, also an open, slow, unprepared touch; a near miss does not.
+        [Test] public void SlowUnpreparedContactsAdvanceTheTargetStepsButNearMissesDoNot()
+        {
+            Begin();
+            foreach (int step in new[] { 1, 2 })
+            {
+                Run(1.2f, BoxingSceneTests.Pose());
+                Assert.That(game.TutorialStep, Is.EqualTo(step));
+                Assert.That(game.TutorialTarget(out var ring), Is.True);
+                var pose = BoxingSceneTests.Pose(); pose.leftClosed = false;
+                // A near miss: the glove stops 5 cm before it could touch.
+                Vector3 start = ring + Vector3.back * .3f, shy = ring + Vector3.back * (game.tuning.gloveRadius + .03f);
+                for (int i = 0; i <= 100; i++) { pose.left = Vector3.Lerp(start, shy, i / 100f); Step(pose); }
+                Run(.5f, pose);
+                Assert.That(Board, Is.EqualTo(BoxingGame.TutorialSteps[step - 1]), $"step {step}: no advance without contact");
+                // An open hand creeping in at about 0.1 m/s.
+                bool result = false;
+                for (int i = 0; i <= 150 && !result; i++) { pose.left = Vector3.Lerp(shy, ring + Vector3.forward * .05f, i / 150f); Step(pose); result = Board == BoxingGame.TutorialResults[step - 1]; }
+                Assert.That(result, Is.True, $"step {step}: a slow open touch advances");
+                Assert.That(RunUntil(() => game.TutorialStep == step + 1, 4, BoxingSceneTests.Pose()), Is.True);
+            }
+            Assert.That(game.feedback.Sends, Is.Zero);
+        }
+
+        // From the start position a comfortable straight arm (TutorialReach from the shoulder) reaches both targets: the
+        // opponent comes closer during steps 1-2 when needed and steps back for the strikes.
+        [Test] public void AJustReachingStraightFromTheStartReachesBothTargets()
+        {
+            Begin();
+            var stand = BoxingSceneTests.Pose(); stand.head = new Vector3(game.input.StartPosition.x, stand.head.y, game.input.StartPosition.z);
+            stand.left += stand.head - BoxingSceneTests.Pose().head; stand.right += stand.head - BoxingSceneTests.Pose().head;
+            float[] advance = new float[2];
+            foreach (int step in new[] { 1, 2 })
+            {
+                Run(1.5f, stand);
+                Assert.That(game.TutorialStep, Is.EqualTo(step));
+                advance[step - 1] = game.Opponent.ScriptedAdvance;
+                Assert.That(game.TutorialTarget(out var ring), Is.True);
+                Vector3 shoulder = game.TutorialShoulder, dir = (ring - shoulder).normalized;
+                var pose = stand; bool result = false;
+                for (int i = 0; i <= 30 && !result; i++) { pose.left = shoulder + dir * Mathf.Lerp(.25f, BoxingGame.TutorialReach, i / 30f); Step(pose); result = Board == BoxingGame.TutorialResults[step - 1]; }
+                for (int i = 0; i < 30 && !result; i++) { Step(pose); result = Board == BoxingGame.TutorialResults[step - 1]; }
+                Assert.That(result, Is.True, $"step {step}: reached at {BoxingGame.TutorialReach} m from the shoulder (opponent {advance[step - 1]:F2} m closer)");
+                pose.left = stand.left;
+                Assert.That(RunUntil(() => game.TutorialStep == step + 1, 4, pose), Is.True);
+            }
+            Debug.Log($"BOXING_TUTORIAL_ADVANCE step1 {advance[0]:F3} m, step2 {advance[1]:F3} m");
+            Assert.That(advance[1], Is.GreaterThan(0), "The belly needs the opponent closer.");
+            Run(2, stand);
+            Assert.That(game.TutorialStep, Is.EqualTo(3)); Assert.That(game.Opponent.ScriptedAdvance, Is.Zero, "Back for the strikes.");
+            Assert.That(game.feedback.Sends, Is.Zero);
+        }
+
         [Test] public void StartRoundSkipsTheTutorialAndRetryOrRestartNeverReplaysIt()
         {
             Begin();

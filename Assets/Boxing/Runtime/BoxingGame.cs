@@ -359,7 +359,7 @@ namespace Hapbeat.Boxing
         {
             TutorialStep++; tutorialStepTime = 0; tutorialAdvance = tutorialGuarded = tutorialBody = tutorialStriking = false;
             tutorialMessageTime = 0; tutorialStrikes = 0; tutorialStrikeWait = TutorialStrikeGap;
-            if (TutorialStep == 3) Opponent.ScriptedRelease();
+            if (TutorialStep == 3) { Opponent.ScriptedRelease(); Opponent.ScriptedAdvance = 0; }
             Narrate(feedback.tutorialStepVoice[TutorialStep - 1]);
         }
         private float Narrate(AudioClip clip) => tutorialLineTime = feedback.SpeakTutorial(clip);
@@ -386,6 +386,22 @@ namespace Hapbeat.Boxing
             return true;
         }
         private const int MarkerRimSamples = 24, GloveSpheres = 5, ArmSpheres = 6;
+        // A comfortable straight arm from the player's shoulder (TutorialShoulderDrop below the eyes, at the start position)
+        // to the glove's centre; steps 1-2 bring the opponent at most TutorialMaxAdvance closer so the target is within it.
+        internal const float TutorialReach = .58f, TutorialShoulderDrop = .2f, TutorialMaxAdvance = .35f;
+        // The player's shoulder for the reach: at the start position, below the eye height the opponent is sized from.
+        internal Vector3 TutorialShoulder => new Vector3(input.StartPosition.x, input.ReferenceFloorHeight + SizeEyeHeight - TutorialShoulderDrop, input.StartPosition.z);
+        // How much closer the opponent must stand so the glove's centre meets the marked surface (just behind the ring) within
+        // TutorialReach. Relative to the opponent's root, so its own approach does not feed back; current while no ring shows.
+        private float TutorialAdvance(float current)
+        {
+            if (!TutorialTarget(out var ring)) return current;
+            Vector3 shoulder = TutorialShoulder;
+            float contactZ = ring.z + TutorialMarkerLead - tuning.gloveRadius;
+            float dy = ring.y - shoulder.y, forward = Mathf.Sqrt(Mathf.Max(0, TutorialReach * TutorialReach - dy * dy));
+            float rootWanted = shoulder.z + forward - (contactZ - Opponent.Root.z);
+            return Mathf.Clamp(BoxingOpponent.HomeZ - rootWanted, 0, TutorialMaxAdvance);
+        }
         // The glove as a capsule along the glove (15 x 13 x 26 cm: radius 7 cm, centres 6 cm either side of the middle).
         private const float GloveCapsuleRadius = .07f, GloveCapsuleHalf = .06f;
         private readonly BoxingHitSphere[] markerShapes = new BoxingHitSphere[BoxingOpponentAvatar.HeadSpheres + BoxingOpponentAvatar.TorsoSpheres + 2 * GloveSpheres + 4 * ArmSpheres];
@@ -452,6 +468,7 @@ namespace Hapbeat.Boxing
             {
                 // Set every step: a recenter (Opponent.Reset) drops it.
                 Opponent.ScriptedGuard(BoxingGuard.HeadStraight);
+                Opponent.ScriptedAdvance = TutorialAdvance(Opponent.ScriptedAdvance);
                 if (TutorialStep == 1 ? tutorialGuarded : tutorialBody) TutorialMessage(TutorialResults[TutorialStep - 1], true, feedback.tutorialResultVoice[TutorialStep - 1]);
                 else if (tutorialStepTime >= tuning.tutorialStepTimeoutSeconds) NextTutorialStep();
                 return;
@@ -545,6 +562,9 @@ namespace Hapbeat.Boxing
             // Hysteresis releases an existing contact; it must never create an early one.
             bool wasContact = contact; contact = hit || (wasContact && overlap);
             bool alreadyResolved = side == ImpactZone.LeftGlove ? leftBlockedThisFrame : rightBlockedThisFrame;
+            // Tutorial steps 1-2 advance on any real contact with their target (the guard, the torso), however slow, weak or
+            // unprepared; the impact below still needs the usual punch.
+            if (Round.Phase == BoxingPhase.Tutorial && hit && !wasContact) { if (surface == ImpactSurface.Glove) tutorialGuarded = true; else if (!hitHead) tutorialBody = true; }
             if (!hit || wasContact || cooldown > 0 || !closed || alreadyResolved) return;
             float speed = BoxingCollision.RelativeSpeed(from, to, targetFrom, targetTo, dt);
             if (speed < tuning.minimumImpactSpeed) return;
@@ -554,7 +574,6 @@ namespace Hapbeat.Boxing
             float strength = (side == ImpactZone.LeftGlove ? leftPunch : rightPunch).Consume(point - headAtContact, tuning);
             // The punch strength reads the glove centre; the impact (burst, sound, haptics) sits where the glove meets the surface.
             var impact = new BoxingImpact(side, speed, SurfacePoint(point, Vector3.Lerp(targetFrom, targetTo, earliest), targetRadius), tuning, surface, strength, part);
-            if (Round.Phase == BoxingPhase.Tutorial) { if (surface == ImpactSurface.Glove) tutorialGuarded = true; else if (!hitHead) tutorialBody = true; }
             if (surface == ImpactSurface.Body)
             {
                 Opponent.React(impact.gain, BoxingOpponent.Zone(hitHead, dt > 0 ? (to - from) / dt : Vector3.zero));
