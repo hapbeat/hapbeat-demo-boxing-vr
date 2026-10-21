@@ -14,13 +14,12 @@ namespace Hapbeat.Boxing.Tests
             game.feedback.forceSilent=true; game.feedback.sdkRoot.SetActive(false); game.menu.Close();
         }
         [TearDown] public void Cleanup()=>EditorSceneManager.NewScene(NewSceneSetup.EmptyScene);
-        [TestCase(1.4f)] [TestCase(1.85f)] public void RecenterCalibratesOpponentButDuckingDoesNotResizeIt(float height)
+        [TestCase(1.4f)] [TestCase(1.85f)] public void RecenterSizesTheOpponentForTheForcedEyeHeightAndDuckingDoesNotResizeIt(float height)
         {
             game.input.headCamera.transform.position=new Vector3(0,height,0);
-            // The opponent is sized from the standing eye height the head has held (BoxingInput.StandingEyeHeight).
-            for(int i=0;i<40;i++) game.input.ObserveHead(true,height,.01f);
+            // The opponent is sized for the forced eye height above the game floor, whatever the head's height.
             game.RecenterPlayer();
-            float head=height*game.tuning.opponentSizeScale;
+            float head=game.input.GameFloor+BoxingInput.EyeHeight*game.tuning.opponentSizeScale;
             Assert.That(game.Opponent.Head.y,Is.EqualTo(head).Within(.001f));
             game.input.headCamera.transform.position=Vector3.up*(height-.3f);
             game.Opponent.Tick(.01f,game.input.headCamera.transform.position,Quaternion.identity,false);

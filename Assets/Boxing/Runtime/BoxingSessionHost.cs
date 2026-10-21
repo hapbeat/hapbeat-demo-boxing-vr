@@ -12,7 +12,7 @@ namespace Hapbeat.Boxing
     /// reach the game through <see cref="SetGameplayPaused"/> and <see cref="Restart"/>; Boxing has no IDemoAppControls.
     /// 視線をリセット (button and CONTROL `recenter`) is the menu's recenter (<see cref="BoxingGame.RecenterPlayer"/>).
     /// </summary>
-    public sealed class BoxingSessionHost : MonoBehaviour, IDemoSessionHost, IDemoSessionRecenter
+    public sealed class BoxingSessionHost : MonoBehaviour, IDemoSessionHost, IDemoSessionRecenter, IDemoSessionHeight
     {
         private BoxingGame game;
         private bool completionWired;
@@ -88,6 +88,13 @@ namespace Hapbeat.Boxing
                 panelHands.AddComponent<DemoHands>().SetStyle(DemoHands.ResolveStyle(DemoSession.Ticket, DemoHandStyle.Ghost));
             }
             if (panelHands != null) panelHands.SetActive(visible);
+        }
+
+        // The forced eye height above Boxing's own floor (BoxingInput.ApplyEyeHeight; idempotent).
+        public void ApplyEyeHeight(float target)
+        {
+            if (game == null) game = GetComponent<BoxingGame>();
+            game.input.ApplyEyeHeight(target);
         }
 
         public void RecenterToStart()

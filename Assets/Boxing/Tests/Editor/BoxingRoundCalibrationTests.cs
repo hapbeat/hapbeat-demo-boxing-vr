@@ -18,26 +18,25 @@ namespace Hapbeat.Boxing.Tests
         {
             game.input.origin.transform.position=Vector3.up*.4f;
             game.input.headCamera.transform.position=new Vector3(0,2.1f,.2f);
-            for(int i=0;i<40;i++) game.input.ObserveHead(true,1.7f,.01f);
             for(int i=0;i<3;i++)
             {
                 game.StartRound();
                 Assert.That(game.input.ReferenceEyeHeight,Is.EqualTo(1.7f).Within(.001f));
-                Assert.That(game.Opponent.Head.y,Is.EqualTo(.4f+1.7f*game.tuning.opponentSizeScale).Within(.001f));
+                // The game floor is the origin's height at the start (.4); the opponent and the board are set for the forced eye height.
+                Assert.That(game.Opponent.Head.y,Is.EqualTo(.4f+BoxingInput.EyeHeight*game.tuning.opponentSizeScale).Within(.001f));
                 Assert.That(game.Opponent.Root.y,Is.EqualTo(.4f).Within(.001f));
                 Assert.That(game.presentation.arena.position.y,Is.EqualTo(.4f).Within(.001f));
-                Assert.That(game.presentation.timerText.transform.parent.position.y,Is.EqualTo(3.15f).Within(.001f));
+                Assert.That(game.presentation.timerText.transform.parent.position.y,Is.EqualTo(.4f+BoxingInput.EyeHeight+1.05f).Within(.001f));
             }
         }
-        [Test] public void StartRoundRecapturesHeightEvenBeforeBothHandsAreReady()
+        [Test] public void StartRoundNeverSizesTheOpponentFromTheHeadHeight()
         {
-            // The standing height never shrinks during a run: rising heights.
-            foreach(float height in new[]{1.3f,1.5f,1.85f})
+            foreach(float height in new[]{1.3f,1.85f,1.5f})
             {
                 game.input.headCamera.transform.position=new Vector3(0,height,.2f);
-                for(int i=0;i<40;i++) game.input.ObserveHead(true,height,.01f);
                 game.StartRound();
-                Assert.That(game.Opponent.Head.y,Is.EqualTo(height*game.tuning.opponentSizeScale).Within(.001f));
+                Assert.That(game.input.ReferenceEyeHeight,Is.EqualTo(height).Within(.001f),"Only logged.");
+                Assert.That(game.Opponent.Head.y,Is.EqualTo(BoxingInput.EyeHeight*game.tuning.opponentSizeScale).Within(.001f));
             }
         }
         // Size probe (TODO with BoxingTuning.opponentSizeScale): the opponent is sized from eye height x the scale, avatar and
@@ -48,7 +47,6 @@ namespace Hapbeat.Boxing.Tests
             var original=game.tuning; game.tuning=Object.Instantiate(original); game.tuning.opponentSizeScale=1.3f; game.Initialize();
             try {
             game.input.headCamera.transform.position=new Vector3(0,1.65f,.2f);
-            for(int i=0;i<40;i++) game.input.ObserveHead(true,1.65f,.01f);
             game.StartRound();
             var avatar=game.presentation.enemyAvatar; avatar.Render(game.Opponent,0);
             Assert.That(game.SizeEyeHeight,Is.EqualTo(1.65f).Within(.001f));

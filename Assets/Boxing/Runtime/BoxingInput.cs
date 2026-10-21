@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Hapbeat.DemoSwitch;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.XR;
@@ -18,19 +19,27 @@ namespace Hapbeat.Boxing
         public Transform startPoint;
         public Vector3 StartPosition => startPoint != null ? new Vector3(startPoint.position.x, 0, startPoint.position.z) : Vector3.zero;
         public float StartYaw => startPoint != null ? startPoint.eulerAngles.y : 0;
-        // Head height above the floor at the last recenter (the posture of that moment: often a crouched boxing stance).
+        // Head height above the game floor at the last recenter (for the [Boxing Size] log only; nothing is sized from it).
         public float ReferenceEyeHeight { get; private set; } = 1.65f;
-        // Standing eye height: the highest head height above the floor held for StandingWindow seconds while the head is
-        // tracked since the app started (a shorter rise does not count), clamped to the standing range. It never shrinks
-        // during the run; StandingDefault until the head has been tracked that long. The opponent is sized from it.
-        public float StandingEyeHeight { get; private set; } = StandingDefault;
-        // The head height above the floor last observed (ObserveHead).
-        public float HeadAboveFloor { get; private set; }
-        public const float StandingDefault = 1.65f, StandingMin = 1.2f, StandingMax = 2f, StandingWindow = .3f;
-        private readonly float[] standingValues = new float[128], standingTimes = new float[128];
-        private int standingNext, standingCount;
-        private float standingClock, standingTracked;
-        private bool standingSeen;
+        // The head height above the game floor last seen (BoxingGame.Simulate), for the status line.
+        public float HeadAboveFloor { get; set; }
+        // The game's floor: the XR Origin's height when the scene started (the arena is authored on it). Fixed: the Quest's
+        // floor drifts (boundary off, a new venue), so the eye height is forced above this floor instead (ApplyEyeHeight).
+        public float GameFloor { get { CaptureFloor(); return gameFloor; } }
+        private float gameFloor;
+        private bool floorCaptured;
+        private void CaptureFloor() { if (floorCaptured || origin == null) return; gameFloor = origin.transform.position.y; floorCaptured = true; }
+        private void Awake() => CaptureFloor();
+        // The forced eye height (Demo Switch settings Eye Height, 1.65 m by default): the opponent is sized for it.
+        public static float EyeHeight => DemoEyeHeight.Target;
+        // Moves the XR Origin vertically so the head is target above the game floor, whatever the headset's floor. Called by the
+        // Demo Switch (IDemoSessionHeight: 視線をリセット, a system recenter, the first tracked frame) and Boxing's own
+        // RECENTER; called again it changes nothing (no accumulation). The round / tutorial start recenter does not call it.
+        public void ApplyEyeHeight(float target)
+        {
+            if (headCamera == null || origin == null) return;
+            origin.transform.position += Vector3.up * DemoEyeHeight.Correction(headCamera.transform.position.y - GameFloor, target);
+        }
         public float ReferenceFloorHeight { get; private set; }
         public bool HeadTracked { get; private set; }
         public event System.Action Recentered;
@@ -65,11 +74,9 @@ namespace Hapbeat.Boxing
         private void OnEnable() { xrControls = new BoxingXrControls(); aligned = false; }
         private void OnDisable() { xrControls?.Dispose(); xrControls = null; HasTracking = HeadTracked = false; LeftPointer.Reset(); RightPointer.Reset(); }
 
-        // Each simulated frame (BoxingGame.Simulate): the head height above the floor while tracked. The lowest height of
-        // the last StandingWindow seconds is what the head has held; the standing height is the most of that seen.
         // Startup recenter (視線リセット once): after launch the visitor stands still; once the HMD has been tracked and
         // nearly still (head below StartupSpeed and yaw below StartupYawRate for StartupStillSeconds), or after
-        // StartupTimeout seconds of tracking anyway, BoxingGame recenters once and seeds the standing eye height.
+        // StartupTimeout seconds of tracking anyway, BoxingGame recenters once (yaw and horizontal position).
         // The former recenter on the first tracked frame came too early (the headset still settling on the head).
         public bool StartupRecentered { get; private set; }
         public const float StartupSpeed = .15f, StartupYawRate = 20, StartupStillSeconds = .5f, StartupTimeout = 5;
@@ -93,30 +100,6 @@ namespace Hapbeat.Boxing
         }
         // A tutorial or round started before the startup recenter recenters itself; no startup recenter after it.
         public void CompleteStartup() => StartupRecentered = true;
-        // The startup recenter's head height is the first standing eye height (the running maximum continues from it).
-        public void SeedStanding(float headAboveFloor)
-        {
-            StandingEyeHeight = Mathf.Clamp(headAboveFloor, StandingMin, StandingMax); standingSeen = true;
-        }
-        public void ObserveHead(bool tracked, float headAboveFloor, float dt)
-        {
-            HeadAboveFloor = headAboveFloor;
-            if (!tracked || dt <= 0) { if (!tracked) { standingCount = 0; standingTracked = 0; } return; }
-            standingClock += dt; standingTracked += dt;
-            standingValues[standingNext] = headAboveFloor; standingTimes[standingNext] = standingClock;
-            standingNext = (standingNext + 1) % standingValues.Length; standingCount = Mathf.Min(standingCount + 1, standingValues.Length);
-            // Only once tracked for a whole window without a gap; the first such window replaces the default.
-            if (standingTracked < StandingWindow) return;
-            float held = float.PositiveInfinity;
-            for (int i = 1; i <= standingCount; i++)
-            {
-                int k = (standingNext - i + standingValues.Length) % standingValues.Length;
-                if (standingClock - standingTimes[k] > StandingWindow) break;
-                held = Mathf.Min(held, standingValues[k]);
-            }
-            float value = Mathf.Clamp(held, StandingMin, StandingMax);
-            StandingEyeHeight = standingSeen ? Mathf.Max(StandingEyeHeight, value) : value; standingSeen = true;
-        }
         public void SetTestPose(BoxerPose pose) { HasOverride = true; testPose = Current = pose; HasTracking = pose.valid; HeadTracked=pose.valid; }
         public void ClearTestPose() => HasOverride = false;
         public void SelectMode(BoxingInputMode next)
@@ -132,7 +115,8 @@ namespace Hapbeat.Boxing
                 var p = headCamera.transform.position;
                 origin.transform.position += StartPosition - new Vector3(p.x, 0, p.z);
             }
-            ReferenceFloorHeight=origin.transform.position.y;
+            // Yaw and horizontal position only: the height is the forced eye height (ApplyEyeHeight), the floor the game's.
+            ReferenceFloorHeight=GameFloor;
             float eye=(HasOverride ? Current.head.y : headCamera.transform.position.y)-ReferenceFloorHeight;
             ReferenceEyeHeight=Mathf.Max(.2f,eye);
             leftVisual.Reset(); rightVisual.Reset();

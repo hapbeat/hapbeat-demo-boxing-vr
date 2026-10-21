@@ -146,17 +146,15 @@ namespace Hapbeat.Boxing
         private void OnApplicationPause(bool value) { appPaused = value; if (value) PauseForExternalTransition(); }
         public void ResetHistory() { haveHistory = false; validTime = 0; leftContact = rightContact = false; leftCooldown = rightCooldown = 0; ResetPunches(); }
         public void ResetPunches() { leftPunch.Reset(); rightPunch.Reset(); }
-        // The eye height the opponent is sized from: the player's standing eye height (BoxingInput.StandingEyeHeight), read
+        // The eye height the opponent is sized from: the forced eye height (BoxingInput.EyeHeight, Demo Switch settings), the
+        // visitor's own height is not used.
         // when the tutorial or a round starts, so the posture at a recenter (a crouched stance) does not shrink the
         // opponent and a round keeps one size. Before the first start it follows the estimate.
-        public float SizeEyeHeight => sizeEyeRead ? sizeEye : input.StandingEyeHeight;
-        private float sizeEye;
-        private bool sizeEyeRead;
+        public float SizeEyeHeight => BoxingInput.EyeHeight;
         public float SizeOpponentStature { get; private set; }
-        private void ReadStandingHeight() { sizeEye = input.StandingEyeHeight; sizeEyeRead = true; }
         private void OnRecentered()
         {
-            // Recentering sets position, yaw and floor; the size comes from the standing height.
+            // Recentering sets position and yaw; the size comes from the forced eye height above the game floor.
             Initialize(); Opponent.Reset(SizeEyeHeight * tuning.opponentSizeScale,input.ReferenceFloorHeight,tuning.opponentSizeScale);
             presentation.CalibrateEnvironment(input.ReferenceFloorHeight,SizeEyeHeight);
             resolvedAttack=lastCompleted=0; ResetHistory();
@@ -169,12 +167,13 @@ namespace Hapbeat.Boxing
             SizeOpponentStature = avatar != null ? avatar.StatureFor(Opponent) : Opponent.StandingHeadHeight;
             float cameraY = input.HasOverride ? input.Current.head.y : input.headCamera != null ? input.headCamera.transform.position.y : 0;
             float originY = input.origin != null ? input.origin.transform.position.y : 0;
-            Debug.Log($"[Boxing Size] eye={SizeEyeHeight:F3} standing={input.StandingEyeHeight:F3} recenterHead={input.ReferenceEyeHeight:F3} " +
+            Debug.Log($"[Boxing Size] eye={SizeEyeHeight:F3} (forced) recenterHead={input.ReferenceEyeHeight:F3} " +
                 $"floor={input.ReferenceFloorHeight:F3} cameraY={cameraY:F3} originY={originY:F3} " +
                 $"opponentHead={Opponent.Head.y:F3} avatarScale={scale:F3} stature={SizeOpponentStature:F3} sizeScale={tuning.opponentSizeScale:F2}");
         }
         // Local operations for a future authenticated M5 command adapter. No new wire protocol here.
-        public void RecenterPlayer() { input.Recenter(); OnRecentered(); feedback.StopImpacts(); }
+        // 視線をリセット (the menu's RECENTER, the Demo Switch's reset through BoxingSessionHost): yaw, position and the forced eye height.
+        public void RecenterPlayer() { input.Recenter(); input.ApplyEyeHeight(BoxingInput.EyeHeight); OnRecentered(); feedback.StopImpacts(); }
         public void UseHandTracking() { input.SelectMode(BoxingInputMode.Hands); ResetHistory(); }
         public void UseControllers() { input.SelectMode(BoxingInputMode.Controllers); ResetHistory(); }
         // The plain round (countdown, gong): retry, restart and the next round never repeat the tutorial.
@@ -197,7 +196,7 @@ namespace Hapbeat.Boxing
         {
             if (presentation != null && presentation.enemyAvatar != null) presentation.enemyAvatar.ResetReaction();
             // Head height must not depend on controllers/both hands already being tracked.
-            ReadStandingHeight(); input.Recenter(); input.CompleteStartup(); OnRecentered();
+            input.Recenter(); input.CompleteStartup(); OnRecentered();
             calibrationPending=!input.HeadTracked && !input.HasOverride;
             ResultPresentationTime=0;
             resolvedAttack = lastCompleted = 0; ResetHistory(); feedback.StopFeedback(); feedback.StopMusic(); menu.Close();
@@ -214,13 +213,12 @@ namespace Hapbeat.Boxing
         }
         public void Simulate(float dt, BoxerPose pose)
         {
-            float floorY = input.origin != null ? input.origin.transform.position.y : input.ReferenceFloorHeight;
-            input.ObserveHead(pose.valid || pose.headTracked, pose.head.y - floorY, dt > 0 && dt <= .1f ? dt : 0);
+            input.HeadAboveFloor = pose.head.y - input.GameFloor;
             // Only before the first start: a tutorial or round started otherwise (menu, session) recenters itself (Prepare).
             if (Round.Phase == BoxingPhase.Ready && input.TickStartup(pose.valid || pose.headTracked, pose.head, pose.headRotation, dt > 0 && dt <= .1f ? dt : 0))
-            { input.Recenter(); input.SeedStanding(input.ReferenceEyeHeight); OnRecentered(); }
+            { input.Recenter(); OnRecentered(); }
             if(calibrationPending && input.HeadTracked)
-            { ReadStandingHeight(); input.Recenter(); OnRecentered(); calibrationPending=false; return; }
+            { input.Recenter(); OnRecentered(); calibrationPending=false; return; }
             if(Round.Phase==BoxingPhase.Results && previousPhase==BoxingPhase.Results && !menu.IsOpen)
             {
                 // End the action before the next step. No combat runs here; a pause holds the result.

@@ -4,9 +4,10 @@ using UnityEngine;
 
 namespace Hapbeat.Boxing.Tests
 {
-    // The opponent is sized from the player's standing eye height (BoxingInput.StandingEyeHeight), not from the posture at a
-    // recenter, and the tutorial ring markers sit on the surfaces they mark. Silent: forceSilent, no Hapbeat output.
-    public sealed class BoxingStandingHeightTests
+    // The forced eye height (BoxingInput.ApplyEyeHeight, the Demo Switch's IDemoSessionHeight): the camera at 1.65 m above the
+    // game floor after 視線をリセット whatever the Quest's floor, the opponent sized for it; and the tutorial ring markers in
+    // front of the body. Silent: forceSilent, no Hapbeat output.
+    public sealed class BoxingEyeHeightTests
     {
         private BoxingGame game;
         private BoxingTuning original;
@@ -29,56 +30,61 @@ namespace Hapbeat.Boxing.Tests
         private void Run(float seconds, BoxerPose pose) { game.input.SetTestPose(pose); for (int i = 0; i < Mathf.CeilToInt(seconds * 100); i++) game.Simulate(.01f, pose); }
         private BoxingInput Input => game.input;
 
-        [Test] public void TheEstimateStartsAtASaneDefaultBeforeTracking()
+        // The Quest's floor off by err (its tracking floor err below the real one: the head reads err higher): 視線をリセット
+        // puts the camera 1.65 m above the game floor, and the opponent's head is at the fixed 1.65 m.
+        [TestCase(.3f)] [TestCase(-.3f)]
+        public void TheResetForcesTheEyeHeightWhateverTheQuestFloor(float err)
         {
-            Assert.That(Input.StandingEyeHeight, Is.EqualTo(BoxingInput.StandingDefault));
-            Assert.That(BoxingInput.StandingDefault, Is.InRange(BoxingInput.StandingMin, BoxingInput.StandingMax));
-            // Untracked frames and less than a window of tracking leave it.
-            for (int i = 0; i < 100; i++) Input.ObserveHead(false, 1.9f, .01f);
-            for (int i = 0; i < 25; i++) Input.ObserveHead(true, 1.9f, .01f);
-            Assert.That(Input.StandingEyeHeight, Is.EqualTo(BoxingInput.StandingDefault));
-            for (int i = 0; i < 10; i++) Input.ObserveHead(true, 1.9f, .01f);
-            Assert.That(Input.StandingEyeHeight, Is.EqualTo(1.9f).Within(1e-4f));
+            float floor = Input.GameFloor;
+            Input.ClearTestPose();
+            Input.headCamera.transform.position = new Vector3(0, floor + 1.65f + err, .2f);
+            game.RecenterPlayer();
+            Assert.That(Input.headCamera.transform.position.y - floor, Is.EqualTo(BoxingInput.EyeHeight).Within(1e-4f));
+            Assert.That(BoxingInput.EyeHeight, Is.EqualTo(1.65f));
+            Assert.That(game.Opponent.Head.y - floor, Is.EqualTo(1.65f).Within(1e-4f));
+            Assert.That(game.presentation.arena.position.y, Is.EqualTo(floor).Within(1e-4f), "The arena stays on the game floor.");
         }
 
-        [Test] public void ShortSpikesAreIgnoredAndTheEstimateNeverShrinksAndStaysInRange()
+        [Test] public void ACrouchAtTheResetDoesNotChangeTheOpponentAndRepeatedCallsDoNotAccumulate()
         {
-            for (int i = 0; i < 100; i++) Input.ObserveHead(true, 1.6f, .01f);
-            Assert.That(Input.StandingEyeHeight, Is.EqualTo(1.6f).Within(1e-4f));
-            // A 0.2 s rise (a tracking jump, a hop) does not count; a crouch never lowers it.
-            for (int i = 0; i < 20; i++) Input.ObserveHead(true, 1.95f, .01f);
-            for (int i = 0; i < 100; i++) Input.ObserveHead(true, 1.6f, .01f);
-            Assert.That(Input.StandingEyeHeight, Is.EqualTo(1.6f).Within(1e-4f));
-            for (int i = 0; i < 200; i++) Input.ObserveHead(true, 1.35f, .01f);
-            Assert.That(Input.StandingEyeHeight, Is.EqualTo(1.6f).Within(1e-4f));
-            for (int i = 0; i < 100; i++) Input.ObserveHead(true, 2.4f, .01f);
-            Assert.That(Input.StandingEyeHeight, Is.EqualTo(BoxingInput.StandingMax));
+            float floor = Input.GameFloor;
+            Input.ClearTestPose();
+            Input.headCamera.transform.position = new Vector3(0, floor + 1.45f, .2f);
+            game.RecenterPlayer();
+            float stature = game.SizeOpponentStature;
+            Assert.That(game.Opponent.Head.y - floor, Is.EqualTo(1.65f).Within(1e-4f), "The opponent keeps its fixed size.");
+            Assert.That(Input.headCamera.transform.position.y - floor, Is.EqualTo(1.65f).Within(1e-4f));
+            float originY = Input.origin.transform.position.y;
+            var host = game.gameObject.AddComponent<BoxingSessionHost>();
+            for (int i = 0; i < 5; i++) host.ApplyEyeHeight(BoxingInput.EyeHeight);
+            Assert.That(Input.origin.transform.position.y, Is.EqualTo(originY).Within(1e-5f), "Repeated calls do not accumulate.");
+            // Crouching later and starting a round or the tutorial (their own recenter) moves nothing vertically.
+            Input.headCamera.transform.position += Vector3.down * .25f; originY = Input.origin.transform.position.y;
+            game.StartRound();
+            Assert.That(Input.origin.transform.position.y, Is.EqualTo(originY).Within(1e-5f));
+            game.StartTutorial();
+            Assert.That(Input.origin.transform.position.y, Is.EqualTo(originY).Within(1e-5f));
+            Assert.That(game.Opponent.Head.y - floor, Is.EqualTo(1.65f).Within(1e-4f));
+            Assert.That(game.SizeOpponentStature, Is.EqualTo(stature).Within(1e-4f));
         }
 
-        [Test] public void ACrouchedStanceAtTheRecenterKeepsTheSizeAndTutorialAndRoundMatch()
+        // The Demo Switch's 視線をリセット goes through the host: its horizontal recenter, then the host's eye height.
+        [Test] public void TheDemoSwitchResetUsesBoxingsHeight()
         {
-            // Standing 1.75 m until the tutorial starts by itself, then crouched 0.2 m lower in the boxing stance.
-            Run(game.tuning.autoStartSeconds + 1, Standing(1.75f));
-            Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Tutorial));
-            Assert.That(game.SizeEyeHeight, Is.EqualTo(1.75f).Within(1e-4f));
-            float tutorialStature = game.SizeOpponentStature;
-            var crouched = Standing(1.55f);
-            Run(1, crouched);
-            game.RecenterPlayer();
-            Assert.That(Input.ReferenceEyeHeight, Is.EqualTo(1.55f).Within(1e-4f), "The recenter reads the crouch...");
-            Assert.That(game.Opponent.Head.y, Is.EqualTo(1.75f).Within(1e-4f), "...but the opponent keeps the standing size.");
-            Assert.That(game.SizeOpponentStature, Is.EqualTo(tutorialStature).Within(1e-4f));
-            game.StartRound();
-            Assert.That(game.Opponent.Head.y, Is.EqualTo(1.75f).Within(1e-4f), "The round uses the tutorial's size.");
-            Assert.That(game.SizeOpponentStature, Is.EqualTo(tutorialStature).Within(1e-4f));
-            game.presentation.Render(game, crouched, true, .01f);
-            StringAssert.Contains("EYE 1.75m (now 1.55m)", game.presentation.statusText.text);
-            // Standing taller later does not resize the running round; the next start reads it.
-            Run(1, Standing(1.85f));
-            game.RecenterPlayer();
-            Assert.That(game.Opponent.Head.y, Is.EqualTo(1.75f).Within(1e-4f));
-            game.StartRound();
-            Assert.That(game.Opponent.Head.y, Is.EqualTo(1.85f).Within(1e-4f));
+            Assert.That(Hapbeat.DemoSwitch.DemoSessionDescriptor.TryParse(System.IO.File.ReadAllText("Assets/StreamingAssets/hapbeat-demo-session.json"), out var descriptor, out var error), Is.True, error);
+            Hapbeat.DemoSwitch.DemoSession.ResetForTests(null, "boxing", descriptor);
+            try
+            {
+                var host = game.gameObject.AddComponent<BoxingSessionHost>();
+                Hapbeat.DemoSwitch.DemoSession.RegisterHost(host);
+                float floor = Input.GameFloor;
+                Input.ClearTestPose();
+                Input.headCamera.transform.position = new Vector3(.3f, floor + 1.95f, .5f);
+                Hapbeat.DemoSwitch.DemoRecenter.ResetView();
+                Assert.That(Input.headCamera.transform.position.y - floor, Is.EqualTo(1.65f).Within(1e-4f));
+                Assert.That(game.Opponent.Head.y - floor, Is.EqualTo(1.65f).Within(1e-4f));
+            }
+            finally { Hapbeat.DemoSwitch.DemoSession.ResetForTests(); }
         }
 
         // Steps 1-2: the rings stand before the guarding gloves at face height / the belly, the whole rim in front of the skinned

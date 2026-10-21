@@ -33,7 +33,7 @@ namespace Hapbeat.Boxing.Tests
         private BoxerPose Moving(float head) { frame++; float s = Mathf.Sin(frame * .06f); return At(head, .04f * s, 15 * s); }
         private void Step(BoxerPose pose) { game.input.SetTestPose(pose); game.Simulate(.01f, pose); }
 
-        [Test] public void RecentersOnceWhenStillAndSeedsTheStandingHeightBeforeTheTutorial()
+        [Test] public void RecentersOnceWhenStillBeforeTheTutorialAndKeepsTheFixedSize()
         {
             Assert.That(game.input.StartupRecentered, Is.False);
             for (int i = 0; i < 300; i++) Step(Moving(1.72f));
@@ -45,16 +45,12 @@ namespace Hapbeat.Boxing.Tests
             Assert.That(still * .01f, Is.InRange(BoxingInput.StartupStillSeconds - .02f, BoxingInput.StartupStillSeconds + .03f), "After 0.5 s still.");
             Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Ready));
             Assert.That(game.input.ReferenceEyeHeight, Is.EqualTo(1.72f).Within(1e-4f));
-            Assert.That(game.input.StandingEyeHeight, Is.EqualTo(1.72f).Within(1e-4f), "The startup head height seeds the standing eye height.");
-            Assert.That(game.Opponent.Head.y, Is.EqualTo(1.72f).Within(1e-4f), "The opponent's head at the player's height.");
+            Assert.That(game.Opponent.Head.y - game.input.GameFloor, Is.EqualTo(BoxingInput.EyeHeight).Within(1e-4f), "The opponent is sized for the forced eye height, not the visitor's.");
             // The tutorial follows autoStartSeconds after it (and the tracking settle), never before.
             int ready = 0;
             while (game.Round.Phase == BoxingPhase.Ready && ready < 400) { Step(At(1.72f)); ready++; }
             Assert.That(game.Round.Phase, Is.EqualTo(BoxingPhase.Tutorial));
             Assert.That(ready * .01f, Is.GreaterThanOrEqualTo(game.tuning.autoStartSeconds));
-            // The running maximum continues from the seed.
-            for (int i = 0; i < 50; i++) Step(At(1.8f));
-            Assert.That(game.input.StandingEyeHeight, Is.EqualTo(1.8f).Within(1e-4f));
             Assert.That(game.feedback.Sends, Is.Zero);
         }
 
