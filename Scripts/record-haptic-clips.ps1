@@ -2,9 +2,10 @@
 # workspace; its launcher calls this) for Boxing. A PC replay of every cue, three takes each: scripted
 # punches by the player's gloves and strikes by the opponent, rendered at a fixed 30 fps from the player's
 # eye (no sound, nothing sent to Hapbeat devices; BoxingHapticRecord, which fails if a take fires anything but
-# its cue), then haptic_session.py writes the recording's session and runs hapbeat-helper scene build into
+# its cue). It writes the recording log and frames under Saved\HapticRecord, then `hapbeat-helper scene session`
+# (hapbeat-scene.json) checks the log against the cue table (every cue fired, each take only its own) and builds
 # Saved\HapticViewer (open Hapbeat Studio's Scene tab and pick this project folder).
-# Needs ffmpeg with libx264 (on PATH, or -Ffmpeg <path>), Python 3.8+ on PATH and hapbeat-helper (on PATH, or
+# Needs ffmpeg with libx264 (on PATH, or -Ffmpeg <path>) and hapbeat-helper with the scene commands (on PATH, or
 # HAPBEAT_HELPER). Close the Unity Editor on this project first. -EngineRoot is passed by the launcher (Unreal)
 # and ignored.
 param([string]$Unity=$(if($env:BOXING_UNITY){$env:BOXING_UNITY}else{'M:\GameEngine\Unity\Editor\6000.3.12f1\Editor\Unity.exe'}),
@@ -20,7 +21,8 @@ if(!(Select-String -Path $log -Pattern 'HAPTIC_RECORD_COMPLETE' -Quiet)) {
     throw "Replay did not complete (see $log)"
 }
 Select-String -Path $log -Pattern 'HAPTIC_RECORD_CUE|HAPTIC_RECORD_COMPLETE' | ForEach-Object { $_.Line }
-$py=@("$PSScriptRoot\haptic_session.py",'--ffmpeg',$Ffmpeg)
-if($KeepFrames) { $py+='--keep-frames' }
-python @py
-if($LASTEXITCODE -ne 0) { throw 'Scene build failed' }
+$helper=if($env:HAPBEAT_HELPER){$env:HAPBEAT_HELPER}else{'hapbeat-helper'}
+$session=@('scene','session','--config',(Join-Path $projectRoot 'hapbeat-scene.json'),'--require-all','--build','--ffmpeg',$Ffmpeg)
+if($KeepFrames) { $session+='--keep-frames' }
+& $helper @session
+if($LASTEXITCODE -ne 0) { throw 'Scene session failed' }

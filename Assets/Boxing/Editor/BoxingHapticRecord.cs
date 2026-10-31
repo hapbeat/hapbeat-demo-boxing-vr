@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using Hapbeat.Scene;
 
 namespace Hapbeat.Boxing.Editor
 {
@@ -18,10 +18,12 @@ namespace Hapbeat.Boxing.Editor
     /// contact itself (BoxingGame, BoxingFeedback.CueIndex): the player's gloves follow a scripted punch, the
     /// opponent strikes through its recording hook (BoxingOpponent.ScriptedStrike; no AI meanwhile).
     /// A take that fires anything but its one intended cue (and hand / zone) fails the run.
-    /// Writes Saved/HapticClips/Frames/f&lt;frame&gt;.png and Saved/HapticClips/record.json
-    /// (fps, events [[frame, cue, hand, note, gain]], no levels: every cue is a one-shot). The log and record.json
-    /// name each cue as the cue table does (punch_glove:soft for the game cue punch_glove_soft, BoxingHapticImport.TableCue);
-    /// Scripts/haptic_session.py turns them into the Studio Scene tab's data.
+    /// Writes Saved/HapticRecord/frames/f&lt;frame&gt;.png and the recording log Saved/HapticRecord/events.jsonl
+    /// (hapbeat-contracts specs/scene-recording.md section 5, HapbeatSceneLog): one take per scripted contact with
+    /// its intended cue as expect, and every contact the game reported (BoxingFeedback.Reported) as a cue named as
+    /// the cue table does (punch_glove:soft for the game cue punch_glove_soft, BoxingHapticImport.TableCue).
+    /// `hapbeat-helper scene session` (hapbeat-scene.json at the project root) checks it against the cue table and
+    /// builds the Studio Scene tab's data.
     ///
     /// Run: Unity -batchmode -quit -projectPath &lt;project&gt; -executeMethod Hapbeat.Boxing.Editor.BoxingHapticRecord.Run (with graphics).
     /// </summary>
@@ -99,10 +101,10 @@ namespace Hapbeat.Boxing.Editor
         public static void Run()
         {
             var root = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            var outDir = Path.Combine(root, "Saved", "HapticClips");
-            var frames = Path.Combine(outDir, "Frames");
-            if (Directory.Exists(frames)) Directory.Delete(frames, true);
+            // hapbeat-scene.json frames: a folder of this recording's f<frame>.png only.
+            var frames = Path.Combine(root, "Saved", "HapticRecord", "frames");
             Directory.CreateDirectory(frames);
+            foreach (var old in Directory.GetFiles(frames, "f*.png")) File.Delete(old);
 
             EditorSceneManager.OpenScene(BoxingProject.ScenePath);
             var game = UnityEngine.Object.FindFirstObjectByType<BoxingGame>();
@@ -127,8 +129,18 @@ namespace Hapbeat.Boxing.Editor
             int frame = 0;
             float dt = 1f / (Fps * SubSteps);
             var fired = new List<(int frame, BoxingImpact impact)>();
+            string Hand(BoxingImpact i) => BoxingFeedback.CueIndex(i) >= BoxingFeedback.WristCues ? "both" : i.zone == ImpactZone.LeftGlove ? "left" : "right";
+            string label = "";
+            HapbeatSceneLog.Begin("boxing-vr", Fps);
             // An impact belongs to the frame rendered after the step in which it fired.
-            game.feedback.Reported += impact => fired.Add((frame, impact));
+            game.feedback.Reported += impact =>
+            {
+                fired.Add((frame, impact));
+                // The acting hand matters only to the wrist cues (at: hand); hit_body plays at the neck.
+                bool wrist = BoxingFeedback.CueIndex(impact) < BoxingFeedback.WristCues;
+                HapbeatSceneLog.Cue(frame, BoxingHapticImport.TableCue(BoxingFeedback.CueName(impact)), wrist ? Hand(impact) : null, impact.gain,
+                    note: string.Format(CultureInfo.InvariantCulture, "{0}, {1:0.00} m/s, gain {2:0.00}", label, impact.relativeSpeed, impact.gain));
+            };
 
             // Plays `seconds` of the pose function (time since the segment start), SubSteps game steps per frame.
             void Play(float seconds, Func<float, BoxerPose> at)
@@ -153,10 +165,8 @@ namespace Hapbeat.Boxing.Editor
             RenderPipeline.SubmitRenderRequest(camera, request);
             Play(GapSeconds, _ => pose); // tracking settles (HOLD STILL) before the first take
 
-            var events = new List<string>();
             var failures = new List<string>();
             var byCue = new Dictionary<string, List<BoxingImpact>>();
-            string Hand(BoxingImpact i) => BoxingFeedback.CueIndex(i) >= BoxingFeedback.WristCues ? "both" : i.zone == ImpactZone.LeftGlove ? "left" : "right";
             int number = 0;
             foreach (var take in Script())
             {
@@ -170,8 +180,12 @@ namespace Hapbeat.Boxing.Editor
                 }
                 Play(GapSeconds, _ => pose);
                 fired.Clear();
+                label = "take " + number + ": " + take.Label;
+                HapbeatSceneLog.Take(frame, label, new[] { BoxingHapticImport.TableCue(take.cue) });
                 if (take.punch) Punch(game, take, pose, Play); else Strike(game, take, pose, Play);
                 Play(GapSeconds, _ => pose);
+                HapbeatSceneLog.TakeEnd(frame);
+                label = "";
 
                 bool ok = fired.Count == 1 && BoxingFeedback.CueName(fired[0].impact) == take.cue;
                 if (ok && BoxingFeedback.CueIndex(fired[0].impact) < BoxingFeedback.WristCues) ok = Hand(fired[0].impact) == (take.left ? "left" : "right");
@@ -183,16 +197,16 @@ namespace Hapbeat.Boxing.Editor
                 if (!ok)
                 {
                     failures.Add($"take {number} ({take.Label}): intended {take.cue}, fired [{string.Join(",", fired.Select(f => BoxingFeedback.CueName(f.impact) + "/" + f.impact.zone))}]");
+                    // The hand and the zone are the game's own checks; the take's expect covers the cue.
+                    HapbeatSceneLog.Fail(failures[failures.Count - 1], frame);
                     continue;
                 }
-                var (hitFrame, hit) = fired[0];
                 if (!byCue.TryGetValue(take.cue, out var list)) byCue[take.cue] = list = new List<BoxingImpact>();
-                list.Add(hit);
-                string note = string.Format(CultureInfo.InvariantCulture, "take {0}: {1}, {2:0.00} m/s, gain {3:0.00}", list.Count, take.Label, hit.relativeSpeed, hit.gain);
-                events.Add(string.Format(CultureInfo.InvariantCulture, "[{0},\"{1}\",\"{2}\",\"{3}\",{4:0.###}]", hitFrame, BoxingHapticImport.TableCue(take.cue), Hand(hit), note, hit.gain));
+                list.Add(fired[0].impact);
             }
             target.Release();
             skin.enabled = true; UnityEngine.Object.DestroyImmediate(baked); UnityEngine.Object.DestroyImmediate(skinned);
+            HapbeatSceneLog.End(frame);
             if (failures.Count > 0) throw new Exception("HAPTIC_RECORD_FAILED: " + string.Join("; ", failures));
             foreach (var cue in BoxingFeedback.Cues)
             {
@@ -200,11 +214,7 @@ namespace Hapbeat.Boxing.Editor
                 Debug.Log(string.Format(CultureInfo.InvariantCulture, "HAPTIC_RECORD_CUE {0} takes={1} speed={2:0.00}..{3:0.00} gain={4:0.000}..{5:0.000}",
                     BoxingHapticImport.TableCue(cue), list.Count, list.Min(i => i.relativeSpeed), list.Max(i => i.relativeSpeed), list.Min(i => i.gain), list.Max(i => i.gain)));
             }
-            var json = new StringBuilder();
-            json.Append("{\"fps\":").Append(Fps).Append(",\"level_columns\":[],\"events\":[")
-                .Append(string.Join(",", events)).Append("],\"levels\":{},\"frames\":").Append(frame).Append('}');
-            File.WriteAllText(Path.Combine(outDir, "record.json"), json.ToString());
-            Debug.Log("HAPTIC_RECORD_COMPLETE frames=" + frame + " events=" + events.Count + " takes=" + number);
+            Debug.Log("HAPTIC_RECORD_COMPLETE frames=" + frame + " events=" + byCue.Values.Sum(l => l.Count) + " takes=" + number);
         }
 
         private static BoxerPose Blend(BoxerPose from, BoxerPose to, float s)
