@@ -21,7 +21,7 @@ namespace Hapbeat.Boxing
             int next = UnityEngine.Random.Range(0, count - 1); return next >= last ? next + 1 : next;
         }
     }
-    // One cue's sounds (cue table sfx.sound / sfx.sounds) with their volumes (sfx volume x sound intensity)
+    // One cue's sounds (cue table sfx.sound / sfx.sounds) with their volumes (sfx volume x sound clip_gain)
     // and how one is picked per impact (variation.pick).
     [Serializable]
     public sealed class CueSoundSet
@@ -195,7 +195,7 @@ namespace Hapbeat.Boxing
         public int TestSends { get; private set; }
         // One test clip at a full impact's share (1), no sound: streamed as an impact streams it, leadSeconds later on the
         // stream timeline, or (kit) as the PLAY of the device's own copy KitName.<clip> at the same gain. Returns the peak
-        // sent (1 = full scale; Studio's audition sends the clip's peak x its intensity).
+        // sent (1 = full scale; Studio's audition sends the clip's peak x its clip_gain).
         public float TestHaptic(HapbeatUnityEventTrigger trigger, bool kit, double leadSeconds)
         {
             var entry = trigger != null ? trigger.ResolveEntry() : null;
@@ -235,9 +235,9 @@ namespace Hapbeat.Boxing
         // Demo-wide haptics trim in dB (the Demo Session option haptics_db, else BoxingTuning.hapticsTrimDb); set by BoxingGame.
         public float HapticsTrimDb { get; set; } = -3;
         public static readonly int[] TrimSteps = { 0, -3, -6, -9, -12, -15, -18, -24 };
-        // GainMultiplier for this impact: the wanted level is entry gain x intensity x the impact's share, capped at full
+        // GainMultiplier for this impact: the wanted level is entry gain x clip_gain x the impact's share, capped at full
         // scale for the clip (1 / its peak; above it the SDK limiter only squashed it, so a trim did nothing), times
-        // 10^(trim/20), divided back by entry gain x intensity. Nothing is sent above full scale and the trim acts in dB.
+        // 10^(trim/20), divided back by entry gain x clip_gain. Nothing is sent above full scale and the trim acts in dB.
         public float HapticMultiplier(BoxingImpact impact, HapbeatUnityEventTrigger trigger) => HapticMultiplier(HapticGain(impact), trigger);
         // The same for an impact's share of the cue (HapticGain).
         public float HapticMultiplier(float share, HapbeatUnityEventTrigger trigger)

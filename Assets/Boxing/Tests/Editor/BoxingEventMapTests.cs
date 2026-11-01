@@ -12,7 +12,7 @@ namespace Hapbeat.Boxing.Tests
         [TestCase("Assets")] [TestCase("Assets/Boxing/Haptics")] [TestCase("Packages")] [TestCase("")]
         public void ManifestSearchHandlesRootAndStandaloneFolders(string folder)
         {
-            var type=Type.GetType("Hapbeat.Editor.HapbeatManifestIntensity, Hapbeat.Editor",true);
+            var type=Type.GetType("Hapbeat.Editor.HapbeatManifestClipGain, Hapbeat.Editor",true);
             var find=type.GetMethod("FindKitManifest",BindingFlags.NonPublic|BindingFlags.Static);
             Assert.DoesNotThrow(()=>find.Invoke(null,new object[]{folder}));
         }
@@ -44,7 +44,7 @@ namespace Hapbeat.Boxing.Tests
                 Assert.That(entry.loop,Is.False); Assert.That(entry.mode,Is.EqualTo(Hapbeat.HapticMode.StreamClip));
                 // Wrist routes are raised to 2.0 against the in-game gain; the neck keeps 0.8 (cue table).
                 // Route gains come from the cue table (punch_glove 2, the others lower to sit 3 dB under it).
-                Assert.That(entry.gain,Is.GreaterThan(0).And.LessThanOrEqualTo(2)); Assert.That(entry.CachedManifestIntensity,Is.GreaterThan(0).And.LessThanOrEqualTo(1));
+                Assert.That(entry.gain,Is.GreaterThan(0).And.LessThanOrEqualTo(2)); Assert.That(entry.CachedManifestClipGain,Is.GreaterThan(0).And.LessThanOrEqualTo(1));
             }
             Assert.That(map.entries.Select(e=>e.eventName),Is.Unique);
         }
@@ -103,7 +103,7 @@ namespace Hapbeat.Boxing.Tests
             var samples=new float[clip.samples*clip.channels];
             Assert.That(clip.GetData(samples,0),Is.True);
             Assert.That(samples.Length,Is.GreaterThan(0));
-            var type=Type.GetType("Hapbeat.Editor.HapbeatManifestIntensity, Hapbeat.Editor",true);
+            var type=Type.GetType("Hapbeat.Editor.HapbeatManifestClipGain, Hapbeat.Editor",true);
             var find=type.GetMethod("FindManifestForClip",BindingFlags.Public|BindingFlags.Static);
             Assert.DoesNotThrow(()=>find.Invoke(null,new object[]{clip}));
         }

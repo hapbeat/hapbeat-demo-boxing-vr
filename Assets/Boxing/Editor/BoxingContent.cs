@@ -161,7 +161,7 @@ namespace Hapbeat.Boxing.Editor
         public static string DefaultSound(int cue) =>
             (cue < 2 || (cue >= 4 && cue < 8) ? "impactSoft_" : "impactPunch_") + (cue % 2 == 0 ? "medium" : "heavy") + "_000";
         // Replaces the EventMap entries and the scene's impact triggers (BoxingFeedback.TriggerIndex order, one clip
-        // each): stream clip stream-clips/<cue>.wav, gain 0.8, clip intensity 1, and the default cue sounds.
+        // each): stream clip stream-clips/<cue>.wav, gain 0.8, clip_gain 1, and the default cue sounds.
         public static void ConfigureHapticEvents(BoxingGame game)
         {
             var f = game.feedback;
@@ -179,8 +179,8 @@ namespace Hapbeat.Boxing.Editor
                 var entry = new HapbeatEventEntry { displayName = name, category = "boxing", eventName = name, mode = HapticMode.StreamClip,
                     streamClip = ImportAudio(StreamClips + BoxingFeedback.Cues[cue] + ".wav"), gain = DefaultEventGain,
                     target = i < wrist ? "*/pos_l_wrist" : i < 2 * wrist ? "*/pos_r_wrist" : "*/pos_neck" };
-                // The clip intensity lives in the cue table, not in a Kit manifest (BoxingHapticImport).
-                entry.SetCachedManifestIntensity(1);
+                // The clip_gain lives in the cue table, not in a Kit manifest (BoxingHapticImport).
+                entry.SetCachedManifestClipGain(1);
                 map.entries.Add(entry);
                 f.impactHaptics[i] = new CueHapticSet { triggers = new[] { AddImpactTrigger(f, map, entry) } };
             }

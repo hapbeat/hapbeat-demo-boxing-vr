@@ -1,6 +1,6 @@
 """Flattens the Boxing cue table (Assets/Boxing/Haptics/boxing-cues.json) into Saved/HapticImport.json for
 BoxingHapticImport (Unity's JsonUtility reads no dictionaries): one item per game cue (BoxingFeedback.Cues) with
-its clips, route gain, clip intensities, sounds with their volumes (sfx volume x sound intensity) and how one is
+its clips, route gain, clip gains (clip_gain), sounds with their volumes (sfx volume x sound clip_gain) and how one is
 picked.
 
 The table has one cue per contact kind (punch_glove, punch_body, guard_glove, guard_arm, hit_body) with the
@@ -138,7 +138,7 @@ def plan(table, clips_dir=CLIPS_DIR, sfx_dir=SFX_DIR):
             if not clips:
                 err.append(f'{name}: clips is empty')
                 continue
-            intensities, bad = [], False
+            clip_gains, bad = [], False
             for clip in clips:
                 info = table.get('clips', {}).get(clip)
                 if info is None:
@@ -148,7 +148,7 @@ def plan(table, clips_dir=CLIPS_DIR, sfx_dir=SFX_DIR):
                 elif not (Path(clips_dir) / f'{clip}.wav').is_file():
                     err.append(f'{name}: {Path(clips_dir) / (clip + ".wav")} missing'); bad = True
                 else:
-                    intensities.append(float(info.get('intensity', 1)))
+                    clip_gains.append(float(info.get('clip_gain', 1)))
             if bad:
                 continue
             sfx, sounds = resolved.get('sfx'), []
@@ -161,11 +161,11 @@ def plan(table, clips_dir=CLIPS_DIR, sfx_dir=SFX_DIR):
                 if missing:
                     err.extend(f'{name}: {Path(sfx_dir) / (s + ".wav")} missing' for s in missing)
                     continue
-            volumes = [float(sfx.get('volume', 1)) * float(table.get('sounds', {}).get(s, {}).get('intensity', 1)) for s in sounds]
+            volumes = [float(sfx.get('volume', 1)) * float(table.get('sounds', {}).get(s, {}).get('clip_gain', 1)) for s in sounds]
             # DEC-093: where each sound and clip is put together with the other (ms from the file start; absent = 0).
             sound_sync = [float(table.get('sounds', {}).get(s, {}).get('syncMs', 0)) for s in sounds]
             clip_sync = [float(table.get('clips', {}).get(c, {}).get('syncMs', 0)) for c in clips]
-            items.append({'cue': f'{cue}_{variant}', 'clips': clips, 'gain': float(route.get('gain', 1)), 'intensities': intensities,
+            items.append({'cue': f'{cue}_{variant}', 'clips': clips, 'gain': float(route.get('gain', 1)), 'clipGains': clip_gains,
                           'sounds': sounds, 'volumes': volumes, 'pick': pick, 'soundSyncMs': sound_sync, 'clipSyncMs': clip_sync})
     return items, err
 

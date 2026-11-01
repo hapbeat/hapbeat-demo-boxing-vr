@@ -72,7 +72,7 @@ namespace Hapbeat.Boxing.Tests
         }
 
         // punch_body (soft / hard), guard_glove hard and guard_arm hard (clips punch_body_t150_a / punch_body_hard_t151_b,
-        // intensity 0.18): were capped at full scale (intensity 1 x route gain 2), then a third of it, and since the user
+        // clip_gain 0.18): were capped at full scale (clip_gain 1 x route gain 2), then a third of it, and since the user
         // runs the trim at 0 dB with these routes at 1.416 (3 dB under punch_glove's 2), about 0.71 x a third at 0 dB.
         [Test] public void TheDamageWristCuesSendAboutAThirdOfTheFullScaleCap()
         {

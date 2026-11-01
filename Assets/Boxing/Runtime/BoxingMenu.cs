@@ -212,7 +212,7 @@ namespace Hapbeat.Boxing
                 rows[i].text = (i == Selection ? ">  " : "   ") + (i < labels.Length ? labels[i] : "");
                 rows[i].color = i == Selection ? new Color(0.25f, 0.95f, 1) : new Color(0.8f, 0.85f, 0.92f);
             }
-            hint.text = "PEAK " + peak.ToString("0.00") + " FS = STUDIO INTENSITY " + (clipPeak > 0 ? peak / clipPeak : 0).ToString("0.00") +
+            hint.text = "PEAK " + peak.ToString("0.00") + " FS = STUDIO CLIP GAIN " + (clipPeak > 0 ? peak / clipPeak : 0).ToString("0.00") +
                 "  (TRIM " + game.feedback.HapticsTrimDb.ToString("0") + " dB)\nA FULL-STRENGTH IMPACT OF THE CUE, NO PUNCH, NO SOUND\n" +
                 "KIT: INSTALL " + BoxingFeedback.KitName + " WITH THE CLIP AS A DEVICE (FIRE) CLIP\n" +
                 (UsesHandPointer ? "PINCH TO SELECT" : "STICK: SELECT   A / X: CONFIRM   B / Y: CLOSE");

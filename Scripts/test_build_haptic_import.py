@@ -23,8 +23,8 @@ class PlanTests(unittest.TestCase):
         for name, at in bhi.CUES.items():
             cues[name] = {'description': name, 'sfx': {'sounds': ['S1', 'S2'], 'volume': 1}, 'variation': {'pick': 'random'},
                           'variants': {'soft': {'haptics': route(at, clip='a')}, 'hard': {'haptics': route(at, clips=['b', 'c'])}}}
-        self.table = {'schema_version': 1, 'clips': {'a': {'intensity': 0.5}, 'b': {'intensity': 1}, 'c': {'intensity': 0.25}},
-                      'sounds': {'S1': {'intensity': 0.5}, 'S3': {}}, 'cues': cues}
+        self.table = {'schema_version': 1, 'clips': {'a': {'clip_gain': 0.5}, 'b': {'clip_gain': 1}, 'c': {'clip_gain': 0.25}},
+                      'sounds': {'S1': {'clip_gain': 0.5}, 'S3': {}}, 'cues': cues}
 
     def tearDown(self):
         self.dir.cleanup()
@@ -100,11 +100,11 @@ class PlanTests(unittest.TestCase):
         _, err = self.plan(table)
         self.assertTrue(any('guard_arm:hard: hapticsGain' in e for e in err), err)
 
-    def test_several_clips_keep_their_order_and_intensities(self):
+    def test_several_clips_keep_their_order_and_clip_gains(self):
         items, _ = self.plan()
         self.assertEqual(items[1]['clips'], ['b', 'c'])
-        self.assertEqual(items[1]['intensities'], [1.0, 0.25])
-        self.assertEqual(items[0]['intensities'], [0.5])
+        self.assertEqual(items[1]['clipGains'], [1.0, 0.25])
+        self.assertEqual(items[0]['clipGains'], [0.5])
 
     def test_variant_pick_overrides_the_cue_pick(self):
         table = copy.deepcopy(self.table)

@@ -26,7 +26,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestClipGain: 1
   - _id: daae9f12ccac49c9b8a38fd8dcd799e5
     mode: 1
     displayName: left_punch_glove_hard
@@ -40,7 +40,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestClipGain: 1
   - _id: 1b4ed2e4cfa349f39bb9d57687015bdd
     mode: 1
     displayName: left_punch_body_soft
@@ -54,7 +54,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.18
+    _cachedManifestClipGain: 0.18
   - _id: 496fe196ca5a43eb94e192d626d8ff0b
     mode: 1
     displayName: left_punch_body_hard
@@ -68,7 +68,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.18
+    _cachedManifestClipGain: 0.18
   - _id: 7a7e57641e7d42d7bb84fb5398c22469
     mode: 1
     displayName: left_guard_glove_soft
@@ -82,7 +82,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.3
+    _cachedManifestClipGain: 0.3
   - _id: 7053c9f6f2f9412b9a59ba3844dc5a9a
     mode: 1
     displayName: left_guard_glove_hard
@@ -96,7 +96,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.18
+    _cachedManifestClipGain: 0.18
   - _id: c4c5ae9b8d074324b61e0f477c08c68b
     mode: 1
     displayName: left_guard_arm_soft
@@ -110,7 +110,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.45
+    _cachedManifestClipGain: 0.45
   - _id: 8ab599f61b09424b85cb40c65a8fd9d1
     mode: 1
     displayName: left_guard_arm_hard
@@ -124,7 +124,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.18
+    _cachedManifestClipGain: 0.18
   - _id: aafe7f6f73124c6b93dbc67635592804
     mode: 1
     displayName: right_punch_glove_soft
@@ -138,7 +138,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestClipGain: 1
   - _id: 490f790c9b1d4541a28a4f9d91368f6a
     mode: 1
     displayName: right_punch_glove_hard
@@ -152,7 +152,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestClipGain: 1
   - _id: f1337ae4e31f4fbe805b53e0c8ddb163
     mode: 1
     displayName: right_punch_body_soft
@@ -166,7 +166,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.18
+    _cachedManifestClipGain: 0.18
   - _id: 872b9997d3b848b5803ea6791933b42f
     mode: 1
     displayName: right_punch_body_hard
@@ -180,7 +180,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.18
+    _cachedManifestClipGain: 0.18
   - _id: ab734116385d4c76981c499de1a141d9
     mode: 1
     displayName: right_guard_glove_soft
@@ -194,7 +194,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.3
+    _cachedManifestClipGain: 0.3
   - _id: 98982b96caeb42b08a440f37af71596c
     mode: 1
     displayName: right_guard_glove_hard
@@ -208,7 +208,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.18
+    _cachedManifestClipGain: 0.18
   - _id: 1bf01b514cbb48438df2472110bf9389
     mode: 1
     displayName: right_guard_arm_soft
@@ -222,7 +222,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.45
+    _cachedManifestClipGain: 0.45
   - _id: 21d0b7f209b2426bbb7294a5253b6750
     mode: 1
     displayName: right_guard_arm_hard
@@ -236,7 +236,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.18
+    _cachedManifestClipGain: 0.18
   - _id: 5a7432825fc54c378892cd99a16c4a4d
     mode: 1
     displayName: hit_body_soft
@@ -250,7 +250,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.4254271
+    _cachedManifestClipGain: 0.4254271
   - _id: 63327898f7c44cd398acdc985ed6b379
     mode: 1
     displayName: hit_body_hard
@@ -264,7 +264,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 1
+    _cachedManifestClipGain: 1
   - _id: 5d1887209d4349a3a20663c8b99e4bf0
     mode: 1
     displayName: left_guard_glove_soft_2
@@ -278,7 +278,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.5
+    _cachedManifestClipGain: 0.5
   - _id: f3b43da6cd214425ae1c3c9fe83fa332
     mode: 1
     displayName: right_guard_glove_soft_2
@@ -292,7 +292,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.5
+    _cachedManifestClipGain: 0.5
   - _id: 362c3996f5d343bdb78d2530fcff4de6
     mode: 1
     displayName: left_guard_arm_soft_2
@@ -306,7 +306,7 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.45
+    _cachedManifestClipGain: 0.45
   - _id: f165633ab9084a6b8a4def6a182b4162
     mode: 1
     displayName: right_guard_arm_soft_2
@@ -320,5 +320,5 @@ MonoBehaviour:
     delayOffsetSeconds: 0
     notes: 
     manifestOverride: {fileID: 0}
-    _cachedManifestIntensity: 0.45
+    _cachedManifestClipGain: 0.45
   revertPlayModeChanges: 0
