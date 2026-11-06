@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "title": "Boxing",
+  "project_name": "boxing-vr",
+  "paths": {
+    "cues": "Assets/Boxing/Haptics/boxing-cues.json",
+    "clips": "Assets/Boxing/Haptics/stream-clips",
+    "sounds": "Assets/Boxing/Haptics/sounds"
+  },
+  "at": [
+    "hand",
+    "pos_neck"
+  ],
+  "families": [
+    {
+      "label": "自分のパンチ",
+      "color": "#ff8a3d",
+      "cues": [
+        "punch_glove",
+        "punch_body"
+      ]
+    },
+    {
+      "label": "ガード",
+      "color": "#4ea1ff",
+      "cues": [
+        "guard_glove",
+        "guard_arm"
+      ]
+    },
+    {
+      "label": "被弾",
+      "color": "#ff4d4d",
+      "cues": [
+        "hit_body"
+      ]
+    }
+  ],
+  "moment_rules": {
+    "max": {},
+    "min_gap_s": {},
+    "default_max": null
+  },
+  "import_command": "powershell -ExecutionPolicy Bypass -File Scripts/import-haptic-kit.ps1",
+  "record_command": "powershell -ExecutionPolicy Bypass -File Scripts/record-haptic-clips.ps1"
+}

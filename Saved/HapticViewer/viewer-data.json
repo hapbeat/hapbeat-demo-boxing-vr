@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "fps": 30,
+  "frames": 3258,
+  "video": "full_replay.mp4",
+  "events": [
+    {
+      "t": 2.4,
+      "name": "punch_glove:soft",
+      "hand": "left",
+      "gain": 0.819707,
+      "note": "take 1: left punch to the glove, 1.02 m/s, gain 0.82"
+    },
+    {
+      "t": 5.6333,
+      "name": "punch_glove:soft",
+      "hand": "right",
+      "gain": 0.819707,
+      "note": "take 2: right punch to the glove, 0.98 m/s, gain 0.82"
+    },
+    {
+      "t": 8.7333,
+      "name": "punch_glove:soft",
+      "hand": "left",
+      "gain": 0.819707,
+      "note": "take 3: left punch to the glove, 1.06 m/s, gain 0.82"
+    },
+    {
+      "t": 12.1333,
+      "name": "punch_body:soft",
+      "hand": "left",
+      "gain": 0.819708,
+      "note": "take 4: left punch to the head, 0.98 m/s, gain 0.82"
+    },
+    {
+      "t": 15.4333,
+      "name": "punch_body:soft",
+      "hand": "right",
+      "gain": 0.819708,
+      "note": "take 5: right punch to the body, 0.93 m/s, gain 0.82"
+    },
+    {
+      "t": 18.7,
+      "name": "punch_body:soft",
+      "hand": "right",
+      "gain": 0.819708,
+      "note": "take 6: right punch to the head, 1.04 m/s, gain 0.82"
+    },
+    {
+      "t": 21.5,
+      "name": "punch_glove:hard",
+      "hand": "left",
+      "gain": 1,
+      "note": "take 7: left punch to the glove, 4.03 m/s, gain 1.00"
+    },
+    {
+      "t": 24.2667,
+      "name": "punch_glove:hard",
+      "hand": "right",
+      "gain": 1,
+      "note": "take 8: right punch to the glove, 3.95 m/s, gain 1.00"
+    },
+    {
+      "t": 27.0333,
+      "name": "punch_glove:hard",
+      "hand": "left",
+      "gain": 1,
+      "note": "take 9: left punch to the glove, 3.97 m/s, gain 1.00"
+    },
+    {
+      "t": 29.8333,
+      "name": "punch_body:hard",
+      "hand": "left",
+      "gain": 1,
+      "note": "take 10: left punch to the head, 4.06 m/s, gain 1.00"
+    },
+    {
+      "t": 32.6667,
+      "name": "punch_body:hard",
+      "hand": "right",
+      "gain": 1,
+      "note": "take 11: right punch to the body, 4.02 m/s, gain 1.00"
+    },
+    {
+      "t": 35.5,
+      "name": "punch_body:hard",
+      "hand": "right",
+      "gain": 1,
+      "note": "take 12: right punch to the head, 3.15 m/s, gain 1.00"
+    },
+    {
+      "t": 39.6667,
+      "name": "guard_glove:soft",
+      "hand": "left",
+      "gain": 0.308963,
+      "note": "take 13: jab to the head on the glove, 1.19 m/s, gain 0.31"
+    },
+    {
+      "t": 43.6333,
+      "name": "guard_glove:soft",
+      "hand": "right",
+      "gain": 0.295575,
+      "note": "take 14: cross to the head on the glove, 1.11 m/s, gain 0.30"
+    },
+    {
+      "t": 47.4333,
+      "name": "guard_glove:soft",
+      "hand": "left",
+      "gain": 0.30934,
+      "note": "take 15: jab to the head on the glove, 1.19 m/s, gain 0.31"
+    },
+    {
+      "t": 51.8,
+      "name": "guard_arm:soft",
+      "hand": "left",
+      "gain": 0.318224,
+      "note": "take 16: jab to the head on the forearm, 1.25 m/s, gain 0.32"
+    },
+    {
+      "t": 55.7667,
+      "name": "guard_arm:soft",
+      "hand": "right",
+      "gain": 0.300479,
+      "note": "take 17: cross to the head on the forearm, 1.14 m/s, gain 0.30"
+    },
+    {
+      "t": 59.5667,
+      "name": "guard_arm:soft",
+      "hand": "left",
+      "gain": 0.311972,
+      "note": "take 18: jab to the head on the forearm, 1.21 m/s, gain 0.31"
+    },
+    {
+      "t": 64.1333,
+      "name": "hit_body:soft",
+      "gain": 0.279443,
+      "note": "take 19: jab to the head, 1.02 m/s, gain 0.28"
+    },
+    {
+      "t": 68.9,
+      "name": "hit_body:soft",
+      "gain": 0.263204,
+      "note": "take 20: cross to the body, 0.93 m/s, gain 0.26"
+    },
+    {
+      "t": 73.4333,
+      "name": "hit_body:soft",
+      "gain": 0.282164,
+      "note": "take 21: jab to the head, 1.04 m/s, gain 0.28"
+    },
+    {
+      "t": 77.8333,
+      "name": "guard_glove:hard",
+      "hand": "left",
+      "gain": 0.767947,
+      "note": "take 22: jab to the head on the glove, 4.26 m/s, gain 0.77"
+    },
+    {
+      "t": 81.2333,
+      "name": "guard_glove:hard",
+      "hand": "right",
+      "gain": 0.729294,
+      "note": "take 23: cross to the head on the glove, 3.98 m/s, gain 0.73"
+    },
+    {
+      "t": 84.5667,
+      "name": "guard_glove:hard",
+      "hand": "left",
+      "gain": 0.753574,
+      "note": "take 24: jab to the head on the glove, 4.16 m/s, gain 0.75"
+    },
+    {
+      "t": 88.4667,
+      "name": "guard_arm:hard",
+      "hand": "left",
+      "gain": 0.756851,
+      "note": "take 25: jab to the head on the forearm, 4.18 m/s, gain 0.76"
+    },
+    {
+      "t": 91.8667,
+      "name": "guard_arm:hard",
+      "hand": "right",
+      "gain": 0.714388,
+      "note": "take 26: cross to the head on the forearm, 3.87 m/s, gain 0.71"
+    },
+    {
+      "t": 95.2,
+      "name": "guard_arm:hard",
+      "hand": "left",
+      "gain": 0.773461,
+      "note": "take 27: jab to the head on the forearm, 4.30 m/s, gain 0.77"
+    },
+    {
+      "t": 99.3667,
+      "name": "hit_body:hard",
+      "gain": 0.614541,
+      "note": "take 28: cross to the body, 3.17 m/s, gain 0.61"
+    },
+    {
+      "t": 102.9,
+      "name": "hit_body:hard",
+      "gain": 0.654642,
+      "note": "take 29: jab to the head, 3.45 m/s, gain 0.65"
+    },
+    {
+      "t": 106.5667,
+      "name": "hit_body:hard",
+      "gain": 0.619378,
+      "note": "take 30: cross to the body, 3.20 m/s, gain 0.62"
+    }
+  ]
+}
